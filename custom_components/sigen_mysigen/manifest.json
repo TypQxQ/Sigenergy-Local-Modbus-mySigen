@@ -1,0 +1,20 @@
+{
+  "domain": "sigen_mysigen",
+  "name": "Sigenergy ESS – mySigen cloud",
+  "codeowners": [
+    "@TypQxQ"
+  ],
+  "config_flow": false,
+  "dependencies": [
+    "sigen"
+  ],
+  "documentation": "https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues",
+  "loggers": [
+    "custom_components.sigen_mysigen"
+  ],
+  "requirements": [],
+  "version": "0.0.1"
+}
