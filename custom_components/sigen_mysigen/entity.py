@@ -26,9 +26,10 @@ class MySigenEntity(CoordinatorEntity[MySigenCoordinator]):
         self.device_entry = next(
             (
                 device
-                for device in dr.async_get(coordinator.hass).devices.values()
+                for device in dr.async_entries_for_config_entry(
+                    dr.async_get(coordinator.hass), plant_entry_id
+                )
                 if identifier in device.identifiers
-                and plant_entry_id in device.config_entries
             ),
             None,
         )
