@@ -69,6 +69,25 @@ class TestSerials(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(api.MySigenRateLimitError):
             await client.async_device_serials()
 
+    def test_masked_shape_keeps_names_and_units_but_no_values(self):
+        shape = api.masked_shape({
+            "gridSideInfoList": [
+                {"paramKey": "Phase A Voltage", "paramValue": "231.4 V",
+                 "name": "My house", "power": 1.5},
+            ],
+            "sn": "ABC1234567XYZ",
+            "online": True,
+            "note": None,
+        })
+        self.assertEqual(shape, {
+            "gridSideInfoList": [{
+                "paramKey": "label:Phase A Voltage", "paramValue": "text:999.9 V",
+                "name": "text:aa aaaaa", "power": "float"}],
+            "sn": "text:aaa9999999aaa",
+            "online": "bool",
+            "note": "null",
+        })
+
     def test_match_rule(self):
         self.assertIsNone(match_station({"INV123"}, {"GW001", "INV123"}))
         self.assertEqual(match_station(set(), {"INV123"}), "no_local_serial")

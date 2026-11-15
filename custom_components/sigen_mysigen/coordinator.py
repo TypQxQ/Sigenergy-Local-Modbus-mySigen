@@ -1,6 +1,7 @@
 """Polling of mySigen for one linked plant."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 import time
@@ -14,7 +15,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    GatewayReadings,
     MySigenAuthError,
+    MySigenConnectionError,
     MySigenError,
     MySigenPermissionError,
     MySigenRateLimitError,
@@ -34,10 +37,20 @@ _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
+# How long an answer without Gateway readings is trusted before asking again.
+_GATEWAY_RECHECK = 600.0
 
 
-class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
-    """Read the battery override status at the configured interval."""
+@dataclass(frozen=True)
+class MySigenData:
+    """One poll. `gateway` is None when it gave no readings this time."""
+
+    override: OverrideStatus
+    gateway: GatewayReadings | None
+
+
+class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
+    """Read the battery override and the Gateway at the configured interval."""
 
     config_entry: ConfigEntry
 
@@ -58,6 +71,9 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
             entry.data[CONF_PASSWORD],
         )
         self.last_success: datetime | None = None
+        # None until mySigen has answered: True with readings, False without.
+        self.has_gateway: bool | None = None
+        self._gateway_recheck_at = 0.0
         # True when mySigen refused the read itself, not the sign-in.
         self.permission_denied = False
         # Result of the startup station check, for diagnostics.
@@ -82,12 +98,34 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
         self._limits["blocked_until"] = time.monotonic() + wait
         return wait
 
-    async def _async_update_data(self) -> OverrideStatus:
+    async def _async_gateway(self) -> GatewayReadings | None:
+        """Read the Gateway without letting it fail the whole poll."""
+        now = time.monotonic()
+        if self.has_gateway is False and now < self._gateway_recheck_at:
+            return None
+        try:
+            gateway = await self.session.async_gateway_readings()
+        except (MySigenConnectionError, MySigenPermissionError) as err:
+            # Unknown stays unknown: a failed read says nothing about
+            # whether the system has a Gateway.
+            _LOGGER.debug("mySigen Gateway read failed: %s", err)
+            return None
+        if gateway is not None:
+            self.has_gateway = True
+        elif self.has_gateway is not True:
+            # No readings this time. Ask again later instead of deciding for
+            # good: the Gateway may be added or come online.
+            self.has_gateway = False
+            self._gateway_recheck_at = now + _GATEWAY_RECHECK
+        return gateway
+
+    async def _async_update_data(self) -> MySigenData:
         # Stay quiet while the service has asked for fewer requests.
         if self.rate_limit_wait:
             raise UpdateFailed("Waiting after a mySigen rate limit")
         try:
             status = await self.session.async_override_status()
+            gateway = await self._async_gateway()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"mySigen refused the stored account ({err})"
@@ -103,4 +141,4 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
         self._limits["streak"] = 0
         self.permission_denied = False
         self.last_success = dt_util.utcnow()
-        return status
+        return MySigenData(status, gateway)
