@@ -117,6 +117,9 @@ class OverrideStatus:
     enabled: bool
     mode: str | None
     ends_at: datetime | None
+    # False when mySigen did not state on or off in a recognisable way.
+    # Such an answer is shown as off but is not proof that nothing runs.
+    explicit: bool = True
 
 
 @dataclass(frozen=True)
@@ -259,7 +262,11 @@ def parse_override(data: Any) -> OverrideStatus:
     """Turn the override answer into a status, keeping missing apart from off."""
     if not isinstance(data, dict):
         raise MySigenConnectionError("Unexpected override answer")
-    enabled = bool(data.get("enable"))
+    raw = data.get("enable")
+    if isinstance(raw, str) and raw.strip().lower() in ("true", "false", "0", "1"):
+        raw = raw.strip().lower() in ("true", "1")
+    explicit = isinstance(raw, bool) or (isinstance(raw, int) and raw in (0, 1))
+    enabled = bool(raw)
     raw_mode = data.get("mode")
     mode = OVERRIDE_MODES.get(str(raw_mode)) if raw_mode not in (None, "") else None
     ends_at = None
@@ -274,7 +281,7 @@ def parse_override(data: Any) -> OverrideStatus:
         ends_at = datetime.fromtimestamp(end, tz=timezone.utc)
     if not enabled:
         mode = ends_at = None
-    return OverrideStatus(enabled, mode, ends_at)
+    return OverrideStatus(enabled, mode, ends_at, explicit)
 
 
 async def _async_request_token(

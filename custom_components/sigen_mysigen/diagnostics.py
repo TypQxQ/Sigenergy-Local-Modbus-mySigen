@@ -72,6 +72,7 @@ async def async_get_config_entry_diagnostics(
     if status is not None:
         result["battery_override"] = {
             "enabled": status.enabled,
+            "stated_by_mysigen": status.explicit,
             "mode": status.mode,
             "ends_at": status.ends_at.isoformat() if status.ends_at else None,
         }

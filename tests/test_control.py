@@ -27,6 +27,7 @@ _SPEC.loader.exec_module(control)
 OFF = api.OverrideStatus(False, None, None)
 HOLD = api.OverrideStatus(True, "hold_battery", None)
 CHARGE = api.OverrideStatus(True, "charging", None)
+UNSTATED = api.OverrideStatus(False, None, None, explicit=False)
 
 
 class _FakeSession:
@@ -76,6 +77,9 @@ async def _no_sleep(_seconds):
 
 class TestStart(unittest.IsolatedAsyncioTestCase):
     async def _start(self, coordinator, mode="hold_battery", minutes=60, remote_ems="off"):
+        if not callable(remote_ems):
+            state = remote_ems
+            remote_ems = lambda: state  # noqa: E731
         return await control.async_start_override(
             coordinator, mode=mode, minutes=minutes, remote_ems=remote_ems, sleep=_no_sleep
         )
@@ -103,6 +107,26 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
                 await self._start(coordinator, **call_args)
             self.assertEqual(coordinator.session.writes, [])
             self.assertEqual(coordinator.commands, [("start", "refused")])
+
+    async def test_remote_ems_is_read_last_and_inside_the_lock(self):
+        # Remote EMS turns on while the second start waits for the first.
+        states = iter(["off", "on"])
+        coordinator = _FakeCoordinator([OFF, HOLD, OFF])
+        results = await asyncio.gather(
+            self._start(coordinator, remote_ems=lambda: next(states)),
+            self._start(coordinator, remote_ems=lambda: next(states)),
+            return_exceptions=True,
+        )
+        self.assertEqual(results[0], "confirmed")
+        self.assertIsInstance(results[1], control.CommandRefused)
+        self.assertIn("Remote EMS is active", str(results[1]))
+        self.assertEqual(len(coordinator.session.writes), 1)
+
+    async def test_unstated_off_is_not_proof_of_off(self):
+        coordinator = _FakeCoordinator([UNSTATED, HOLD])
+        with self.assertRaisesRegex(control.CommandRefused, "did not state"):
+            await self._start(coordinator)
+        self.assertEqual(coordinator.session.writes, [])
 
     async def test_running_override_is_left_alone(self):
         for running in (HOLD, CHARGE):
@@ -181,6 +205,15 @@ class TestCancel(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(control.CommandRefused):
             await control.async_cancel_override(coordinator, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [])
+
+    async def test_unstated_answers_neither_allow_nor_confirm_a_cancel(self):
+        coordinator = _FakeCoordinator([UNSTATED])
+        with self.assertRaisesRegex(control.CommandRefused, "did not state"):
+            await control.async_cancel_override(coordinator, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
+        coordinator = _FakeCoordinator([HOLD, UNSTATED, UNSTATED])
+        with self.assertRaises(control.CommandNotConfirmed):
+            await control.async_cancel_override(coordinator, sleep=_no_sleep)
 
     async def test_still_running_after_cancel_is_not_confirmed(self):
         coordinator = _FakeCoordinator([HOLD, HOLD, HOLD])

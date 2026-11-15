@@ -100,7 +100,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                     coordinator,
                     mode=call.data[ATTR_MODE],
                     minutes=call.data[ATTR_DURATION],
-                    remote_ems=remote_ems_state(hass, plant_entry_id),
+                    remote_ems=lambda: remote_ems_state(hass, plant_entry_id),
                 )
             else:
                 await async_cancel_override(coordinator)

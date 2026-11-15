@@ -3,8 +3,9 @@
 This is the only code path that changes the plant. Its rules:
 
 * Nothing is sent unless control was switched on for the connection.
-* Before a start, a fresh read must show no override running and the
-  Modbus integration must show Remote EMS off. Either one is left alone.
+* Before a start, a fresh read must state that no override is running and
+  the Modbus integration must show Remote EMS off, checked last, right
+  before sending. Either one is left alone.
 * A request is sent once. It is never repeated, whatever the answer.
 * After an accepted request, a fresh read must show the expected state.
 * When the answer is lost, the outcome is reported as unknown.
@@ -81,7 +82,7 @@ def _check_ready(coordinator: Any) -> None:
 async def _fresh_status(coordinator: Any) -> OverrideStatus:
     """Read the current override before sending anything."""
     try:
-        return await coordinator.session.async_override_status()
+        status = await coordinator.session.async_override_status()
     except MySigenRateLimitError as err:
         coordinator.note_rate_limit(err)
         raise CommandRefused("mySigen is limiting requests. Nothing was sent.") from err
@@ -89,6 +90,13 @@ async def _fresh_status(coordinator: Any) -> OverrideStatus:
         raise CommandRefused(
             f"Could not read the current state ({err}). Nothing was sent."
         ) from err
+    if not status.explicit:
+        # An answer without a clear on or off is not proof of off.
+        raise CommandRefused(
+            "mySigen did not state whether an override is running. "
+            "Nothing was sent."
+        )
+    return status
 
 
 async def _send(coordinator: Any, request: Callable[[], Awaitable[None]]) -> None:
@@ -153,7 +161,7 @@ async def async_start_override(
     *,
     mode: str,
     minutes: int,
-    remote_ems: str | None,
+    remote_ems: Callable[[], str | None],
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Start a timed override. Raises CommandError unless it is confirmed."""
@@ -167,14 +175,6 @@ async def async_start_override(
                 f"{MAX_OVERRIDE_MINUTES} minutes."
             )
         _check_ready(coordinator)
-        if remote_ems == REMOTE_EMS_ON:
-            raise CommandRefused(
-                "Remote EMS is active on the plant. It was left in place."
-            )
-        if remote_ems != REMOTE_EMS_OFF:
-            raise CommandRefused(
-                "Could not confirm that Remote EMS is off. Nothing was sent."
-            )
         current = await _fresh_status(coordinator)
         if current.enabled:
             coordinator.publish_override(current)
@@ -182,12 +182,25 @@ async def async_start_override(
                 f"An override is already running ({current.mode}). "
                 "It was left in place; cancel it first."
             )
+        # Read last, inside the lock and with nothing awaited before the
+        # send, so a start that waited in line cannot use an old answer.
+        remote_ems_now = remote_ems()
+        if remote_ems_now == REMOTE_EMS_ON:
+            raise CommandRefused(
+                "Remote EMS is active on the plant. It was left in place."
+            )
+        if remote_ems_now != REMOTE_EMS_OFF:
+            raise CommandRefused(
+                "Could not confirm that Remote EMS is off. Nothing was sent."
+            )
         await _send(
             coordinator,
             lambda: coordinator.session.async_start_override(mode, minutes),
         )
         status = await _confirm(
-            coordinator, lambda s: s.enabled and s.mode == mode, sleep
+            coordinator,
+            lambda s: s.explicit and s.enabled and s.mode == mode,
+            sleep,
         )
         coordinator.publish_override(status)
         return RESULT_CONFIRMED
@@ -210,7 +223,9 @@ async def async_cancel_override(
             coordinator.publish_override(current)
             return RESULT_NO_OVERRIDE
         await _send(coordinator, coordinator.session.async_cancel_override)
-        status = await _confirm(coordinator, lambda s: not s.enabled, sleep)
+        status = await _confirm(
+            coordinator, lambda s: s.explicit and not s.enabled, sleep
+        )
         coordinator.publish_override(status)
         return RESULT_CONFIRMED
 
