@@ -1,6 +1,7 @@
 """Polling of mySigen for one linked plant."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
@@ -25,6 +26,7 @@ from .api import (
     OverrideStatus,
 )
 from .const import (
+    CONF_ALLOW_CONTROL,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
@@ -71,6 +73,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             entry.data[CONF_PASSWORD],
         )
         self.last_success: datetime | None = None
+        # One command at a time per connection.
+        self.command_lock = asyncio.Lock()
+        # How the last start or cancel ended, for the sensor and diagnostics.
+        self.last_command: dict[str, str] | None = None
         # None until mySigen has answered: True with readings, False without.
         self.has_gateway: bool | None = None
         self._gateway_recheck_at = 0.0
@@ -83,6 +89,26 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self._limits: dict[str, float] = hass.data.setdefault(DOMAIN, {}).setdefault(
             entry.entry_id, {"blocked_until": 0.0, "streak": 0}
         )
+
+    @property
+    def allow_control(self) -> bool:
+        """True only when the user switched control on for this connection."""
+        return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
+
+    def record_command(self, action: str, result: str) -> None:
+        """Remember how a command ended and tell the entities."""
+        self.last_command = {
+            "action": action,
+            "result": result,
+            "at": dt_util.utcnow().isoformat(),
+        }
+        self.async_update_listeners()
+
+    def publish_override(self, status: OverrideStatus) -> None:
+        """Show a freshly read override state without waiting for a poll."""
+        gateway = self.data.gateway if self.data else None
+        self.last_success = dt_util.utcnow()
+        self.async_set_updated_data(MySigenData(status, gateway))
 
     @property
     def rate_limit_wait(self) -> float:

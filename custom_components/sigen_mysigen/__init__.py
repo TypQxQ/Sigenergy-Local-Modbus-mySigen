@@ -7,24 +7,42 @@ from __future__ import annotations
 
 import logging
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
 )
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import (
     config_validation as cv,
     device_registry as dr,
     issue_registry as ir,
 )
 
-from .api import MySigenAuthError, MySigenError, MySigenRateLimitError
+from .api import (
+    CONTROL_MODES,
+    MAX_OVERRIDE_MINUTES,
+    MIN_OVERRIDE_MINUTES,
+    MySigenAuthError,
+    MySigenError,
+    MySigenRateLimitError,
+)
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
+from .control import (
+    CommandError,
+    CommandRefused,
+    async_cancel_override,
+    async_start_override,
+)
 from .coordinator import MySigenCoordinator
-from .link import STATION_MISMATCH, async_link_problem
+from .link import STATION_MISMATCH, async_link_problem, remote_ems_state
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +51,69 @@ PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 NO_PERMISSION = "no_permission"
 _ISSUES = ("plant_missing", STATION_MISMATCH, NO_PERMISSION)
+
+
+SERVICE_START = "start_battery_override"
+SERVICE_CANCEL = "cancel_battery_override"
+ATTR_ENTRY_ID = "config_entry_id"
+ATTR_MODE = "mode"
+ATTR_DURATION = "duration"
+
+_CANCEL_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTRY_ID): cv.string})
+_START_SCHEMA = _CANCEL_SCHEMA.extend({
+    vol.Required(ATTR_MODE): vol.In(CONTROL_MODES),
+    vol.Required(ATTR_DURATION): vol.All(
+        vol.Coerce(int), vol.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
+    ),
+})
+
+
+def _target_coordinator(hass: HomeAssistant, call: ServiceCall) -> MySigenCoordinator:
+    """Find the connection an action is for."""
+    loaded = [
+        entry
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if entry.state is ConfigEntryState.LOADED
+    ]
+    if entry_id := call.data.get(ATTR_ENTRY_ID):
+        loaded = [entry for entry in loaded if entry.entry_id == entry_id]
+        if not loaded:
+            raise ServiceValidationError("That mySigen connection is not loaded.")
+    elif len(loaded) != 1:
+        raise ServiceValidationError(
+            "Choose which mySigen connection to use."
+            if loaded
+            else "No mySigen connection is loaded."
+        )
+    return loaded[0].runtime_data
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register the actions once; each call picks its connection."""
+
+    async def handle(call: ServiceCall) -> None:
+        coordinator = _target_coordinator(hass, call)
+        try:
+            if call.service == SERVICE_START:
+                plant_entry_id = coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
+                await async_start_override(
+                    coordinator,
+                    mode=call.data[ATTR_MODE],
+                    minutes=call.data[ATTR_DURATION],
+                    remote_ems=remote_ems_state(hass, plant_entry_id),
+                )
+            else:
+                await async_cancel_override(coordinator)
+        except CommandRefused as err:
+            raise ServiceValidationError(str(err)) from err
+        except CommandError as err:
+            # The plant may have changed; let the next poll show it soon.
+            await coordinator.async_request_refresh()
+            raise HomeAssistantError(str(err)) from err
+
+    hass.services.async_register(DOMAIN, SERVICE_START, handle, schema=_START_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_CANCEL, handle, schema=_CANCEL_SCHEMA)
+    return True
 
 
 def _issue_id(key: str, entry: ConfigEntry) -> str:

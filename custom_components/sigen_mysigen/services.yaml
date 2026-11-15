@@ -1,0 +1,33 @@
+start_battery_override:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: sigen_mysigen
+    mode:
+      required: true
+      default: hold_battery
+      selector:
+        select:
+          translation_key: override_mode
+          options:
+            - hold_battery
+    duration:
+      required: true
+      default: 60
+      selector:
+        number:
+          min: 30
+          max: 120
+          step: 1
+          unit_of_measurement: min
+          mode: box
+
+cancel_battery_override:
+  fields:
+    config_entry_id:
+      required: false
+      selector:
+        config_entry:
+          integration: sigen_mysigen

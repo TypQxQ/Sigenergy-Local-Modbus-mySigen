@@ -1,8 +1,9 @@
-"""Small read-only mySigen client.
+"""Small mySigen client.
 
 Request formats follow solidfox/sigenergy-cloud (MIT License,
-https://github.com/solidfox/sigenergy-cloud). This module only signs in and
-reads. It contains no request that changes a plant.
+https://github.com/solidfox/sigenergy-cloud). It signs in and reads. The
+only requests that change a plant start and cancel the temporary battery
+override, and they are sent exactly once (see control.py for the rules).
 
 Never log request bodies, response bodies, credentials or tokens.
 """
@@ -35,6 +36,13 @@ OVERRIDE_MODES: dict[str, str] = {
     "3": "self_consumption",
 }
 
+# Modes that may be started from Home Assistant. Others are added only
+# after each has been verified on hardware.
+CONTROL_MODES: tuple[str, ...] = ("hold_battery",)
+# The range the reference client enforces; wider ranges are unverified.
+MIN_OVERRIDE_MINUTES = 30
+MAX_OVERRIDE_MINUTES = 120
+
 _TOKEN_PATH = "auth/oauth/token"
 _STATION_PATH = "device/owner/station/home"
 # The misspelling is the service's own path.
@@ -42,6 +50,7 @@ _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
 _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
 _GATEWAY_PATH = "device/gateway/{station_id}"
+_OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
 # Label in the Gateway answer -> (reading, unit it must carry).
@@ -75,6 +84,14 @@ class MySigenAuthError(MySigenError):
 
 class MySigenPermissionError(MySigenError):
     """The account is signed in but may not make this request."""
+
+
+class MySigenRejectedError(MySigenError):
+    """The service answered a change with an error; nothing was changed."""
+
+
+class MySigenUnknownOutcome(MySigenError):
+    """A change was sent and no usable answer came back."""
 
 
 class MySigenConnectionError(MySigenError):
@@ -445,6 +462,75 @@ class MySigenSession:
             except (MySigenConnectionError, MySigenPermissionError) as err:
                 _LOGGER.debug("mySigen serial source unavailable: %s", err)
         return serials
+
+    async def _async_put(self, what: str, path: str, body: dict[str, Any]) -> None:
+        """Send one change. It is never repeated, not even after a sign-out."""
+        try:
+            await self._async_ensure_token()
+        except MySigenConnectionError as err:
+            raise MySigenRejectedError(f"{what}: not sent, {err}") from err
+        try:
+            async with self._session.request(
+                "PUT",
+                f"{REGIONS[self._region]}{path}",
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {self._access_token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT),
+            ) as response:
+                status = response.status
+                retry_after = _retry_after(response.headers)
+                try:
+                    payload = await response.json(content_type=None)
+                except (ValueError, aiohttp.ClientError):
+                    payload = None
+        except (aiohttp.ClientError, TimeoutError) as err:
+            # The request may have arrived. Only a later read can tell.
+            raise MySigenUnknownOutcome(f"{what}: {type(err).__name__}") from err
+
+        code = payload.get("code") if isinstance(payload, dict) else None
+        if status == 429 or code in _RATE_LIMIT_CODES:
+            raise MySigenRateLimitError(retry_after)
+        detail = f"{what}: HTTP {status}, code {code}"
+        if status == 401 or code in (401, "401"):
+            raise MySigenAuthError(detail)
+        if status == 403 or code in (403, "403"):
+            raise MySigenPermissionError(detail)
+        if status >= 400 or (isinstance(payload, dict) and code not in _SUCCESS_CODES):
+            raise MySigenRejectedError(detail)
+        if not isinstance(payload, dict):
+            raise MySigenUnknownOutcome(f"{what}: unreadable answer, HTTP {status}")
+
+    async def _async_station_number(self) -> int | str:
+        station_id = await self.async_station_id()
+        return int(station_id) if station_id.isdigit() else station_id
+
+    async def async_start_override(self, mode: str, minutes: int) -> None:
+        """Ask the plant to start a timed override. Sent once."""
+        if mode not in CONTROL_MODES:
+            raise ValueError(f"Mode {mode!r} is not available for control")
+        if not MIN_OVERRIDE_MINUTES <= minutes <= MAX_OVERRIDE_MINUTES:
+            raise ValueError("Duration is outside the allowed range")
+        code = next(key for key, name in OVERRIDE_MODES.items() if name == mode)
+        await self._async_put("start battery override", _OVERRIDE_WRITE_PATH, {
+            "enable": True,
+            "stationId": await self._async_station_number(),
+            "mode": code,
+            "duration": str(minutes),
+            "powerLimitation": "",
+        })
+
+    async def async_cancel_override(self) -> None:
+        """Ask the plant to end the running override. Sent once."""
+        await self._async_put("cancel battery override", _OVERRIDE_WRITE_PATH, {
+            "enable": False,
+            "stationId": await self._async_station_number(),
+            "mode": "",
+            "duration": "",
+            "powerLimitation": "",
+        })
 
     async def async_gateway(self) -> Any:
         """Read the Gateway's own readings as mySigen returns them."""

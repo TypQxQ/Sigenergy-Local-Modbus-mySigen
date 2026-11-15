@@ -24,15 +24,17 @@
       },
       "reconfigure": {
         "title": "Change mySigen connection",
-        "description": "Change the mySigen account or how often Home Assistant reads from mySigen.",
+        "description": "Change the mySigen account, how often Home Assistant reads from mySigen, or whether it may control the battery.",
         "data": {
           "username": "Email",
           "password": "Password",
-          "scan_interval": "Polling interval"
+          "scan_interval": "Polling interval",
+          "allow_control": "Allow battery control"
         },
         "data_description": {
           "password": "Leave empty to keep the current password.",
-          "scan_interval": "Between 15 and 60 seconds. Shorter intervals send more requests to mySigen."
+          "scan_interval": "Between 15 and 60 seconds. Shorter intervals send more requests to mySigen.",
+          "allow_control": "Lets Home Assistant actions start and cancel a timed battery override (Hold Battery) through mySigen. Off by default. The account needs View and Edit access."
         }
       }
     },
@@ -63,6 +65,11 @@
         "apac": "Asia-Pacific",
         "us": "United States",
         "cn": "China"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Hold battery"
       }
     }
   },
@@ -111,6 +118,16 @@
       },
       "gateway_grid_contactor": {
         "name": "Gateway grid contactor"
+      },
+      "battery_override_command": {
+        "name": "Battery override command",
+        "state": {
+          "confirmed": "Confirmed",
+          "refused": "Refused",
+          "unknown": "Outcome unknown",
+          "not_confirmed": "Not confirmed",
+          "no_override": "Nothing to cancel"
+        }
       }
     }
   },
@@ -126,6 +143,36 @@
     "no_permission": {
       "title": "{name} is not allowed to read mySigen",
       "description": "mySigen signed the account in but did not allow it to read the battery settings. Check in the mySigen app that the system is shared with this account with View and Edit access, then reload this connection."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Start battery override",
+      "description": "Starts a timed battery override through mySigen. The plant ends it by itself when the time is up, even if Home Assistant is not running. Refused while another override or Remote EMS is active.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen connection",
+          "description": "Which connection to use. Can be left out when there is only one."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "What the battery should do."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Minutes until the plant returns to its normal strategy (30 to 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Cancel battery override",
+      "description": "Ends the running battery override, including one started in the mySigen app.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen connection",
+          "description": "Which connection to use. Can be left out when there is only one."
+        }
+      }
     }
   }
 }

@@ -21,6 +21,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .api import OVERRIDE_MODES
 from .const import DOMAIN
+from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
 
@@ -54,6 +55,7 @@ async def async_setup_entry(
         BatteryOverrideMode(coordinator, "battery_override_mode"),
         BatteryOverrideEnd(coordinator, "battery_override_end"),
         LastUpdate(coordinator, "last_update"),
+        LastCommand(coordinator, "battery_override_command"),
     ]
 
     # Add Gateway sensors when mySigen gave Gateway readings now, or did on an
@@ -123,6 +125,28 @@ class LastUpdate(MySigenEntity, SensorEntity):
     @property
     def native_value(self) -> datetime | None:
         return self.coordinator.last_success
+
+
+class LastCommand(MySigenEntity, SensorEntity):
+    """How the last start or cancel sent from Home Assistant ended."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(RESULTS)
+
+    @property
+    def available(self) -> bool:
+        # An unknown outcome must stay visible during a cloud outage.
+        return True
+
+    @property
+    def native_value(self) -> str | None:
+        command = self.coordinator.last_command
+        return command["result"] if command else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str] | None:
+        command = self.coordinator.last_command
+        return {"action": command["action"], "at": command["at"]} if command else None
 
 
 class _GatewayEntity(MySigenEntity, SensorEntity):

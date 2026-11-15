@@ -76,6 +76,10 @@ async def async_get_config_entry_diagnostics(
             "ends_at": status.ends_at.isoformat() if status.ends_at else None,
         }
 
+    result["control"] = {
+        "allowed": coordinator.allow_control,
+        "last_command": coordinator.last_command,
+    }
     gateway = data.gateway if data else None
     result["gateway"] = {
         "detected": coordinator.has_gateway,
