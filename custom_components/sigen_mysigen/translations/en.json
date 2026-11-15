@@ -43,7 +43,8 @@
       "rate_limited": "mySigen is limiting requests right now. Wait a few minutes and try again.",
       "no_local_serial": "Sigenergy ESS has not read this plant's inverter serial number yet, so the account cannot be checked. Try again when the plant is online.",
       "no_cloud_serial": "mySigen did not list any devices for this account, so it cannot be checked against the plant.",
-      "station_mismatch": "This mySigen account belongs to a different system than the selected plant."
+      "station_mismatch": "This mySigen account belongs to a different system than the selected plant.",
+      "no_permission": "mySigen signed this account in but did not allow it to read the battery settings. Check in the mySigen app that the system is shared with this account with View and Edit access."
     },
     "abort": {
       "modbus_missing": "Install and set up Sigenergy ESS (Sigenergy Local Modbus) first.",
@@ -83,6 +84,9 @@
       },
       "battery_override_end": {
         "name": "Battery override end"
+      },
+      "last_update": {
+        "name": "Last mySigen update"
       }
     }
   },
@@ -94,6 +98,10 @@
     "station_mismatch": {
       "title": "{name} belongs to a different system",
       "description": "mySigen does not list this plant's inverter for the account used by {name}. This happens when the inverter was replaced, the system is no longer shared with the account, or the account was changed. Reconfigure the connection with an account that has access, or delete it and add it again."
+    },
+    "no_permission": {
+      "title": "{name} is not allowed to read mySigen",
+      "description": "mySigen signed the account in but did not allow it to read the battery settings. Check in the mySigen app that the system is shared with this account with View and Edit access, then reload this connection."
     }
   }
 }

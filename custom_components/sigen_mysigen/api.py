@@ -46,7 +46,6 @@ _PASSWORD_KEY = b"sigensigensigenp"
 _REQUEST_TIMEOUT = 20
 _TOKEN_MARGIN = 60
 _SUCCESS_CODES = (0, "0", None)
-_AUTH_CODES = (401, 403, "401", "403")
 _RATE_LIMIT_CODES = (429, "429")
 
 
@@ -56,6 +55,10 @@ class MySigenError(Exception):
 
 class MySigenAuthError(MySigenError):
     """The service answered and refused these credentials."""
+
+
+class MySigenPermissionError(MySigenError):
+    """The account is signed in but may not make this request."""
 
 
 class MySigenConnectionError(MySigenError):
@@ -289,28 +292,40 @@ class MySigenSession:
         code = payload.get("code") if isinstance(payload, dict) else None
         if status == 429 or code in _RATE_LIMIT_CODES:
             raise MySigenRateLimitError(retry_after)
-        if status == 401 or code in _AUTH_CODES:
-            raise MySigenAuthError(f"HTTP {status}")
+        detail = f"HTTP {status}, code {code}"
+        if status == 401 or code in (401, "401"):
+            raise MySigenAuthError(detail)
+        if status == 403 or code in (403, "403"):
+            raise MySigenPermissionError(detail)
         if status >= 400 or not isinstance(payload, dict):
             raise MySigenConnectionError(f"HTTP {status}", status)
         if code not in _SUCCESS_CODES:
             raise MySigenConnectionError(f"code {code}", status)
         return payload.get("data")
 
-    async def _async_get(self, path: str, params: dict[str, str] | None = None) -> Any:
-        """GET one path, signing in again once if the session was dropped."""
-        await self._async_ensure_token()
+    async def _async_get(
+        self, what: str, path: str, params: dict[str, str] | None = None
+    ) -> Any:
+        """GET one path, signing in again once if the session was dropped.
+
+        `what` names the request in refusals, so a message says which read
+        the account was refused.
+        """
         try:
-            return await self._async_get_once(path, params)
-        except MySigenAuthError:
-            self._access_token = None
             await self._async_ensure_token()
-            return await self._async_get_once(path, params)
+            try:
+                return await self._async_get_once(path, params)
+            except MySigenAuthError:
+                self._access_token = None
+                await self._async_ensure_token()
+                return await self._async_get_once(path, params)
+        except (MySigenAuthError, MySigenPermissionError) as err:
+            raise type(err)(f"{what}: {err}") from err
 
     async def async_station_id(self) -> str:
         """Return the account's station id, read once and then kept."""
         if self._station_id is None:
-            data = await self._async_get(_STATION_PATH)
+            data = await self._async_get("station", _STATION_PATH)
             station_id = data.get("stationId") if isinstance(data, dict) else None
             if station_id in (None, ""):
                 raise MySigenConnectionError("The account has no station")
@@ -326,17 +341,22 @@ class MySigenSession:
         """
         params = {"stationId": await self.async_station_id()}
         serials: set[str] = set()
-        for path, parse in ((_TOPOLOGY_PATH, topology_serials), (_AIO_PATH, aio_serials)):
+        for what, path, parse in (
+            ("device tree", _TOPOLOGY_PATH, topology_serials),
+            ("inverter list", _AIO_PATH, aio_serials),
+        ):
             try:
-                serials |= parse(await self._async_get(path, params))
-            except MySigenConnectionError as err:
-                _LOGGER.debug("mySigen serial source %s unavailable: %s", path, err)
+                serials |= parse(await self._async_get(what, path, params))
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen serial source unavailable: %s", err)
         return serials
 
     async def async_override_status(self) -> OverrideStatus:
         """Read the temporary battery override."""
         station_id = await self.async_station_id()
-        data = await self._async_get(_OVERRIDE_PATH.format(station_id=station_id))
+        data = await self._async_get(
+            "battery override", _OVERRIDE_PATH.format(station_id=station_id)
+        )
         if not self._logged_keys and isinstance(data, dict):
             # Field names only, to help verify the answer's shape.
             _LOGGER.debug("mySigen override answer keys: %s", sorted(data))

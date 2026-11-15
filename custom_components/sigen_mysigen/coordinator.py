@@ -1,7 +1,7 @@
 """Polling of mySigen for one linked plant."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 import time
 
@@ -11,10 +11,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import (
     MySigenAuthError,
     MySigenError,
+    MySigenPermissionError,
     MySigenRateLimitError,
     MySigenSession,
     OverrideStatus,
@@ -55,6 +57,11 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
         )
+        self.last_success: datetime | None = None
+        # True when mySigen refused the read itself, not the sign-in.
+        self.permission_denied = False
+        # Result of the startup station check, for diagnostics.
+        self.link_problem: str | None = None
         # Kept outside the coordinator: a failed first refresh discards the
         # coordinator, and the next setup attempt must still honour the wait.
         self._limits: dict[str, float] = hass.data.setdefault(DOMAIN, {}).setdefault(
@@ -82,11 +89,18 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
         try:
             status = await self.session.async_override_status()
         except MySigenAuthError as err:
-            raise ConfigEntryAuthFailed("mySigen refused the stored account") from err
+            raise ConfigEntryAuthFailed(
+                f"mySigen refused the stored account ({err})"
+            ) from err
+        except MySigenPermissionError as err:
+            self.permission_denied = True
+            raise UpdateFailed(f"mySigen did not allow this read ({err})") from err
         except MySigenRateLimitError as err:
             wait = self.note_rate_limit(err)
             raise UpdateFailed(f"mySigen rate limit, waiting {wait:.0f} s") from err
         except MySigenError as err:
             raise UpdateFailed(f"mySigen read failed: {err}") from err
         self._limits["streak"] = 0
+        self.permission_denied = False
+        self.last_success = dt_util.utcnow()
         return status
