@@ -87,6 +87,30 @@
       },
       "last_update": {
         "name": "Last mySigen update"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway grid voltage phase A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway grid current phase A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway grid voltage phase B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway grid current phase B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway grid voltage phase C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway grid current phase C"
+      },
+      "gateway_grid_frequency": {
+        "name": "Gateway grid frequency"
+      },
+      "gateway_grid_contactor": {
+        "name": "Gateway grid contactor"
       }
     }
   },

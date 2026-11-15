@@ -13,6 +13,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
+from .api import MySigenError, masked_shape
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .link import local_inverter_serials
 
@@ -52,7 +53,8 @@ async def async_get_config_entry_diagnostics(
     if coordinator is None:
         return result
 
-    status = coordinator.data
+    data = coordinator.data
+    status = data.override if data else None
     result["station_check"] = coordinator.link_problem or "ok"
     result["polling"] = {
         "interval_seconds": coordinator.update_interval.total_seconds(),
@@ -73,4 +75,23 @@ async def async_get_config_entry_diagnostics(
             "mode": status.mode,
             "ends_at": status.ends_at.isoformat() if status.ends_at else None,
         }
+
+    gateway = data.gateway if data else None
+    result["gateway"] = {
+        "detected": coordinator.has_gateway,
+        "readings": sorted(gateway.values) if gateway else None,
+        "contactor": gateway.contactor if gateway else None,
+    }
+
+    # Structure of the Gateway answer, with every value masked. It is read
+    # on demand for this download and is not polled.
+    if coordinator.rate_limit_wait:
+        result["gateway_shape"] = "skipped: waiting after a rate limit"
+    else:
+        try:
+            result["gateway_shape"] = masked_shape(
+                await coordinator.session.async_gateway()
+            )
+        except MySigenError as err:
+            result["gateway_shape"] = f"unavailable: {type(err).__name__}: {err}"
     return result

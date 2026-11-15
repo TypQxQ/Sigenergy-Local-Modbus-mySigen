@@ -12,6 +12,7 @@ import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import logging
+import re
 import time
 from typing import Any
 
@@ -40,6 +41,21 @@ _STATION_PATH = "device/owner/station/home"
 _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
 _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
+_GATEWAY_PATH = "device/gateway/{station_id}"
+_LABEL_KEYS = ("paramKey", "key")
+_NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
+# Label in the Gateway answer -> (reading, unit it must carry).
+_GATEWAY_FIELDS: dict[str, tuple[str, str]] = {
+    "phase a voltage": ("voltage_a", "V"),
+    "phase b voltage": ("voltage_b", "V"),
+    "phase c voltage": ("voltage_c", "V"),
+    "phase a current": ("current_a", "A"),
+    "phase b current": ("current_b", "A"),
+    "phase c current": ("current_c", "A"),
+    "voltage frequency": ("frequency", "Hz"),
+}
+_GATEWAY_CONTACTOR = "grid side contactor status"
+_MEASUREMENT = re.compile(r"-?[\d.,]+\s*[A-Za-z%°/]{0,6}")
 _CLIENT_ID = "sigen"
 _CLIENT_SECRET = "sigen"
 _PASSWORD_KEY = b"sigensigensigenp"
@@ -86,6 +102,53 @@ class OverrideStatus:
     ends_at: datetime | None
 
 
+@dataclass(frozen=True)
+class GatewayReadings:
+    """Grid-side readings of the Gateway. A missing key means no reading."""
+
+    values: dict[str, float]
+    contactor: str | None
+
+
+def parse_measurement(text: Any, unit: str) -> float | None:
+    """Read "231.40 V" as 231.4. Anything unexpected is no reading."""
+    if not isinstance(text, str):
+        return None
+    match = _NUMBER_WITH_UNIT.fullmatch(text.strip())
+    # A different unit (kV, mA) is refused instead of guessed at.
+    if match is None or match.group(2).lower() != unit.lower():
+        return None
+    return float(match.group(1))
+
+
+def parse_gateway(data: Any) -> GatewayReadings | None:
+    """Pick the grid-side readings out of the Gateway answer.
+
+    Returns None when the answer carries none of them, which is how a
+    system without a Gateway shows.
+    """
+    rows = data.get("gridSideInfoList") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        return None
+    values: dict[str, float] = {}
+    contactor: str | None = None
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        label = str(row.get("paramKey") or "").strip().lower()
+        value = row.get("paramValue")
+        if label in _GATEWAY_FIELDS:
+            key, unit = _GATEWAY_FIELDS[label]
+            reading = parse_measurement(value, unit)
+            if reading is not None:
+                values[key] = reading
+        elif label == _GATEWAY_CONTACTOR and isinstance(value, str) and value.strip():
+            contactor = value.strip().lower().replace(" ", "_")
+    if not values and contactor is None:
+        return None
+    return GatewayReadings(values, contactor)
+
+
 def encrypt_password(password: str) -> str:
     """Return the password in the form the mySigen token endpoint expects."""
     # Imported here so the module loads without the package in unit tests.
@@ -105,6 +168,38 @@ def _retry_after(headers: Any) -> float | None:
     except (AttributeError, TypeError, ValueError):
         return None
     return value if value > 0 else None
+
+
+def masked_shape(value: Any, depth: int = 0) -> Any:
+    """Describe an answer's structure without its values.
+
+    Field names are kept. Numbers become their type. A short number with a
+    unit keeps the unit and has its digits replaced; any other text has its
+    letters and digits replaced, so names and serial numbers cannot leak.
+    """
+    if depth > 8:
+        return "…"
+    if isinstance(value, dict):
+        return {
+            # Parameter labels such as "Phase A Voltage" are field names in
+            # all but form, so they are kept.
+            str(key): f"label:{item}"
+            if key in _LABEL_KEYS and isinstance(item, str)
+            else masked_shape(item, depth + 1)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [masked_shape(item, depth + 1) for item in value[:40]]
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "bool"
+    if isinstance(value, (int, float)):
+        return type(value).__name__
+    text = str(value)
+    if len(text) <= 16 and _MEASUREMENT.fullmatch(text):
+        return "text:" + re.sub(r"\d", "9", text)
+    return "text:" + re.sub(r"\d", "9", re.sub(r"[^\W\d_]", "a", text))[:40]
 
 
 def normalize_serial(value: Any) -> str | None:
@@ -350,6 +445,17 @@ class MySigenSession:
             except (MySigenConnectionError, MySigenPermissionError) as err:
                 _LOGGER.debug("mySigen serial source unavailable: %s", err)
         return serials
+
+    async def async_gateway(self) -> Any:
+        """Read the Gateway's own readings as mySigen returns them."""
+        station_id = await self.async_station_id()
+        return await self._async_get(
+            "gateway", _GATEWAY_PATH.format(station_id=station_id)
+        )
+
+    async def async_gateway_readings(self) -> GatewayReadings | None:
+        """Read the Gateway's grid side; None when there are no readings."""
+        return parse_gateway(await self.async_gateway())
 
     async def async_override_status(self) -> OverrideStatus:
         """Read the temporary battery override."""
