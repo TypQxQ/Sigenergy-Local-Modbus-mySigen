@@ -30,6 +30,7 @@ from .api import (
     MySigenAuthError,
     MySigenConnectionError,
     MySigenRateLimitError,
+    MySigenSession,
     async_validate_login,
 )
 from .const import (
@@ -46,6 +47,8 @@ from .const import (
     MODBUS_DEVICE_TYPE_PLANT,
     MODBUS_DOMAIN,
 )
+
+from .link import async_link_problem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,13 +82,27 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
         }
 
     async def _async_login_error(
-        self, region: str, username: str, password: str
+        self,
+        region: str,
+        username: str,
+        password: str,
+        plant_entry_id: str | None = None,
     ) -> str | None:
-        """Try one login and return a form error key, or None on success."""
+        """Try one login and return a form error key, or None on success.
+
+        With a plant, also require that the account's station contains one
+        of that plant's inverters.
+        """
+        http = async_get_clientsession(self.hass)
         try:
-            await async_validate_login(
-                async_get_clientsession(self.hass), region, username, password
-            )
+            if plant_entry_id is None:
+                await async_validate_login(http, region, username, password)
+            else:
+                return await async_link_problem(
+                    self.hass,
+                    MySigenSession(http, region, username, password),
+                    plant_entry_id,
+                )
         except MySigenAuthError:
             return "invalid_auth"
         except MySigenRateLimitError:
@@ -121,6 +138,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 user_input[CONF_REGION],
                 user_input[CONF_USERNAME],
                 user_input[CONF_PASSWORD],
+                plant_entry_id,
             )
             if error is None:
                 return self.async_create_entry(
@@ -215,7 +233,10 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 entry.data[CONF_USERNAME], entry.data[CONF_PASSWORD]
             ):
                 error = await self._async_login_error(
-                    entry.data[CONF_REGION], username, password
+                    entry.data[CONF_REGION],
+                    username,
+                    password,
+                    entry.data[CONF_PLANT_ENTRY_ID],
                 )
             if error is None:
                 return self.async_update_reload_and_abort(

@@ -38,6 +38,8 @@ _TOKEN_PATH = "auth/oauth/token"
 _STATION_PATH = "device/owner/station/home"
 # The misspelling is the service's own path.
 _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
+_TOPOLOGY_PATH = "device/devicetreepanel/topology"
+_AIO_PATH = "device/aio/by/station"
 _CLIENT_ID = "sigen"
 _CLIENT_SECRET = "sigen"
 _PASSWORD_KEY = b"sigensigensigenp"
@@ -100,6 +102,42 @@ def _retry_after(headers: Any) -> float | None:
     except (AttributeError, TypeError, ValueError):
         return None
     return value if value > 0 else None
+
+
+def normalize_serial(value: Any) -> str | None:
+    """Return a serial number in a comparable form, or None when empty."""
+    if value in (None, "") or isinstance(value, (dict, list)):
+        return None
+    text = str(value).strip().upper()
+    return text or None
+
+
+def topology_serials(data: Any) -> set[str]:
+    """Collect every device serial number from the station's device tree."""
+    found: set[str] = set()
+    pending = [data]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, list):
+            pending.extend(node)
+        elif isinstance(node, dict):
+            if serial := normalize_serial(node.get("snCode")):
+                found.add(serial)
+            pending.append(node.get("nodeList"))
+    return found
+
+
+def aio_serials(data: Any) -> set[str]:
+    """Collect serial numbers from the station's inverter list."""
+    if isinstance(data, dict):
+        data = next(
+            (data[key] for key in ("snList", "aioSnList", "list", "data")
+             if isinstance(data.get(key), list)),
+            [],
+        )
+    if not isinstance(data, list):
+        return set()
+    return {serial for item in data if (serial := normalize_serial(item))}
 
 
 def parse_override(data: Any) -> OverrideStatus:
@@ -227,11 +265,12 @@ class MySigenSession:
                 self._refresh_token = None
         await self._async_login()
 
-    async def _async_get_once(self, path: str) -> Any:
+    async def _async_get_once(self, path: str, params: dict[str, str] | None) -> Any:
         try:
             async with self._session.request(
                 "GET",
                 f"{REGIONS[self._region]}{path}",
+                params=params,
                 headers={
                     "Authorization": f"Bearer {self._access_token}",
                     "Content-Type": "application/json",
@@ -258,15 +297,15 @@ class MySigenSession:
             raise MySigenConnectionError(f"code {code}", status)
         return payload.get("data")
 
-    async def _async_get(self, path: str) -> Any:
+    async def _async_get(self, path: str, params: dict[str, str] | None = None) -> Any:
         """GET one path, signing in again once if the session was dropped."""
         await self._async_ensure_token()
         try:
-            return await self._async_get_once(path)
+            return await self._async_get_once(path, params)
         except MySigenAuthError:
             self._access_token = None
             await self._async_ensure_token()
-            return await self._async_get_once(path)
+            return await self._async_get_once(path, params)
 
     async def async_station_id(self) -> str:
         """Return the account's station id, read once and then kept."""
@@ -277,6 +316,22 @@ class MySigenSession:
                 raise MySigenConnectionError("The account has no station")
             self._station_id = str(station_id)
         return self._station_id
+
+    async def async_device_serials(self) -> set[str]:
+        """Return the serial numbers mySigen lists for the account's station.
+
+        Two sources are asked because plants differ in which one they fill.
+        A source that fails on its own is skipped; sign-in and rate-limit
+        errors are raised.
+        """
+        params = {"stationId": await self.async_station_id()}
+        serials: set[str] = set()
+        for path, parse in ((_TOPOLOGY_PATH, topology_serials), (_AIO_PATH, aio_serials)):
+            try:
+                serials |= parse(await self._async_get(path, params))
+            except MySigenConnectionError as err:
+                _LOGGER.debug("mySigen serial source %s unavailable: %s", path, err)
+        return serials
 
     async def async_override_status(self) -> OverrideStatus:
         """Read the temporary battery override."""
