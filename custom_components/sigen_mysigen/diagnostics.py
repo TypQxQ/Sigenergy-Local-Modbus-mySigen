@@ -13,7 +13,7 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
-from .api import MySigenError, masked_shape
+from .api import MySigenError, MySigenRateLimitError, masked_shape
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .link import local_inverter_serials
 
@@ -92,6 +92,10 @@ async def async_get_config_entry_diagnostics(
             result["gateway_shape"] = masked_shape(
                 await coordinator.session.async_gateway()
             )
+        except MySigenRateLimitError as err:
+            # Keep the shared wait in step, so polling pauses as well.
+            wait = coordinator.note_rate_limit(err)
+            result["gateway_shape"] = f"rate limited: waiting {wait:.0f} s"
         except MySigenError as err:
             result["gateway_shape"] = f"unavailable: {type(err).__name__}: {err}"
     return result

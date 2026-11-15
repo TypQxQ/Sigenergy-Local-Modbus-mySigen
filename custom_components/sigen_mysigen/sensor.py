@@ -15,7 +15,7 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfFrequency,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -63,10 +63,29 @@ async def async_setup_entry(
         registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{key}")
         for key in (*map(_gateway_key, GATEWAY_SENSORS), _GATEWAY_CONTACTOR)
     )
+    def gateway_entities() -> list[SensorEntity]:
+        return [
+            *(GatewayReading(coordinator, reading) for reading in GATEWAY_SENSORS),
+            GatewayContactor(coordinator, _GATEWAY_CONTACTOR),
+        ]
+
     if coordinator.has_gateway or known_before:
-        entities.extend(GatewayReading(coordinator, reading) for reading in GATEWAY_SENSORS)
-        entities.append(GatewayContactor(coordinator, _GATEWAY_CONTACTOR))
+        async_add_entities([*entities, *gateway_entities()])
+        return
     async_add_entities(entities)
+
+    # The first Gateway read may have failed. Add the sensors as soon as a
+    # later poll finds the Gateway, without waiting for a reload.
+    added = False
+
+    @callback
+    def add_when_detected() -> None:
+        nonlocal added
+        if not added and coordinator.has_gateway:
+            added = True
+            async_add_entities(gateway_entities())
+
+    entry.async_on_unload(coordinator.async_add_listener(add_when_detected))
 
 
 class BatteryOverrideMode(MySigenEntity, SensorEntity):
