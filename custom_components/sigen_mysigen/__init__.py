@@ -39,6 +39,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Forget the rate-limit state of a removed connection."""
+    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a mySigen connection."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)

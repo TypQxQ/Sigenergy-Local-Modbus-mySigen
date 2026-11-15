@@ -92,6 +92,13 @@ class TestLogin(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(api.MySigenConnectionError):
                 await self._login(result)
 
+    async def test_rate_limited_login_is_its_own_error(self):
+        response = _Response(429, None)
+        response.headers = {"Retry-After": "60"}
+        with self.assertRaises(api.MySigenRateLimitError) as caught:
+            await self._login(response)
+        self.assertEqual(caught.exception.retry_after, 60)
+
     async def test_unknown_region_makes_no_request(self):
         session = _Session(_Response(200, {"access_token": "t"}))
         with self.assertRaises(api.MySigenConnectionError):

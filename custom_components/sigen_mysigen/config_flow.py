@@ -29,6 +29,7 @@ from .api import (
     REGIONS,
     MySigenAuthError,
     MySigenConnectionError,
+    MySigenRateLimitError,
     async_validate_login,
 )
 from .const import (
@@ -87,6 +88,8 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             )
         except MySigenAuthError:
             return "invalid_auth"
+        except MySigenRateLimitError:
+            return "rate_limited"
         except MySigenConnectionError as err:
             _LOGGER.warning("mySigen login check failed: %s", err)
             # A server error with a correct request is how the service

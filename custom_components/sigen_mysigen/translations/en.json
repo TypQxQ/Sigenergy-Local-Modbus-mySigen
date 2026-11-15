@@ -39,7 +39,8 @@
     "error": {
       "invalid_auth": "mySigen did not accept this email and password for the selected region.",
       "cannot_connect": "Could not reach mySigen. Check the connection and try again.",
-      "login_rejected": "mySigen answered with a server error instead of signing in. Newer mySigen versions may no longer accept this login method."
+      "login_rejected": "mySigen answered with a server error instead of signing in. Newer mySigen versions may no longer accept this login method.",
+      "rate_limited": "mySigen is limiting requests right now. Wait a few minutes and try again."
     },
     "abort": {
       "modbus_missing": "Install and set up Sigenergy ESS (Sigenergy Local Modbus) first.",
