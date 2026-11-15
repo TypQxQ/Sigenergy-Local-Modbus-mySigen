@@ -87,6 +87,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         problem = str(err)
     if problem == STATION_MISMATCH:
         _raise_link_issue(hass, entry, STATION_MISMATCH)
+    coordinator.link_problem = problem
     if problem is not None:
         _LOGGER.warning(
             "Could not verify the mySigen station for %s: %s", entry.title, problem

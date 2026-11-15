@@ -1,7 +1,7 @@
 """Polling of mySigen for one linked plant."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 import time
 
@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import (
     MySigenAuthError,
@@ -55,6 +56,9 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
         )
+        self.last_success: datetime | None = None
+        # Result of the startup station check, for diagnostics.
+        self.link_problem: str | None = None
         # Kept outside the coordinator: a failed first refresh discards the
         # coordinator, and the next setup attempt must still honour the wait.
         self._limits: dict[str, float] = hass.data.setdefault(DOMAIN, {}).setdefault(
@@ -89,4 +93,5 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
         except MySigenError as err:
             raise UpdateFailed(f"mySigen read failed: {err}") from err
         self._limits["streak"] = 0
+        self.last_success = dt_util.utcnow()
         return status

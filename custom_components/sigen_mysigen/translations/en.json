@@ -83,6 +83,9 @@
       },
       "battery_override_end": {
         "name": "Battery override end"
+      },
+      "last_update": {
+        "name": "Last mySigen update"
       }
     }
   },
