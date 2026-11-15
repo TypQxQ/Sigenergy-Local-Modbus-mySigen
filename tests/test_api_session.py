@@ -73,6 +73,21 @@ class TestSession(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(api.MySigenAuthError):
             await client.async_override_status()
 
+    async def test_not_allowed_is_separate_from_signed_out(self):
+        for reply in (_Reply(403, {}), _Reply(200, {"code": 403})):
+            http, client = self._client(STATION, reply)
+            with self.assertRaises(api.MySigenPermissionError) as caught:
+                await client.async_override_status()
+            self.assertIn("battery override", str(caught.exception))
+            # No second sign-in: the session itself is fine.
+            self.assertEqual(http.posts, ["password"])
+
+    async def test_refusal_names_the_request(self):
+        http, client = self._client(_Reply(401, {}), _Reply(401, {}))
+        with self.assertRaises(api.MySigenAuthError) as caught:
+            await client.async_override_status()
+        self.assertIn("station: HTTP 401", str(caught.exception))
+
     async def test_rate_limit_carries_retry_after(self):
         http, client = self._client(STATION, _Reply(429, None, {"Retry-After": "120"}))
         with self.assertRaises(api.MySigenRateLimitError) as caught:

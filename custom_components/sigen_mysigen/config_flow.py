@@ -29,6 +29,7 @@ from .api import (
     REGIONS,
     MySigenAuthError,
     MySigenConnectionError,
+    MySigenPermissionError,
     MySigenRateLimitError,
     MySigenSession,
     async_validate_login,
@@ -98,15 +99,21 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             if plant_entry_id is None:
                 await async_validate_login(http, region, username, password)
             else:
-                return await async_link_problem(
-                    self.hass,
-                    MySigenSession(http, region, username, password),
-                    plant_entry_id,
-                )
-        except MySigenAuthError:
+                session = MySigenSession(http, region, username, password)
+                problem = await async_link_problem(self.hass, session, plant_entry_id)
+                if problem is None:
+                    # Make the read the add-on depends on, so an account
+                    # without access is refused here and not after setup.
+                    await session.async_override_status()
+                return problem
+        except MySigenAuthError as err:
+            _LOGGER.warning("mySigen refused the account: %s", err)
             return "invalid_auth"
         except MySigenRateLimitError:
             return "rate_limited"
+        except MySigenPermissionError as err:
+            _LOGGER.warning("mySigen did not allow a read: %s", err)
+            return "no_permission"
         except MySigenConnectionError as err:
             _LOGGER.warning("mySigen login check failed: %s", err)
             # A server error with a correct request is how the service

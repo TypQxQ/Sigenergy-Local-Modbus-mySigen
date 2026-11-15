@@ -31,7 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
-_ISSUES = ("plant_missing", STATION_MISMATCH)
+NO_PERMISSION = "no_permission"
+_ISSUES = ("plant_missing", STATION_MISMATCH, NO_PERMISSION)
 
 
 def _issue_id(key: str, entry: ConfigEntry) -> str:
@@ -77,7 +78,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         problem = await async_link_problem(hass, coordinator.session, plant_entry_id)
     except MySigenAuthError as err:
-        raise ConfigEntryAuthFailed("mySigen refused the stored account") from err
+        raise ConfigEntryAuthFailed(
+            f"mySigen refused the stored account ({err})"
+        ) from err
     except MySigenRateLimitError as err:
         wait = coordinator.note_rate_limit(err)
         raise ConfigEntryNotReady(
@@ -96,7 +99,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ir.async_delete_issue(hass, DOMAIN, _issue_id(key, entry))
 
     # A failure here only delays this entry; the Modbus plant is unaffected.
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except ConfigEntryNotReady:
+        if coordinator.permission_denied:
+            # Retrying cannot help; the account needs more access.
+            _raise_link_issue(hass, entry, NO_PERMISSION)
+        raise
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
