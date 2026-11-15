@@ -1,0 +1,289 @@
+"""Small read-only mySigen client.
+
+Request formats follow solidfox/sigenergy-cloud (MIT License,
+https://github.com/solidfox/sigenergy-cloud). This module only signs in and
+reads. It contains no request that changes a plant.
+
+Never log request bodies, response bodies, credentials or tokens.
+"""
+from __future__ import annotations
+
+import base64
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import logging
+import time
+from typing import Any
+
+import aiohttp
+
+_LOGGER = logging.getLogger(__name__)
+
+REGIONS: dict[str, str] = {
+    "eu": "https://api-eu.sigencloud.com/",
+    "aus": "https://api-aus.sigencloud.com/",
+    "apac": "https://api-apac.sigencloud.com/",
+    "us": "https://api-us.sigencloud.com/",
+    "cn": "https://api-cn.sigencloud.com/",
+}
+
+OVERRIDE_MODES: dict[str, str] = {
+    "0": "charging",
+    "1": "discharging",
+    "2": "hold_battery",
+    "3": "self_consumption",
+}
+
+_TOKEN_PATH = "auth/oauth/token"
+_STATION_PATH = "device/owner/station/home"
+# The misspelling is the service's own path.
+_OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
+_CLIENT_ID = "sigen"
+_CLIENT_SECRET = "sigen"
+_PASSWORD_KEY = b"sigensigensigenp"
+_REQUEST_TIMEOUT = 20
+_TOKEN_MARGIN = 60
+_SUCCESS_CODES = (0, "0", None)
+_AUTH_CODES = (401, 403, "401", "403")
+_RATE_LIMIT_CODES = (429, "429")
+
+
+class MySigenError(Exception):
+    """Base error for mySigen requests."""
+
+
+class MySigenAuthError(MySigenError):
+    """The service answered and refused these credentials."""
+
+
+class MySigenConnectionError(MySigenError):
+    """The service could not be reached or gave an unusable answer."""
+
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+class MySigenRateLimitError(MySigenError):
+    """The service asked for fewer requests."""
+
+    def __init__(self, retry_after: float | None = None) -> None:
+        super().__init__("rate limited")
+        self.retry_after = retry_after
+
+
+@dataclass(frozen=True)
+class OverrideStatus:
+    """The temporary battery override (Instant Manual Control)."""
+
+    enabled: bool
+    mode: str | None
+    ends_at: datetime | None
+
+
+def encrypt_password(password: str) -> str:
+    """Return the password in the form the mySigen token endpoint expects."""
+    # Imported here so the module loads without the package in unit tests.
+    from cryptography.hazmat.primitives import padding
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+    padder = padding.PKCS7(algorithms.AES.block_size).padder()
+    padded = padder.update(password.encode("utf-8")) + padder.finalize()
+    encryptor = Cipher(algorithms.AES(_PASSWORD_KEY), modes.CBC(_PASSWORD_KEY)).encryptor()
+    return base64.b64encode(encryptor.update(padded) + encryptor.finalize()).decode("ascii")
+
+
+def _retry_after(headers: Any) -> float | None:
+    """Read a Retry-After given in seconds; ignore other forms."""
+    try:
+        value = float(headers.get("Retry-After"))
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def parse_override(data: Any) -> OverrideStatus:
+    """Turn the override answer into a status, keeping missing apart from off."""
+    if not isinstance(data, dict):
+        raise MySigenConnectionError("Unexpected override answer")
+    enabled = bool(data.get("enable"))
+    raw_mode = data.get("mode")
+    mode = OVERRIDE_MODES.get(str(raw_mode)) if raw_mode not in (None, "") else None
+    ends_at = None
+    try:
+        end = int(data.get("endTime") or 0)
+    except (TypeError, ValueError):
+        end = 0
+    # The unit is undocumented. Accept epoch milliseconds or seconds only.
+    if end > 10**11:
+        ends_at = datetime.fromtimestamp(end / 1000, tz=timezone.utc)
+    elif end > 10**9:
+        ends_at = datetime.fromtimestamp(end, tz=timezone.utc)
+    if not enabled:
+        mode = ends_at = None
+    return OverrideStatus(enabled, mode, ends_at)
+
+
+async def _async_request_token(
+    session: aiohttp.ClientSession, region: str, form: dict[str, str]
+) -> dict[str, Any]:
+    """Post one token request and return the token fields."""
+    if region not in REGIONS:
+        raise MySigenConnectionError(f"Unknown region {region!r}")
+    payload: Any = None
+    try:
+        async with session.post(
+            f"{REGIONS[region]}{_TOKEN_PATH}",
+            data=form,
+            auth=aiohttp.BasicAuth(_CLIENT_ID, _CLIENT_SECRET),
+            timeout=aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT),
+        ) as response:
+            status = response.status
+            retry_after = _retry_after(response.headers)
+            try:
+                payload = await response.json(content_type=None)
+            except (ValueError, aiohttp.ClientError):
+                payload = None
+    except (aiohttp.ClientError, TimeoutError) as err:
+        raise MySigenConnectionError(type(err).__name__) from err
+
+    if status == 429:
+        raise MySigenRateLimitError(retry_after)
+    if status in (400, 401, 403):
+        raise MySigenAuthError(f"HTTP {status}")
+    if status != 200 or not isinstance(payload, dict):
+        raise MySigenConnectionError(f"HTTP {status}", status)
+
+    data = payload.get("data")
+    tokens = data if isinstance(data, dict) else payload
+    if tokens.get("access_token"):
+        return tokens
+
+    # A well-formed answer without a token, for example code 11003
+    # "authentication failed". Log the code only, never the body.
+    _LOGGER.debug("mySigen token request refused with code %s", payload.get("code"))
+    raise MySigenAuthError(f"code {payload.get('code')}")
+
+
+async def async_validate_login(
+    session: aiohttp.ClientSession, region: str, username: str, password: str
+) -> None:
+    """Log in once and discard the result.
+
+    Raises MySigenAuthError for refused credentials and
+    MySigenConnectionError for everything else that prevents a login.
+    """
+    await _async_request_token(session, region, {
+        "username": username,
+        "password": encrypt_password(password),
+        "grant_type": "password",
+    })
+
+
+class MySigenSession:
+    """One signed-in account. Tokens are kept in memory only."""
+
+    def __init__(
+        self, session: aiohttp.ClientSession, region: str, username: str, password: str
+    ) -> None:
+        self._session = session
+        self._region = region
+        self._username = username
+        self._password = password
+        self._access_token: str | None = None
+        self._refresh_token: str | None = None
+        self._expires_at = 0.0
+        self._station_id: str | None = None
+        self._logged_keys = False
+
+    def _store(self, tokens: dict[str, Any]) -> None:
+        self._access_token = str(tokens["access_token"])
+        self._refresh_token = str(tokens.get("refresh_token") or "") or None
+        try:
+            lifetime = int(tokens.get("expires_in") or 0)
+        except (TypeError, ValueError):
+            lifetime = 0
+        self._expires_at = time.monotonic() + max(0, lifetime - _TOKEN_MARGIN)
+
+    async def _async_login(self) -> None:
+        self._store(await _async_request_token(self._session, self._region, {
+            "username": self._username,
+            "password": encrypt_password(self._password),
+            "grant_type": "password",
+        }))
+
+    async def _async_ensure_token(self) -> None:
+        if self._access_token and time.monotonic() < self._expires_at:
+            return
+        if self._refresh_token:
+            try:
+                self._store(await _async_request_token(self._session, self._region, {
+                    "grant_type": "refresh_token",
+                    "refresh_token": self._refresh_token,
+                }))
+                return
+            except MySigenAuthError:
+                # The refresh token is spent. Fall back to the password.
+                self._refresh_token = None
+        await self._async_login()
+
+    async def _async_get_once(self, path: str) -> Any:
+        try:
+            async with self._session.request(
+                "GET",
+                f"{REGIONS[self._region]}{path}",
+                headers={
+                    "Authorization": f"Bearer {self._access_token}",
+                    "Content-Type": "application/json",
+                },
+                timeout=aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT),
+            ) as response:
+                status = response.status
+                retry_after = _retry_after(response.headers)
+                try:
+                    payload = await response.json(content_type=None)
+                except (ValueError, aiohttp.ClientError):
+                    payload = None
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise MySigenConnectionError(type(err).__name__) from err
+
+        code = payload.get("code") if isinstance(payload, dict) else None
+        if status == 429 or code in _RATE_LIMIT_CODES:
+            raise MySigenRateLimitError(retry_after)
+        if status == 401 or code in _AUTH_CODES:
+            raise MySigenAuthError(f"HTTP {status}")
+        if status >= 400 or not isinstance(payload, dict):
+            raise MySigenConnectionError(f"HTTP {status}", status)
+        if code not in _SUCCESS_CODES:
+            raise MySigenConnectionError(f"code {code}", status)
+        return payload.get("data")
+
+    async def _async_get(self, path: str) -> Any:
+        """GET one path, signing in again once if the session was dropped."""
+        await self._async_ensure_token()
+        try:
+            return await self._async_get_once(path)
+        except MySigenAuthError:
+            self._access_token = None
+            await self._async_ensure_token()
+            return await self._async_get_once(path)
+
+    async def async_station_id(self) -> str:
+        """Return the account's station id, read once and then kept."""
+        if self._station_id is None:
+            data = await self._async_get(_STATION_PATH)
+            station_id = data.get("stationId") if isinstance(data, dict) else None
+            if station_id in (None, ""):
+                raise MySigenConnectionError("The account has no station")
+            self._station_id = str(station_id)
+        return self._station_id
+
+    async def async_override_status(self) -> OverrideStatus:
+        """Read the temporary battery override."""
+        station_id = await self.async_station_id()
+        data = await self._async_get(_OVERRIDE_PATH.format(station_id=station_id))
+        if not self._logged_keys and isinstance(data, dict):
+            # Field names only, to help verify the answer's shape.
+            _LOGGER.debug("mySigen override answer keys: %s", sorted(data))
+            self._logged_keys = True
+        return parse_override(data)

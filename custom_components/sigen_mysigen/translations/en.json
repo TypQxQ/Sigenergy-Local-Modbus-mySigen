@@ -1,0 +1,85 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect mySigen",
+        "description": "Link a mySigen account to a plant that is already set up in Sigenergy ESS.\n\n**Use a separate account for Home Assistant.** Signing in here with the account you use in the app can sign the app out.\n\n1. In the mySigen app, sign in as the system owner and open **Settings**.\n2. Open the account or sharing section and choose to add a user.\n3. Enter an email address that is not yet used in mySigen and choose **View and Edit**. A view-only user can read values but cannot start actions such as Hold Battery.\n4. Activate the new account from the email mySigen sends and set its password.\n5. Enter that email and password below.\n\nHome Assistant stores the password so it can sign in again later.",
+        "data": {
+          "plant_entry_id": "Plant",
+          "region": "Region",
+          "username": "Email",
+          "password": "Password"
+        },
+        "data_description": {
+          "plant_entry_id": "The Modbus plant these cloud readings belong to.",
+          "region": "The region your mySigen account was created in."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to mySigen again",
+        "description": "Enter the current password for {username}.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "reconfigure": {
+        "title": "Change mySigen connection",
+        "description": "Change the mySigen account or how often Home Assistant reads from mySigen.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "scan_interval": "Polling interval"
+        },
+        "data_description": {
+          "password": "Leave empty to keep the current password.",
+          "scan_interval": "Between 15 and 60 seconds. Shorter intervals send more requests to mySigen."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen did not accept this email and password for the selected region.",
+      "cannot_connect": "Could not reach mySigen. Check the connection and try again.",
+      "login_rejected": "mySigen answered with a server error instead of signing in. Newer mySigen versions may no longer accept this login method."
+    },
+    "abort": {
+      "modbus_missing": "Install and set up Sigenergy ESS (Sigenergy Local Modbus) first.",
+      "modbus_too_old": "Update Sigenergy ESS (Sigenergy Local Modbus) to 2.0.3 or later first.",
+      "no_plant": "Set up a plant in Sigenergy ESS first.",
+      "already_configured": "This plant already has a mySigen connection.",
+      "reauth_successful": "Signed in again.",
+      "reconfigure_successful": "The mySigen connection was updated."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europe",
+        "aus": "Australia",
+        "apac": "Asia-Pacific",
+        "us": "United States",
+        "cn": "China"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Battery override"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Battery override mode",
+        "state": {
+          "charging": "Charging",
+          "discharging": "Discharging",
+          "hold_battery": "Hold battery",
+          "self_consumption": "Self-consumption"
+        }
+      },
+      "battery_override_end": {
+        "name": "Battery override end"
+      }
+    }
+  }
+}

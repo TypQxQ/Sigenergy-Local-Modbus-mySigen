@@ -3,7 +3,7 @@
 Optional add-on integration for [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigenergy-Local-Modbus).
 It will add mySigen cloud readings to the devices created by the Modbus integration.
 
-**Status: placeholder.** This repository contains no working functionality yet.
+**Status: early development.** It links a mySigen account and reads the temporary battery override (on/off, mode, end time). It sends no commands.
 
 ## Requirements
 
