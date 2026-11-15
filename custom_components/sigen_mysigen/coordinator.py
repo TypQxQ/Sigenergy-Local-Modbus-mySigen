@@ -61,20 +61,30 @@ class MySigenCoordinator(DataUpdateCoordinator[OverrideStatus]):
             entry.entry_id, {"blocked_until": 0.0, "streak": 0}
         )
 
+    @property
+    def rate_limit_wait(self) -> float:
+        """Seconds left of the pause mySigen asked for; 0 when none."""
+        return max(0.0, self._limits["blocked_until"] - time.monotonic())
+
+    def note_rate_limit(self, err: MySigenRateLimitError) -> float:
+        """Record a rate limit and return how long to stay quiet."""
+        self._limits["streak"] += 1
+        wait = err.retry_after or min(
+            _BACKOFF_START * 2 ** (self._limits["streak"] - 1), _BACKOFF_MAX
+        )
+        self._limits["blocked_until"] = time.monotonic() + wait
+        return wait
+
     async def _async_update_data(self) -> OverrideStatus:
         # Stay quiet while the service has asked for fewer requests.
-        if time.monotonic() < self._limits["blocked_until"]:
+        if self.rate_limit_wait:
             raise UpdateFailed("Waiting after a mySigen rate limit")
         try:
             status = await self.session.async_override_status()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed("mySigen refused the stored account") from err
         except MySigenRateLimitError as err:
-            self._limits["streak"] += 1
-            wait = err.retry_after or min(
-                _BACKOFF_START * 2 ** (self._limits["streak"] - 1), _BACKOFF_MAX
-            )
-            self._limits["blocked_until"] = time.monotonic() + wait
+            wait = self.note_rate_limit(err)
             raise UpdateFailed(f"mySigen rate limit, waiting {wait:.0f} s") from err
         except MySigenError as err:
             raise UpdateFailed(f"mySigen read failed: {err}") from err

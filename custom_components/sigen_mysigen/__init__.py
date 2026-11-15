@@ -10,14 +10,18 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryError
+from homeassistant.exceptions import (
+    ConfigEntryAuthFailed,
+    ConfigEntryError,
+    ConfigEntryNotReady,
+)
 from homeassistant.helpers import (
     config_validation as cv,
     device_registry as dr,
     issue_registry as ir,
 )
 
-from .api import MySigenAuthError, MySigenError
+from .api import MySigenAuthError, MySigenError, MySigenRateLimitError
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .coordinator import MySigenCoordinator
 from .link import STATION_MISMATCH, async_link_problem
@@ -63,12 +67,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = MySigenCoordinator(hass, entry)
 
+    # Send nothing while mySigen has asked for fewer requests. The wait is
+    # kept across setup attempts, so a retry lands here until it is over.
+    if wait := coordinator.rate_limit_wait:
+        raise ConfigEntryNotReady(f"Waiting {wait:.0f} s after a mySigen rate limit")
+
     # Refuse an account whose station does not contain this plant's inverter.
     # When the comparison cannot be made, keep running and say so.
     try:
         problem = await async_link_problem(hass, coordinator.session, plant_entry_id)
     except MySigenAuthError as err:
         raise ConfigEntryAuthFailed("mySigen refused the stored account") from err
+    except MySigenRateLimitError as err:
+        wait = coordinator.note_rate_limit(err)
+        raise ConfigEntryNotReady(
+            f"mySigen rate limit, waiting {wait:.0f} s"
+        ) from err
     except MySigenError as err:
         problem = str(err)
     if problem == STATION_MISMATCH:
