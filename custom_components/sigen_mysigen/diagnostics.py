@@ -23,16 +23,15 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return the state of one mySigen connection."""
-    coordinator = entry.runtime_data
     plant_entry_id = entry.data[CONF_PLANT_ENTRY_ID]
     plant_entry = hass.config_entries.async_get_entry(plant_entry_id)
     addon = await async_get_integration(hass, DOMAIN)
     modbus = await async_get_integration(hass, MODBUS_DOMAIN)
-    status = coordinator.data
 
-    return {
+    result: dict[str, Any] = {
         "addon_version": str(addon.version),
         "entry": {
+            "state": entry.state.value,
             "data": async_redact_data(dict(entry.data), TO_REDACT),
             "options": dict(entry.options),
         },
@@ -42,23 +41,36 @@ async def async_get_config_entry_diagnostics(
             # A count only; the serial numbers themselves stay out.
             "inverter_serials_known": len(local_inverter_serials(hass, plant_entry_id)),
         },
-        "station_check": coordinator.link_problem or "ok",
-        "polling": {
-            "interval_seconds": coordinator.update_interval.total_seconds(),
-            "last_update_success": coordinator.last_update_success,
-            "last_success": (
-                coordinator.last_success.isoformat() if coordinator.last_success else None
-            ),
-            "last_error_type": (
-                type(coordinator.last_exception).__name__
-                if coordinator.last_exception
-                else None
-            ),
-            "rate_limit_wait_seconds": round(coordinator.rate_limit_wait),
-        },
-        "battery_override": None if status is None else {
+        "station_check": None,
+        "polling": None,
+        "battery_override": None,
+    }
+
+    # The coordinator only exists after a successful setup. A failed setup
+    # is exactly when this download is wanted, so report what there is.
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is None:
+        return result
+
+    status = coordinator.data
+    result["station_check"] = coordinator.link_problem or "ok"
+    result["polling"] = {
+        "interval_seconds": coordinator.update_interval.total_seconds(),
+        "last_update_success": coordinator.last_update_success,
+        "last_success": (
+            coordinator.last_success.isoformat() if coordinator.last_success else None
+        ),
+        "last_error_type": (
+            type(coordinator.last_exception).__name__
+            if coordinator.last_exception
+            else None
+        ),
+        "rate_limit_wait_seconds": round(coordinator.rate_limit_wait),
+    }
+    if status is not None:
+        result["battery_override"] = {
             "enabled": status.enabled,
             "mode": status.mode,
             "ends_at": status.ends_at.isoformat() if status.ends_at else None,
-        },
-    }
+        }
+    return result
