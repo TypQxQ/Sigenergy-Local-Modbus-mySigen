@@ -1,0 +1,247 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "mySigen verbinden",
+        "description": "Verknüpfe ein mySigen-Konto mit einer Anlage, die bereits in Sigenergy ESS eingerichtet ist.\n\n**Verwende ein eigenes Konto für Home Assistant.** Wenn du dich hier mit dem Konto anmeldest, das du in der App nutzt, kann die App abgemeldet werden.\n\n1. Melde dich in der mySigen-App als Eigentümer der Anlage an und öffne die **Einstellungen**.\n2. Öffne den Bereich für Konto oder Freigabe und füge einen Benutzer hinzu.\n3. Gib eine E-Mail-Adresse ein, die in mySigen noch nicht verwendet wird, und wähle **View and Edit**. Ein Benutzer mit reinem Lesezugriff kann Werte lesen, aber keine Aktionen wie Hold Battery starten.\n4. Aktiviere das neue Konto über die E-Mail von mySigen und lege ein Passwort fest.\n5. Gib diese E-Mail-Adresse und das Passwort unten ein.\n\nHome Assistant speichert das Passwort, um sich später erneut anmelden zu können.",
+        "data": {
+          "plant_entry_id": "Anlage",
+          "region": "Region",
+          "username": "E-Mail",
+          "password": "Passwort"
+        },
+        "data_description": {
+          "plant_entry_id": "Die Modbus-Anlage, zu der diese Cloud-Werte gehören.",
+          "region": "Die Region, in der dein mySigen-Konto erstellt wurde."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Erneut bei mySigen anmelden",
+        "description": "Gib das aktuelle Passwort für {username} ein.",
+        "data": {
+          "password": "Passwort"
+        }
+      },
+      "reconfigure": {
+        "title": "mySigen-Verbindung ändern",
+        "description": "Ändere das mySigen-Konto, wie oft Home Assistant von mySigen liest oder ob die Batterie gesteuert werden darf.",
+        "data": {
+          "username": "E-Mail",
+          "password": "Passwort",
+          "scan_interval": "Abfrageintervall",
+          "allow_control": "Batteriesteuerung erlauben"
+        },
+        "data_description": {
+          "password": "Leer lassen, um das aktuelle Passwort zu behalten.",
+          "scan_interval": "Zwischen 15 und 60 Sekunden. Kürzere Intervalle senden mehr Anfragen an mySigen.",
+          "allow_control": "Erlaubt Home Assistant, eine zeitlich begrenzte Batterie-Übersteuerung (Hold Battery) über mySigen zu starten und abzubrechen. Standardmäßig aus. Das Konto benötigt die Berechtigung View and Edit."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen hat diese E-Mail-Adresse und dieses Passwort für die gewählte Region nicht akzeptiert.",
+      "cannot_connect": "mySigen ist nicht erreichbar. Prüfe die Verbindung und versuche es erneut.",
+      "login_rejected": "mySigen hat mit einem Serverfehler geantwortet, statt die Anmeldung durchzuführen. Neuere mySigen-Versionen akzeptieren diese Anmeldemethode möglicherweise nicht mehr.",
+      "rate_limited": "mySigen begrenzt derzeit die Anzahl der Anfragen. Warte einige Minuten und versuche es erneut.",
+      "no_local_serial": "Sigenergy ESS hat die Seriennummer des Wechselrichters dieser Anlage noch nicht gelesen, daher kann das Konto nicht geprüft werden. Versuche es erneut, wenn die Anlage online ist.",
+      "no_cloud_serial": "mySigen hat für dieses Konto keine Geräte aufgelistet, daher kann es nicht mit der Anlage abgeglichen werden.",
+      "station_mismatch": "Dieses mySigen-Konto gehört zu einem anderen System als die gewählte Anlage.",
+      "no_permission": "mySigen hat das Konto angemeldet, ihm aber nicht erlaubt, die Batterieeinstellungen zu lesen. Prüfe in der mySigen-App, ob das System mit der Berechtigung View and Edit für dieses Konto freigegeben ist."
+    },
+    "abort": {
+      "modbus_missing": "Installiere und richte zuerst Sigenergy ESS (Sigenergy Local Modbus) ein.",
+      "modbus_too_old": "Aktualisiere zuerst Sigenergy ESS (Sigenergy Local Modbus) auf 2.0.3 oder neuer.",
+      "no_plant": "Richte zuerst eine Anlage in Sigenergy ESS ein.",
+      "already_configured": "Diese Anlage hat bereits eine mySigen-Verbindung.",
+      "reauth_successful": "Erneut angemeldet.",
+      "reconfigure_successful": "Die mySigen-Verbindung wurde aktualisiert."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europa",
+        "aus": "Australien",
+        "apac": "Asien-Pazifik",
+        "us": "USA",
+        "cn": "China"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Batterie halten (kein Laden, kein Entladen)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Batterie-Übersteuerung aktiv"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Modus der Batterie-Übersteuerung",
+        "state": {
+          "charging": "Laden",
+          "discharging": "Entladen",
+          "hold_battery": "Batterie halten",
+          "self_consumption": "Eigenverbrauch"
+        }
+      },
+      "battery_override_end": {
+        "name": "Batterie-Übersteuerung endet"
+      },
+      "last_update": {
+        "name": "mySigen letzte Aktualisierung"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway Netzspannung Phase A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway Netzstrom Phase A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway Netzspannung Phase B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway Netzstrom Phase B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway Netzspannung Phase C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway Netzstrom Phase C"
+      },
+      "battery_override_command": {
+        "name": "Letztes Ergebnis der Batterie-Übersteuerung",
+        "state": {
+          "confirmed": "Bestätigt",
+          "refused": "Abgelehnt",
+          "unknown": "Ergebnis unbekannt",
+          "not_confirmed": "Nicht bestätigt",
+          "no_override": "Nichts abzubrechen"
+        }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway höchste Netzspannung der letzten Minute Phase A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway niedrigste Netzspannung der letzten Minute Phase A"
+      },
+      "generator_voltage_a": {
+        "name": "Generatorspannung Phase A"
+      },
+      "generator_current_a": {
+        "name": "Generatorstrom Phase A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway höchste Netzspannung der letzten Minute Phase B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway niedrigste Netzspannung der letzten Minute Phase B"
+      },
+      "generator_voltage_b": {
+        "name": "Generatorspannung Phase B"
+      },
+      "generator_current_b": {
+        "name": "Generatorstrom Phase B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway höchste Netzspannung der letzten Minute Phase C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway niedrigste Netzspannung der letzten Minute Phase C"
+      },
+      "generator_voltage_c": {
+        "name": "Generatorspannung Phase C"
+      },
+      "generator_current_c": {
+        "name": "Generatorstrom Phase C"
+      },
+      "generator_power": {
+        "name": "Generatorleistung"
+      },
+      "generator_frequency": {
+        "name": "Generatorfrequenz"
+      },
+      "generator_contactor": {
+        "name": "Generatorschütz"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway Phasenfolge netzseitig"
+      },
+      "gateway_firmware": {
+        "name": "Gateway Firmware-Version"
+      },
+      "gateway_model": {
+        "name": "Gateway Modell"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Dauer der Batterie-Übersteuerung"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Zu startende Batterie-Übersteuerung",
+        "state": {
+          "hold_battery": "Batterie halten (kein Laden, kein Entladen)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Batterie-Übersteuerung jetzt starten"
+      },
+      "stop_battery_override": {
+        "name": "Batterie-Übersteuerung jetzt stoppen"
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "Die Anlage für {name} existiert nicht mehr",
+      "description": "Die Anlage in Sigenergy ESS, mit der {name} verknüpft war, wurde entfernt. Lösche diese mySigen-Verbindung und füge sie für die gewünschte Anlage erneut hinzu."
+    },
+    "station_mismatch": {
+      "title": "{name} gehört zu einem anderen System",
+      "description": "mySigen listet den Wechselrichter dieser Anlage für das von {name} verwendete Konto nicht auf. Das passiert, wenn der Wechselrichter getauscht wurde, das System nicht mehr für das Konto freigegeben ist oder das Konto geändert wurde. Konfiguriere die Verbindung mit einem Konto mit Zugriff neu oder lösche sie und füge sie erneut hinzu."
+    },
+    "no_permission": {
+      "title": "{name} darf nicht von mySigen lesen",
+      "description": "mySigen hat das Konto angemeldet, ihm aber nicht erlaubt, die Batterieeinstellungen zu lesen. Prüfe in der mySigen-App, ob das System mit der Berechtigung View and Edit für das Konto freigegeben ist, und lade die Verbindung dann neu."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Batterie-Übersteuerung starten",
+      "description": "Startet eine zeitlich begrenzte Batterie-Übersteuerung über mySigen. Die Anlage beendet sie nach Ablauf der Zeit selbst, auch wenn Home Assistant nicht läuft. Wird abgelehnt, solange eine andere Übersteuerung oder Remote EMS aktiv ist.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-Verbindung",
+          "description": "Welche Verbindung verwendet werden soll. Kann weggelassen werden, wenn es nur eine gibt."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Was die Batterie tun soll."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Minuten, bis die Anlage zu ihrer normalen Strategie zurückkehrt (30 bis 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Batterie-Übersteuerung abbrechen",
+      "description": "Beendet die laufende Batterie-Übersteuerung, auch eine in der mySigen-App gestartete.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-Verbindung",
+          "description": "Welche Verbindung verwendet werden soll. Kann weggelassen werden, wenn es nur eine gibt."
+        }
+      }
+    }
+  }
+}

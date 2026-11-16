@@ -79,13 +79,15 @@ async def async_get_config_entry_diagnostics(
 
     result["control"] = {
         "allowed": coordinator.allow_control,
+        "button_mode": coordinator.override_mode,
+        "button_minutes": coordinator.override_minutes,
         "last_command": coordinator.last_command,
     }
     gateway = data.gateway if data else None
     result["gateway"] = {
         "detected": coordinator.has_gateway,
         "readings": sorted(gateway.values) if gateway else None,
-        "contactor": gateway.contactor if gateway else None,
+        "texts": sorted(gateway.texts) if gateway else None,
     }
 
     # Structure of the Gateway answer, with every value masked. It is read

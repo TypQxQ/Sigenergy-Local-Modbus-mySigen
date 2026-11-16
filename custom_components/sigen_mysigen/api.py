@@ -53,17 +53,34 @@ _GATEWAY_PATH = "device/gateway/{station_id}"
 _OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
-# Label in the Gateway answer -> (reading, unit it must carry).
-_GATEWAY_FIELDS: dict[str, tuple[str, str]] = {
-    "phase a voltage": ("voltage_a", "V"),
-    "phase b voltage": ("voltage_b", "V"),
-    "phase c voltage": ("voltage_c", "V"),
-    "phase a current": ("current_a", "A"),
-    "phase b current": ("current_b", "A"),
-    "phase c current": ("current_c", "A"),
-    "voltage frequency": ("frequency", "Hz"),
+# Rows of the Gateway answer that become readings. Labels are compared in
+# lower case; the value must carry the unit given here.
+_PHASES = ("a", "b", "c")
+# gridSideInfoList: one row per value.
+_GRID_FIELDS: dict[str, tuple[str, str]] = {
+    **{f"phase {p} voltage": (f"voltage_{p}", "V") for p in _PHASES},
+    **{f"phase {p} current": (f"current_{p}", "A") for p in _PHASES},
+    **{
+        f"maximum phase {p} voltage in the past minute": (f"voltage_max_{p}", "V")
+        for p in _PHASES
+    },
+    **{
+        f"minimum phase {p} voltage in the past minute": (f"voltage_min_{p}", "V")
+        for p in _PHASES
+    },
 }
-_GATEWAY_CONTACTOR = "grid side contactor status"
+# generatorRealTimeInfoVOList: one row per quantity, one column per phase.
+_GENERATOR_PHASE_ROWS: dict[str, tuple[str, str]] = {
+    "voltage": ("generator_voltage", "V"),
+    "current": ("generator_current", "A"),
+}
+# generatorSideInfoList: one row per value.
+_GENERATOR_FIELDS: dict[str, tuple[str, str]] = {
+    "active power": ("generator_power", "kW"),
+    "voltage frequency": ("generator_frequency", "Hz"),
+}
+_GENERATOR_CONTACTOR = "generator side contactor status"
+_PHASE_SEQUENCE = "voltage phase sequence"
 _MEASUREMENT = re.compile(r"-?[\d.,]+\s*[A-Za-z%°/]{0,6}")
 _CLIENT_ID = "sigen"
 _CLIENT_SECRET = "sigen"
@@ -150,10 +167,10 @@ class OverrideStatus:
 
 @dataclass(frozen=True)
 class GatewayReadings:
-    """Grid-side readings of the Gateway. A missing key means no reading."""
+    """What the Gateway reports. A missing key means no reading."""
 
     values: dict[str, float]
-    contactor: str | None
+    texts: dict[str, str]
 
 
 def parse_measurement(text: Any, unit: str) -> float | None:
@@ -167,32 +184,62 @@ def parse_measurement(text: Any, unit: str) -> float | None:
     return float(match.group(1))
 
 
-def parse_gateway(data: Any) -> GatewayReadings | None:
-    """Pick the grid-side readings out of the Gateway answer.
-
-    Returns None when the answer carries none of them, which is how a
-    system without a Gateway shows.
-    """
-    rows = data.get("gridSideInfoList") if isinstance(data, dict) else None
+def _rows(data: dict[str, Any], name: str, label_key: str) -> list[tuple[str, dict]]:
+    """Return (lower-case label, row) for the well-formed rows of one list."""
+    rows = data.get(name)
     if not isinstance(rows, list):
+        return []
+    return [
+        (str(row.get(label_key) or "").strip().lower(), row)
+        for row in rows
+        if isinstance(row, dict)
+    ]
+
+
+def _text(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def parse_gateway(data: Any) -> GatewayReadings | None:
+    """Pick the readings the add-on uses out of the Gateway answer.
+
+    Returns None when the answer has no grid-side voltage or current, which
+    is how a system without a Gateway shows.
+    """
+    if not isinstance(data, dict):
         return None
     values: dict[str, float] = {}
-    contactor: str | None = None
-    for row in rows:
-        if not isinstance(row, dict):
-            continue
-        label = str(row.get("paramKey") or "").strip().lower()
-        value = row.get("paramValue")
-        if label in _GATEWAY_FIELDS:
-            key, unit = _GATEWAY_FIELDS[label]
-            reading = parse_measurement(value, unit)
-            if reading is not None:
-                values[key] = reading
-        elif label == _GATEWAY_CONTACTOR and isinstance(value, str) and value.strip():
-            contactor = value.strip().lower().replace(" ", "_")
-    if not values and contactor is None:
+    texts: dict[str, str] = {}
+
+    def take(row_value: Any, key: str, unit: str) -> None:
+        reading = parse_measurement(row_value, unit)
+        if reading is not None:
+            values[key] = reading
+
+    for label, row in _rows(data, "gridSideInfoList", "paramKey"):
+        if label in _GRID_FIELDS:
+            take(row.get("paramValue"), *_GRID_FIELDS[label])
+    if not values:
         return None
-    return GatewayReadings(values, contactor)
+
+    for label, row in _rows(data, "newGridSideInfoList", "paramKey"):
+        if label == _PHASE_SEQUENCE and (text := _text(row.get("paramValue"))):
+            texts["phase_sequence"] = text
+    for label, row in _rows(data, "generatorRealTimeInfoVOList", "key"):
+        if label in _GENERATOR_PHASE_ROWS:
+            key, unit = _GENERATOR_PHASE_ROWS[label]
+            for phase in _PHASES:
+                take(row.get(f"phase{phase.upper()}"), f"{key}_{phase}", unit)
+    for label, row in _rows(data, "generatorSideInfoList", "paramKey"):
+        if label in _GENERATOR_FIELDS:
+            take(row.get("paramValue"), *_GENERATOR_FIELDS[label])
+        elif label == _GENERATOR_CONTACTOR and (text := _text(row.get("paramValue"))):
+            texts["generator_contactor"] = text.lower().replace(" ", "_")
+    if firmware := _text(data.get("softVersion")):
+        texts["firmware"] = firmware
+    if model := _text(data.get("deviceModel")):
+        texts["model"] = model
+    return GatewayReadings(values, texts)
 
 
 def encrypt_password(password: str) -> str:

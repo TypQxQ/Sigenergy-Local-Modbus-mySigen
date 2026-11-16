@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import (
     async_create_clientsession,
     async_get_clientsession,
@@ -20,6 +21,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    CONTROL_MODES,
+    MAX_OVERRIDE_MINUTES,
+    MIN_OVERRIDE_MINUTES,
     GatewayReadings,
     MySigenAuthError,
     MySigenConnectionError,
@@ -32,6 +36,10 @@ from .api import (
 )
 from .const import (
     CONF_ALLOW_CONTROL,
+    CONF_OVERRIDE_MINUTES,
+    CONF_OVERRIDE_MODE,
+    DEFAULT_OVERRIDE_MINUTES,
+    DEFAULT_OVERRIDE_MODE,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
@@ -44,8 +52,10 @@ _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
-# How long an answer without Gateway readings is trusted before asking again.
-_GATEWAY_RECHECK = 600.0
+# How long "no Gateway" is trusted before mySigen is asked again. Long
+# enough not to bother the service, short enough that a Gateway that was
+# added, or an answer that was a temporary error, is picked up the same day.
+_GATEWAY_RECHECK = 3600.0
 
 
 def _write_session(hass: HomeAssistant) -> Any:
@@ -94,13 +104,31 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             write_session=_write_session(hass),
         )
         self.last_success: datetime | None = None
+        # Entity names in the plant's chosen language; None for Automatic.
+        self.entity_name_translations: dict[str, str] | None = None
+        # The plant's setting those names were loaded for.
+        self.entity_name_language: str | None = None
+        # Platforms set up for this entry, so unload matches setup.
+        self.platforms: list[str] = []
         # One command at a time per connection.
         self.command_lock = asyncio.Lock()
         # How the last start or cancel ended, for the sensor and diagnostics.
         self.last_command: dict[str, str] | None = None
         # None until mySigen has answered: True with readings, False without.
+        # While False the Gateway is asked once an hour, not on every poll.
         self.has_gateway: bool | None = None
         self._gateway_recheck_at = 0.0
+        # Gateway sensors from an earlier start prove there is a Gateway; an
+        # answer without readings then never switches the reads off.
+        self.gateway_seen_before = any(
+            entity.unique_id.startswith(f"{entry.entry_id}_gateway_grid_")
+            for entity in er.async_entries_for_config_entry(
+                er.async_get(hass), entry.entry_id
+            )
+        )
+        # Counts override states published by commands, so a poll that was
+        # already under way can tell its own reading is the older one.
+        self._published = 0
         # True when mySigen refused the read itself, not the sign-in.
         self.permission_denied = False
         # Result of the startup station check, for diagnostics.
@@ -121,6 +149,29 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         """True only when the user switched control on for this connection."""
         return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
 
+    @property
+    def override_minutes(self) -> int:
+        """The duration the Start button uses, kept inside the allowed range."""
+        try:
+            minutes = int(self.config_entry.options.get(
+                CONF_OVERRIDE_MINUTES, DEFAULT_OVERRIDE_MINUTES
+            ))
+        except (TypeError, ValueError):
+            minutes = DEFAULT_OVERRIDE_MINUTES
+        return min(MAX_OVERRIDE_MINUTES, max(MIN_OVERRIDE_MINUTES, minutes))
+
+    @property
+    def override_mode(self) -> str:
+        """The override the Start button starts."""
+        mode = self.config_entry.options.get(CONF_OVERRIDE_MODE)
+        return mode if mode in CONTROL_MODES else DEFAULT_OVERRIDE_MODE
+
+    def set_option(self, key: str, value: Any) -> None:
+        """Store a local setting. Nothing is sent and nothing is reloaded."""
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, options={**self.config_entry.options, key: value}
+        )
+
     def record_command(self, action: str, result: str) -> None:
         """Remember how a command ended and tell the entities."""
         self.last_command = {
@@ -134,6 +185,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         """Show a freshly read override state without waiting for a poll."""
         gateway = self.data.gateway if self.data else None
         self.last_success = dt_util.utcnow()
+        self._published += 1
         self.async_set_updated_data(MySigenData(status, gateway))
 
     @property
@@ -152,29 +204,39 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     async def _async_gateway(self) -> GatewayReadings | None:
         """Read the Gateway without letting it fail the whole poll."""
-        now = time.monotonic()
-        if self.has_gateway is False and now < self._gateway_recheck_at:
+        if self.has_gateway is False and time.monotonic() < self._gateway_recheck_at:
             return None
         try:
             gateway = await self.session.async_gateway_readings()
-        except (MySigenConnectionError, MySigenPermissionError) as err:
-            # Unknown stays unknown: a failed read says nothing about
-            # whether the system has a Gateway.
+        except MySigenPermissionError as err:
+            _LOGGER.debug("mySigen Gateway read not allowed: %s", err)
+            self._no_gateway_answer()
+            return None
+        except MySigenConnectionError as err:
             _LOGGER.debug("mySigen Gateway read failed: %s", err)
+            if err.status is not None:
+                # mySigen answered with an error. That may mean no Gateway or
+                # a temporary fault, so it is asked again in an hour.
+                self._no_gateway_answer()
+            # Without an answer nothing is known yet; the next poll asks again.
             return None
         if gateway is not None:
             self.has_gateway = True
-        elif self.has_gateway is not True:
-            # No readings this time. Ask again later instead of deciding for
-            # good: the Gateway may be added or come online.
-            self.has_gateway = False
-            self._gateway_recheck_at = now + _GATEWAY_RECHECK
+        else:
+            self._no_gateway_answer()
         return gateway
+
+    def _no_gateway_answer(self) -> None:
+        """mySigen answered without Gateway readings: ask again in an hour."""
+        if self.has_gateway is not True and not self.gateway_seen_before:
+            self.has_gateway = False
+            self._gateway_recheck_at = time.monotonic() + _GATEWAY_RECHECK
 
     async def _async_update_data(self) -> MySigenData:
         # Stay quiet while the service has asked for fewer requests.
         if self.rate_limit_wait:
             raise UpdateFailed("Waiting after a mySigen rate limit")
+        published = self._published
         try:
             status = await self.session.async_override_status()
             gateway = await self._async_gateway()
@@ -190,6 +252,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             raise UpdateFailed(f"mySigen rate limit, waiting {wait:.0f} s") from err
         except MySigenError as err:
             raise UpdateFailed(f"mySigen read failed: {err}") from err
+        if self._published != published and self.data is not None:
+            # A command read and published a newer state while this poll was
+            # under way. Keep that one; this reading predates it.
+            status = self.data.override
         self._limits["streak"] = 0
         self.permission_denied = False
         self.last_success = dt_util.utcnow()

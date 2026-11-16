@@ -1,0 +1,247 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connecter mySigen",
+        "description": "Associez un compte mySigen à une installation déjà configurée dans Sigenergy ESS.\n\n**Utilisez un compte distinct pour Home Assistant.** Si vous vous connectez ici avec le compte que vous utilisez dans l'application, celle-ci peut être déconnectée.\n\n1. Dans l'application mySigen, connectez-vous en tant que propriétaire de l'installation et ouvrez **Paramètres**.\n2. Ouvrez la section compte ou partage et choisissez d'ajouter un utilisateur.\n3. Saisissez une adresse e-mail qui n'est pas encore utilisée dans mySigen et choisissez **View and Edit**. Un utilisateur en lecture seule peut lire les valeurs, mais pas lancer des actions comme Hold Battery.\n4. Activez le nouveau compte depuis l'e-mail envoyé par mySigen et définissez un mot de passe.\n5. Saisissez cette adresse e-mail et ce mot de passe ci-dessous.\n\nHome Assistant enregistre le mot de passe pour pouvoir se reconnecter plus tard.",
+        "data": {
+          "plant_entry_id": "Installation",
+          "region": "Région",
+          "username": "E-mail",
+          "password": "Mot de passe"
+        },
+        "data_description": {
+          "plant_entry_id": "L'installation Modbus à laquelle appartiennent ces valeurs cloud.",
+          "region": "La région dans laquelle votre compte mySigen a été créé."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Se reconnecter à mySigen",
+        "description": "Saisissez le mot de passe actuel de {username}.",
+        "data": {
+          "password": "Mot de passe"
+        }
+      },
+      "reconfigure": {
+        "title": "Modifier la connexion mySigen",
+        "description": "Modifiez le compte mySigen, la fréquence de lecture de mySigen par Home Assistant ou l'autorisation de piloter la batterie.",
+        "data": {
+          "username": "E-mail",
+          "password": "Mot de passe",
+          "scan_interval": "Intervalle de lecture",
+          "allow_control": "Autoriser le pilotage de la batterie"
+        },
+        "data_description": {
+          "password": "Laissez vide pour conserver le mot de passe actuel.",
+          "scan_interval": "Entre 15 et 60 secondes. Des intervalles plus courts envoient davantage de requêtes à mySigen.",
+          "allow_control": "Permet à Home Assistant de démarrer et d'annuler un forçage temporisé de la batterie (Hold Battery) via mySigen. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen n'a pas accepté cette adresse e-mail et ce mot de passe pour la région choisie.",
+      "cannot_connect": "Impossible de joindre mySigen. Vérifiez la connexion et réessayez.",
+      "login_rejected": "mySigen a répondu par une erreur serveur au lieu d'ouvrir la session. Les versions récentes de mySigen n'acceptent peut-être plus cette méthode de connexion.",
+      "rate_limited": "mySigen limite actuellement le nombre de requêtes. Patientez quelques minutes et réessayez.",
+      "no_local_serial": "Sigenergy ESS n'a pas encore lu le numéro de série de l'onduleur de cette installation ; le compte ne peut donc pas être vérifié. Réessayez lorsque l'installation est en ligne.",
+      "no_cloud_serial": "mySigen n'a répertorié aucun appareil pour ce compte ; il ne peut donc pas être comparé à l'installation.",
+      "station_mismatch": "Ce compte mySigen appartient à un autre système que l'installation choisie.",
+      "no_permission": "mySigen a connecté le compte, mais ne l'a pas autorisé à lire les réglages de la batterie. Vérifiez dans l'application mySigen que le système est partagé avec ce compte avec l'autorisation View and Edit."
+    },
+    "abort": {
+      "modbus_missing": "Installez et configurez d'abord Sigenergy ESS (Sigenergy Local Modbus).",
+      "modbus_too_old": "Mettez d'abord à jour Sigenergy ESS (Sigenergy Local Modbus) vers la version 2.0.3 ou ultérieure.",
+      "no_plant": "Configurez d'abord une installation dans Sigenergy ESS.",
+      "already_configured": "Cette installation possède déjà une connexion mySigen.",
+      "reauth_successful": "Reconnecté.",
+      "reconfigure_successful": "La connexion mySigen a été mise à jour."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europe",
+        "aus": "Australie",
+        "apac": "Asie-Pacifique",
+        "us": "États-Unis",
+        "cn": "Chine"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Maintenir la batterie (ni charge, ni décharge)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Forçage de la batterie actif"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Mode du forçage de la batterie",
+        "state": {
+          "charging": "Charge",
+          "discharging": "Décharge",
+          "hold_battery": "Maintien de la batterie",
+          "self_consumption": "Autoconsommation"
+        }
+      },
+      "battery_override_end": {
+        "name": "Fin du forçage de la batterie"
+      },
+      "last_update": {
+        "name": "mySigen dernière mise à jour"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway tension réseau phase A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway courant réseau phase A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway tension réseau phase B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway courant réseau phase B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway tension réseau phase C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway courant réseau phase C"
+      },
+      "battery_override_command": {
+        "name": "Dernier résultat du forçage de la batterie",
+        "state": {
+          "confirmed": "Confirmé",
+          "refused": "Refusé",
+          "unknown": "Résultat inconnu",
+          "not_confirmed": "Non confirmé",
+          "no_override": "Rien à annuler"
+        }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway tension réseau maximale sur la dernière minute phase A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway tension réseau minimale sur la dernière minute phase A"
+      },
+      "generator_voltage_a": {
+        "name": "Tension du générateur phase A"
+      },
+      "generator_current_a": {
+        "name": "Courant du générateur phase A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway tension réseau maximale sur la dernière minute phase B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway tension réseau minimale sur la dernière minute phase B"
+      },
+      "generator_voltage_b": {
+        "name": "Tension du générateur phase B"
+      },
+      "generator_current_b": {
+        "name": "Courant du générateur phase B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway tension réseau maximale sur la dernière minute phase C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway tension réseau minimale sur la dernière minute phase C"
+      },
+      "generator_voltage_c": {
+        "name": "Tension du générateur phase C"
+      },
+      "generator_current_c": {
+        "name": "Courant du générateur phase C"
+      },
+      "generator_power": {
+        "name": "Puissance du générateur"
+      },
+      "generator_frequency": {
+        "name": "Fréquence du générateur"
+      },
+      "generator_contactor": {
+        "name": "Contacteur du générateur"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway ordre des phases côté réseau"
+      },
+      "gateway_firmware": {
+        "name": "Gateway version du micrologiciel"
+      },
+      "gateway_model": {
+        "name": "Gateway modèle"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Durée du forçage de la batterie"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Forçage de la batterie à démarrer",
+        "state": {
+          "hold_battery": "Maintenir la batterie (ni charge, ni décharge)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Démarrer le forçage de la batterie maintenant"
+      },
+      "stop_battery_override": {
+        "name": "Arrêter le forçage de la batterie maintenant"
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "L'installation de {name} n'existe plus",
+      "description": "L'installation Sigenergy ESS à laquelle {name} était associée a été supprimée. Supprimez cette connexion mySigen et ajoutez-la de nouveau pour l'installation souhaitée."
+    },
+    "station_mismatch": {
+      "title": "{name} appartient à un autre système",
+      "description": "mySigen ne répertorie pas l'onduleur de cette installation pour le compte utilisé par {name}. Cela se produit lorsque l'onduleur a été remplacé, que le système n'est plus partagé avec le compte ou que le compte a changé. Reconfigurez la connexion avec un compte disposant d'un accès, ou supprimez-la et ajoutez-la de nouveau."
+    },
+    "no_permission": {
+      "title": "{name} n'est pas autorisé à lire mySigen",
+      "description": "mySigen a connecté le compte, mais ne l'a pas autorisé à lire les réglages de la batterie. Vérifiez dans l'application mySigen que le système est partagé avec le compte avec l'autorisation View and Edit, puis rechargez cette connexion."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Démarrer le forçage de la batterie",
+      "description": "Démarre un forçage temporisé de la batterie via mySigen. L'installation y met fin d'elle-même une fois le temps écoulé, même si Home Assistant n'est pas en marche. Refusé tant qu'un autre forçage ou Remote EMS est actif.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Connexion mySigen",
+          "description": "La connexion à utiliser. Peut être omise lorsqu'il n'y en a qu'une."
+        },
+        "mode": {
+          "name": "Mode",
+          "description": "Ce que la batterie doit faire."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Minutes avant que l'installation ne revienne à sa stratégie normale (30 à 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Annuler le forçage de la batterie",
+      "description": "Met fin au forçage de la batterie en cours, y compris s'il a été démarré dans l'application mySigen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Connexion mySigen",
+          "description": "La connexion à utiliser. Peut être omise lorsqu'il n'y en a qu'une."
+        }
+      }
+    }
+  }
+}

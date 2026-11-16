@@ -69,14 +69,14 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Hold battery"
+        "hold_battery": "Hold battery (no charging, no discharging)"
       }
     }
   },
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Battery override"
+        "name": "Battery override active"
       }
     },
     "sensor": {
@@ -90,10 +90,10 @@
         }
       },
       "battery_override_end": {
-        "name": "Battery override end"
+        "name": "Battery override ends"
       },
       "last_update": {
-        "name": "Last mySigen update"
+        "name": "mySigen last update"
       },
       "gateway_grid_voltage_a": {
         "name": "Gateway grid voltage phase A"
@@ -113,14 +113,8 @@
       "gateway_grid_current_c": {
         "name": "Gateway grid current phase C"
       },
-      "gateway_grid_frequency": {
-        "name": "Gateway grid frequency"
-      },
-      "gateway_grid_contactor": {
-        "name": "Gateway grid contactor"
-      },
       "battery_override_command": {
-        "name": "Battery override command",
+        "name": "Last battery override result",
         "state": {
           "confirmed": "Confirmed",
           "refused": "Refused",
@@ -128,6 +122,81 @@
           "not_confirmed": "Not confirmed",
           "no_override": "Nothing to cancel"
         }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway grid highest voltage in the past minute phase A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway grid lowest voltage in the past minute phase A"
+      },
+      "generator_voltage_a": {
+        "name": "Generator voltage phase A"
+      },
+      "generator_current_a": {
+        "name": "Generator current phase A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway grid highest voltage in the past minute phase B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway grid lowest voltage in the past minute phase B"
+      },
+      "generator_voltage_b": {
+        "name": "Generator voltage phase B"
+      },
+      "generator_current_b": {
+        "name": "Generator current phase B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway grid highest voltage in the past minute phase C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway grid lowest voltage in the past minute phase C"
+      },
+      "generator_voltage_c": {
+        "name": "Generator voltage phase C"
+      },
+      "generator_current_c": {
+        "name": "Generator current phase C"
+      },
+      "generator_power": {
+        "name": "Generator power"
+      },
+      "generator_frequency": {
+        "name": "Generator frequency"
+      },
+      "generator_contactor": {
+        "name": "Generator contactor"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway grid phase sequence"
+      },
+      "gateway_firmware": {
+        "name": "Gateway firmware version"
+      },
+      "gateway_model": {
+        "name": "Gateway model"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Battery override duration"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Battery override to start",
+        "state": {
+          "hold_battery": "Hold battery (no charging, no discharging)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Start battery override now"
+      },
+      "stop_battery_override": {
+        "name": "Stop battery override now"
       }
     }
   },

@@ -1,6 +1,7 @@
 """Sensors for the mySigen cloud add-on."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from homeassistant.components.sensor import (
@@ -14,6 +15,7 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfFrequency,
+    UnitOfPower,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
@@ -25,23 +27,66 @@ from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
 
-# Reading -> (device class, unit, decimals shown).
-GATEWAY_SENSORS: dict[str, tuple[SensorDeviceClass, str, int]] = {
+_VOLT = (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
+_AMPERE = (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
+
+
+@dataclass(frozen=True)
+class _Measurement:
+    """A numeric Gateway reading shown as a sensor."""
+
+    reading: str
+    kind: tuple[SensorDeviceClass, str, int]
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
+class _Text:
+    """A text the Gateway reports, shown as mySigen words it."""
+
+    reading: str
+    enabled: bool = True
+    diagnostic: bool = False
+
+
+# Entity key -> what it shows. Keys are part of the unique IDs.
+GATEWAY_MEASUREMENTS: dict[str, _Measurement] = {
+    **{f"gateway_grid_voltage_{p}": _Measurement(f"voltage_{p}", _VOLT) for p in "abc"},
+    **{f"gateway_grid_current_{p}": _Measurement(f"current_{p}", _AMPERE) for p in "abc"},
+    # Short peaks and dips between two polls. Off until the user wants them.
     **{
-        f"voltage_{phase}": (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
-        for phase in "abc"
+        f"gateway_grid_voltage_max_{p}": _Measurement(f"voltage_max_{p}", _VOLT, False)
+        for p in "abc"
     },
     **{
-        f"current_{phase}": (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
-        for phase in "abc"
+        f"gateway_grid_voltage_min_{p}": _Measurement(f"voltage_min_{p}", _VOLT, False)
+        for p in "abc"
     },
-    "frequency": (SensorDeviceClass.FREQUENCY, UnitOfFrequency.HERTZ, 2),
+    # mySigen reports generator values on every Gateway, also without a
+    # generator, so these start disabled.
+    **{
+        f"generator_voltage_{p}": _Measurement(f"generator_voltage_{p}", _VOLT, False)
+        for p in "abc"
+    },
+    **{
+        f"generator_current_{p}": _Measurement(f"generator_current_{p}", _AMPERE, False)
+        for p in "abc"
+    },
+    "generator_power": _Measurement(
+        "generator_power", (SensorDeviceClass.POWER, UnitOfPower.KILO_WATT, 3), False
+    ),
+    "generator_frequency": _Measurement(
+        "generator_frequency", (SensorDeviceClass.FREQUENCY, UnitOfFrequency.HERTZ, 2), False
+    ),
 }
-_GATEWAY_CONTACTOR = "gateway_grid_contactor"
-
-
-def _gateway_key(reading: str) -> str:
-    return f"gateway_grid_{reading}"
+GATEWAY_TEXTS: dict[str, _Text] = {
+    "gateway_grid_phase_sequence": _Text("phase_sequence", enabled=False, diagnostic=True),
+    "gateway_firmware": _Text("firmware", diagnostic=True),
+    "gateway_model": _Text("model", diagnostic=True),
+    "generator_contactor": _Text("generator_contactor", enabled=False),
+}
+# Removed because the Modbus integration already provides them.
+_REMOVED = ("gateway_grid_frequency", "gateway_grid_contactor")
 
 
 async def async_setup_entry(
@@ -51,6 +96,13 @@ async def async_setup_entry(
 ) -> None:
     """Add the override sensors, the update time and the Gateway readings."""
     coordinator: MySigenCoordinator = entry.runtime_data
+    registry = er.async_get(hass)
+    for key in _REMOVED:
+        if entity_id := registry.async_get_entity_id(
+            "sensor", DOMAIN, f"{entry.entry_id}_{key}"
+        ):
+            registry.async_remove(entity_id)
+
     entities: list[SensorEntity] = [
         BatteryOverrideMode(coordinator, "battery_override_mode"),
         BatteryOverrideEnd(coordinator, "battery_override_end"),
@@ -58,26 +110,21 @@ async def async_setup_entry(
         LastCommand(coordinator, "battery_override_command"),
     ]
 
-    # Add Gateway sensors when mySigen gave Gateway readings now, or did on an
-    # earlier start. A failed read at startup must not make them disappear.
-    registry = er.async_get(hass)
-    known_before = any(
-        registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{key}")
-        for key in (*map(_gateway_key, GATEWAY_SENSORS), _GATEWAY_CONTACTOR)
-    )
     def gateway_entities() -> list[SensorEntity]:
         return [
-            *(GatewayReading(coordinator, reading) for reading in GATEWAY_SENSORS),
-            GatewayContactor(coordinator, _GATEWAY_CONTACTOR),
+            *(GatewayMeasurement(coordinator, key) for key in GATEWAY_MEASUREMENTS),
+            *(GatewayText(coordinator, key) for key in GATEWAY_TEXTS),
         ]
 
-    if coordinator.has_gateway or known_before:
+    # Add Gateway sensors when mySigen gave Gateway readings now, or did on an
+    # earlier start. A failed read at startup must not make them disappear.
+    if coordinator.has_gateway or coordinator.gateway_seen_before:
         async_add_entities([*entities, *gateway_entities()])
         return
     async_add_entities(entities)
 
-    # The first Gateway read may have failed. Add the sensors as soon as a
-    # later poll finds the Gateway, without waiting for a reload.
+    # The first Gateway read may have had no answer. Add the sensors as soon
+    # as a later poll finds the Gateway, without waiting for a reload.
     added = False
 
     @callback
@@ -157,18 +204,19 @@ class _GatewayEntity(MySigenEntity, SensorEntity):
         return super().available and self.coordinator.data.gateway is not None
 
 
-class GatewayReading(_GatewayEntity):
-    """One grid-side measurement of the Gateway."""
+class GatewayMeasurement(_GatewayEntity):
+    """One numeric reading of the Gateway."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator: MySigenCoordinator, reading: str) -> None:
-        super().__init__(coordinator, _gateway_key(reading))
-        self._reading = reading
-        device_class, unit, decimals = GATEWAY_SENSORS[reading]
-        self._attr_device_class = device_class
+    def __init__(self, coordinator: MySigenCoordinator, key: str) -> None:
+        super().__init__(coordinator, key)
+        spec = GATEWAY_MEASUREMENTS[key]
+        self._reading = spec.reading
+        self._attr_device_class, unit, decimals = spec.kind
         self._attr_native_unit_of_measurement = unit
         self._attr_suggested_display_precision = decimals
+        self._attr_entity_registry_enabled_default = spec.enabled
 
     @property
     def native_value(self) -> float | None:
@@ -176,9 +224,17 @@ class GatewayReading(_GatewayEntity):
         return self.coordinator.data.gateway.values.get(self._reading)
 
 
-class GatewayContactor(_GatewayEntity):
-    """The grid-side contactor state, as mySigen words it."""
+class GatewayText(_GatewayEntity):
+    """One text the Gateway reports."""
+
+    def __init__(self, coordinator: MySigenCoordinator, key: str) -> None:
+        super().__init__(coordinator, key)
+        spec = GATEWAY_TEXTS[key]
+        self._reading = spec.reading
+        self._attr_entity_registry_enabled_default = spec.enabled
+        if spec.diagnostic:
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self) -> str | None:
-        return self.coordinator.data.gateway.contactor
+        return self.coordinator.data.gateway.texts.get(self._reading)

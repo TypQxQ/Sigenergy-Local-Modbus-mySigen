@@ -1,0 +1,247 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yhdistä mySigen",
+        "description": "Liitä mySigen-tili laitokseen, joka on jo määritetty Sigenergy ESS:ssä.\n\n**Käytä Home Assistantille erillistä tiliä.** Jos kirjaudut tässä sillä tilillä, jota käytät sovelluksessa, sovellus voi kirjautua ulos.\n\n1. Kirjaudu mySigen-sovellukseen laitoksen omistajana ja avaa **Asetukset**.\n2. Avaa tili- tai jakamisosio ja valitse käyttäjän lisääminen.\n3. Anna sähköpostiosoite, jota ei vielä käytetä mySigenissä, ja valitse **View and Edit**. Pelkän katseluoikeuden käyttäjä voi lukea arvoja, mutta ei käynnistää toimintoja, kuten Hold Battery.\n4. Aktivoi uusi tili mySigenin lähettämästä sähköpostista ja aseta salasana.\n5. Anna tämä sähköpostiosoite ja salasana alle.\n\nHome Assistant tallentaa salasanan, jotta se voi kirjautua myöhemmin uudelleen.",
+        "data": {
+          "plant_entry_id": "Laitos",
+          "region": "Alue",
+          "username": "Sähköposti",
+          "password": "Salasana"
+        },
+        "data_description": {
+          "plant_entry_id": "Modbus-laitos, johon nämä pilviarvot kuuluvat.",
+          "region": "Alue, jolla mySigen-tilisi on luotu."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Kirjaudu mySigeniin uudelleen",
+        "description": "Anna käyttäjän {username} nykyinen salasana.",
+        "data": {
+          "password": "Salasana"
+        }
+      },
+      "reconfigure": {
+        "title": "Muuta mySigen-yhteyttä",
+        "description": "Muuta mySigen-tiliä, sitä kuinka usein Home Assistant lukee mySigenistä, tai sitä saako akkua ohjata.",
+        "data": {
+          "username": "Sähköposti",
+          "password": "Salasana",
+          "scan_interval": "Lukuväli",
+          "allow_control": "Salli akun ohjaus"
+        },
+        "data_description": {
+          "password": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan.",
+          "scan_interval": "15–60 sekuntia. Lyhyemmät välit lähettävät enemmän pyyntöjä mySigeniin.",
+          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa ajastetun akun ohituksen (Hold Battery) mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen ei hyväksynyt tätä sähköpostiosoitetta ja salasanaa valitulla alueella.",
+      "cannot_connect": "mySigeniin ei saatu yhteyttä. Tarkista yhteys ja yritä uudelleen.",
+      "login_rejected": "mySigen vastasi palvelinvirheellä kirjautumisen sijaan. Uudemmat mySigen-versiot eivät ehkä enää hyväksy tätä kirjautumistapaa.",
+      "rate_limited": "mySigen rajoittaa pyyntöjä juuri nyt. Odota muutama minuutti ja yritä uudelleen.",
+      "no_local_serial": "Sigenergy ESS ei ole vielä lukenut tämän laitoksen invertterin sarjanumeroa, joten tiliä ei voida tarkistaa. Yritä uudelleen, kun laitos on verkossa.",
+      "no_cloud_serial": "mySigen ei luetellut tilille yhtään laitetta, joten sitä ei voida verrata laitokseen.",
+      "station_mismatch": "Tämä mySigen-tili kuuluu eri järjestelmään kuin valittu laitos.",
+      "no_permission": "mySigen kirjasi tilin sisään, mutta ei antanut sen lukea akun asetuksia. Tarkista mySigen-sovelluksesta, että järjestelmä on jaettu tälle tilille oikeudella View and Edit."
+    },
+    "abort": {
+      "modbus_missing": "Asenna ja määritä ensin Sigenergy ESS (Sigenergy Local Modbus).",
+      "modbus_too_old": "Päivitä ensin Sigenergy ESS (Sigenergy Local Modbus) versioon 2.0.3 tai uudempaan.",
+      "no_plant": "Määritä ensin laitos Sigenergy ESS:ssä.",
+      "already_configured": "Tällä laitoksella on jo mySigen-yhteys.",
+      "reauth_successful": "Kirjauduttu uudelleen.",
+      "reconfigure_successful": "mySigen-yhteys on päivitetty."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Eurooppa",
+        "aus": "Australia",
+        "apac": "Aasia ja Tyynimeri",
+        "us": "Yhdysvallat",
+        "cn": "Kiina"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Pidä akku (ei latausta, ei purkua)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Akun ohitus aktiivinen"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Akun ohituksen tila",
+        "state": {
+          "charging": "Lataa",
+          "discharging": "Purkaa",
+          "hold_battery": "Pitää akun",
+          "self_consumption": "Omakäyttö"
+        }
+      },
+      "battery_override_end": {
+        "name": "Akun ohitus päättyy"
+      },
+      "last_update": {
+        "name": "mySigen viimeisin päivitys"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway verkkojännite vaihe A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway verkkovirta vaihe A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway verkkojännite vaihe B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway verkkovirta vaihe B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway verkkojännite vaihe C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway verkkovirta vaihe C"
+      },
+      "battery_override_command": {
+        "name": "Akun ohituksen viimeisin tulos",
+        "state": {
+          "confirmed": "Vahvistettu",
+          "refused": "Hylätty",
+          "unknown": "Tulos tuntematon",
+          "not_confirmed": "Ei vahvistettu",
+          "no_override": "Ei peruutettavaa"
+        }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe A"
+      },
+      "generator_voltage_a": {
+        "name": "Generaattorin jännite vaihe A"
+      },
+      "generator_current_a": {
+        "name": "Generaattorin virta vaihe A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe B"
+      },
+      "generator_voltage_b": {
+        "name": "Generaattorin jännite vaihe B"
+      },
+      "generator_current_b": {
+        "name": "Generaattorin virta vaihe B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe C"
+      },
+      "generator_voltage_c": {
+        "name": "Generaattorin jännite vaihe C"
+      },
+      "generator_current_c": {
+        "name": "Generaattorin virta vaihe C"
+      },
+      "generator_power": {
+        "name": "Generaattorin teho"
+      },
+      "generator_frequency": {
+        "name": "Generaattorin taajuus"
+      },
+      "generator_contactor": {
+        "name": "Generaattorin kontaktori"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway vaihejärjestys verkon puolella"
+      },
+      "gateway_firmware": {
+        "name": "Gateway laiteohjelmiston versio"
+      },
+      "gateway_model": {
+        "name": "Gateway malli"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Akun ohituksen kesto"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Käynnistettävä akun ohitus",
+        "state": {
+          "hold_battery": "Pidä akku (ei latausta, ei purkua)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Käynnistä akun ohitus nyt"
+      },
+      "stop_battery_override": {
+        "name": "Pysäytä akun ohitus nyt"
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "Yhteyden {name} laitosta ei enää ole",
+      "description": "Sigenergy ESS -laitos, johon {name} oli liitetty, on poistettu. Poista tämä mySigen-yhteys ja lisää se uudelleen haluamallesi laitokselle."
+    },
+    "station_mismatch": {
+      "title": "{name} kuuluu eri järjestelmään",
+      "description": "mySigen ei luettele tämän laitoksen invertteriä tilille, jota {name} käyttää. Näin käy, kun invertteri on vaihdettu, järjestelmää ei enää jaeta tilille tai tili on vaihdettu. Määritä yhteys uudelleen tilillä, jolla on pääsy, tai poista se ja lisää se uudelleen."
+    },
+    "no_permission": {
+      "title": "{name} ei saa lukea mySigenistä",
+      "description": "mySigen kirjasi tilin sisään, mutta ei antanut sen lukea akun asetuksia. Tarkista mySigen-sovelluksesta, että järjestelmä on jaettu tilille oikeudella View and Edit, ja lataa sitten tämä yhteys uudelleen."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Käynnistä akun ohitus",
+      "description": "Käynnistää ajastetun akun ohituksen mySigenin kautta. Laitos lopettaa sen itse, kun aika on kulunut, myös silloin kun Home Assistant ei ole käynnissä. Hylätään, kun toinen ohitus tai Remote EMS on aktiivinen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-yhteys",
+          "description": "Käytettävä yhteys. Voidaan jättää pois, kun yhteyksiä on vain yksi."
+        },
+        "mode": {
+          "name": "Tila",
+          "description": "Mitä akun pitää tehdä."
+        },
+        "duration": {
+          "name": "Kesto",
+          "description": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (30–120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Peruuta akun ohitus",
+      "description": "Lopettaa käynnissä olevan akun ohituksen, myös mySigen-sovelluksessa käynnistetyn.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-yhteys",
+          "description": "Käytettävä yhteys. Voidaan jättää pois, kun yhteyksiä on vain yksi."
+        }
+      }
+    }
+  }
+}

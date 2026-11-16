@@ -1,0 +1,247 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tilslut mySigen",
+        "description": "Knyt en mySigen-konto til et anlæg, der allerede er sat op i Sigenergy ESS.\n\n**Brug en separat konto til Home Assistant.** Hvis du logger ind her med den konto, du bruger i appen, kan appen blive logget ud.\n\n1. Log ind i mySigen-appen som anlæggets ejer, og åbn **Indstillinger**.\n2. Åbn afsnittet for konto eller deling, og vælg at tilføje en bruger.\n3. Angiv en e-mailadresse, der ikke allerede bruges i mySigen, og vælg **View and Edit**. En bruger, der kun må se, kan læse værdier, men ikke starte handlinger som Hold Battery.\n4. Aktivér den nye konto via e-mailen fra mySigen, og vælg en adgangskode.\n5. Angiv den e-mailadresse og adgangskode nedenfor.\n\nHome Assistant gemmer adgangskoden for at kunne logge ind igen senere.",
+        "data": {
+          "plant_entry_id": "Anlæg",
+          "region": "Region",
+          "username": "E-mail",
+          "password": "Adgangskode"
+        },
+        "data_description": {
+          "plant_entry_id": "Modbus-anlægget, som cloud-værdierne hører til.",
+          "region": "Den region, hvor din mySigen-konto blev oprettet."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Log ind på mySigen igen",
+        "description": "Angiv den aktuelle adgangskode for {username}.",
+        "data": {
+          "password": "Adgangskode"
+        }
+      },
+      "reconfigure": {
+        "title": "Ændr mySigen-forbindelsen",
+        "description": "Ændr mySigen-konto, hvor ofte Home Assistant læser fra mySigen, eller om batteriet må styres.",
+        "data": {
+          "username": "E-mail",
+          "password": "Adgangskode",
+          "scan_interval": "Aflæsningsinterval",
+          "allow_control": "Tillad batteristyring"
+        },
+        "data_description": {
+          "password": "Lad feltet være tomt for at beholde den nuværende adgangskode.",
+          "scan_interval": "Mellem 15 og 60 sekunder. Kortere intervaller sender flere forespørgsler til mySigen.",
+          "allow_control": "Lader Home Assistant starte og annullere en tidsstyret batterioverstyring (Hold Battery) via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen accepterede ikke e-mailadressen og adgangskoden for den valgte region.",
+      "cannot_connect": "Kunne ikke nå mySigen. Kontrollér forbindelsen, og prøv igen.",
+      "login_rejected": "mySigen svarede med en serverfejl i stedet for at logge ind. Nyere versioner af mySigen accepterer måske ikke længere denne loginmetode.",
+      "rate_limited": "mySigen begrænser antallet af forespørgsler lige nu. Vent et par minutter, og prøv igen.",
+      "no_local_serial": "Sigenergy ESS har endnu ikke læst inverterens serienummer for dette anlæg, så kontoen kan ikke kontrolleres. Prøv igen, når anlægget er online.",
+      "no_cloud_serial": "mySigen viste ingen enheder for kontoen, så den kan ikke kontrolleres mod anlægget.",
+      "station_mismatch": "Denne mySigen-konto hører til et andet system end det valgte anlæg.",
+      "no_permission": "mySigen loggede kontoen ind, men lod den ikke læse batteriindstillingerne. Kontrollér i mySigen-appen, at systemet er delt med kontoen med rettigheden View and Edit."
+    },
+    "abort": {
+      "modbus_missing": "Installér og konfigurér Sigenergy ESS (Sigenergy Local Modbus) først.",
+      "modbus_too_old": "Opdatér Sigenergy ESS (Sigenergy Local Modbus) til 2.0.3 eller nyere først.",
+      "no_plant": "Opret et anlæg i Sigenergy ESS først.",
+      "already_configured": "Dette anlæg har allerede en mySigen-forbindelse.",
+      "reauth_successful": "Logget ind igen.",
+      "reconfigure_successful": "mySigen-forbindelsen er opdateret."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europa",
+        "aus": "Australien",
+        "apac": "Asien og Stillehavsområdet",
+        "us": "USA",
+        "cn": "Kina"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Batterioverstyring aktiv"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Batterioverstyringens tilstand",
+        "state": {
+          "charging": "Oplader",
+          "discharging": "Aflader",
+          "hold_battery": "Holder batteriet",
+          "self_consumption": "Egetforbrug"
+        }
+      },
+      "battery_override_end": {
+        "name": "Batterioverstyringen slutter"
+      },
+      "last_update": {
+        "name": "mySigen seneste opdatering"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway netspænding fase A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway netstrøm fase A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway netspænding fase B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway netstrøm fase B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway netspænding fase C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway netstrøm fase C"
+      },
+      "battery_override_command": {
+        "name": "Seneste resultat for batterioverstyring",
+        "state": {
+          "confirmed": "Bekræftet",
+          "refused": "Afvist",
+          "unknown": "Ukendt udfald",
+          "not_confirmed": "Ikke bekræftet",
+          "no_override": "Intet at annullere"
+        }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway højeste netspænding seneste minut fase A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway laveste netspænding seneste minut fase A"
+      },
+      "generator_voltage_a": {
+        "name": "Generatorspænding fase A"
+      },
+      "generator_current_a": {
+        "name": "Generatorstrøm fase A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway højeste netspænding seneste minut fase B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway laveste netspænding seneste minut fase B"
+      },
+      "generator_voltage_b": {
+        "name": "Generatorspænding fase B"
+      },
+      "generator_current_b": {
+        "name": "Generatorstrøm fase B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway højeste netspænding seneste minut fase C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway laveste netspænding seneste minut fase C"
+      },
+      "generator_voltage_c": {
+        "name": "Generatorspænding fase C"
+      },
+      "generator_current_c": {
+        "name": "Generatorstrøm fase C"
+      },
+      "generator_power": {
+        "name": "Generatoreffekt"
+      },
+      "generator_frequency": {
+        "name": "Generatorfrekvens"
+      },
+      "generator_contactor": {
+        "name": "Generatorkontaktor"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway fasefølge på netsiden"
+      },
+      "gateway_firmware": {
+        "name": "Gateway firmwareversion"
+      },
+      "gateway_model": {
+        "name": "Gateway model"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Batterioverstyringens varighed"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Batterioverstyring, der skal startes",
+        "state": {
+          "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Start batterioverstyring nu"
+      },
+      "stop_battery_override": {
+        "name": "Stop batterioverstyring nu"
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "Anlægget for {name} findes ikke længere",
+      "description": "Anlægget i Sigenergy ESS, som {name} var knyttet til, er blevet fjernet. Slet denne mySigen-forbindelse, og tilføj den igen for det anlæg, du vil bruge."
+    },
+    "station_mismatch": {
+      "title": "{name} hører til et andet system",
+      "description": "mySigen viser ikke anlæggets inverter for den konto, som {name} bruger. Det sker, når inverteren er udskiftet, systemet ikke længere deles med kontoen, eller kontoen er ændret. Konfigurér forbindelsen igen med en konto, der har adgang, eller slet den og tilføj den igen."
+    },
+    "no_permission": {
+      "title": "{name} må ikke læse fra mySigen",
+      "description": "mySigen loggede kontoen ind, men lod den ikke læse batteriindstillingerne. Kontrollér i mySigen-appen, at systemet er delt med kontoen med rettigheden View and Edit, og genindlæs derefter forbindelsen."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Start batterioverstyring",
+      "description": "Starter en tidsstyret batterioverstyring via mySigen. Anlægget afslutter den selv, når tiden er gået, også hvis Home Assistant ikke kører. Afvises, mens en anden overstyring eller Remote EMS er aktiv.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-forbindelse",
+          "description": "Hvilken forbindelse der skal bruges. Kan udelades, når der kun er én."
+        },
+        "mode": {
+          "name": "Tilstand",
+          "description": "Hvad batteriet skal gøre."
+        },
+        "duration": {
+          "name": "Varighed",
+          "description": "Minutter, indtil anlægget vender tilbage til sin normale strategi (30 til 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Annullér batterioverstyring",
+      "description": "Afslutter den igangværende batterioverstyring, også en, der er startet i mySigen-appen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-forbindelse",
+          "description": "Hvilken forbindelse der skal bruges. Kan udelades, når der kun er én."
+        }
+      }
+    }
+  }
+}
