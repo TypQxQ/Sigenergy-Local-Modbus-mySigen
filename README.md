@@ -127,7 +127,7 @@ If Home Assistant is unavailable, an override can always be stopped in the mySig
 - **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.
 - **Verified on one system:** a European account, one inverter, one Gateway. Other regions, models and firmware are untested.
 - **One system per account.** The add-on uses the system the account opens by default.
-- **Hold battery is the only mode tested on hardware so far.** Charging, discharging and self-consumption use the same request and checks, but have not yet been confirmed on a plant.
+- **All four override modes and the power limit are tested on one plant.** Other models and firmware may behave differently.
 - **Eleven languages, nine of them unreviewed.** Danish, German, English, Spanish, Finnish, French, Italian, Norwegian, Dutch, Polish and Swedish, the same as Sigenergy Local Modbus. Only English and Swedish have been checked by a speaker. Entity names follow the plant's **Entity name language** setting in the Modbus integration.
 - **The password is stored** in Home Assistant so the add-on can sign in again.
 

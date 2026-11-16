@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b6. Step A is built; step B is built and waiting for hardware tests.
+Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B was tested on hardware on 2026-11-16.
 
 ## How to read the tables
 
@@ -86,13 +86,13 @@ Options of **Battery override to start**, as the user sees them:
 | Option | What happens | Step | Status |
 | --- | --- | --- | --- |
 | Hold battery (no charging, no discharging) | The battery keeps its charge. The home runs on solar and grid. | – | Done |
-| Charge battery | The battery charges, from the grid if solar is not enough. | B | Testing |
-| Discharge battery | The battery supplies the home and can export. | B | Testing |
-| Use my own solar first (self-consumption) | The plant uses solar and battery before the grid. | B | Testing |
+| Charge battery | The battery charges, from the grid if solar is not enough. | B | Done |
+| Discharge battery | The battery supplies the home and can export. | B | Done |
+| Use my own solar first (self-consumption) | The plant uses solar and battery before the grid. | B | Done |
 
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Battery override power limit (0 = no limit) | Number, 0 to 100 kW | The most power a charge or discharge override may use. 0 means no limit. The start action takes the same value as `power_limit`. | B | Testing | Disabled | Local |
+| Battery override power limit (0 = no limit) | Number, 0 to 100 kW | The most power a charge or discharge override may use. 0 means no limit. The start action takes the same value as `power_limit`. | B | Done | Disabled | Local |
 
 ### Settings that stay until changed back
 
