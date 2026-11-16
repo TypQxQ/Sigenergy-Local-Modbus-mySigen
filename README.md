@@ -4,7 +4,7 @@ Optional add-on for [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigenergy
 
 - the **temporary battery override** (Instant Manual Control): whether one is running, its mode and when it ends;
 - **Gateway grid-side readings**: voltage and current per phase, frequency and the contactor state, on systems with a Gateway;
-- optional **actions to start and cancel a timed Hold Battery**, which the plant ends by itself when the time is up.
+- optional **timed battery overrides** (hold, charge, discharge or self-consumption), which the plant ends by itself when the time is up.
 
 **Status: beta.** This project is unofficial and not affiliated with Sigenergy. It uses the same private interface as the mySigen app, which Sigenergy can change or close at any time. Read [Limitations](#limitations) before relying on it.
 
@@ -66,26 +66,39 @@ A battery override makes the battery do one thing for a set time. When the time 
 
 | Control | Type | What it does |
 | --- | --- | --- |
-| Battery override to start | Dropdown | What the battery should do. Today: **Hold battery (no charging, no discharging)**. Changing it sends nothing. |
+| Battery override to start | Dropdown | What the battery should do. See the options below. Changing it sends nothing. |
 | Battery override duration | Number, 30 to 120 minutes | How long the override should last. Changing it sends nothing. |
+| Battery override power limit (0 = no limit) | Number, kW | The most power a charge or discharge override may use. Disabled by default; enable it to set a limit. Changing it sends nothing. |
 | Start battery override now | Button | Starts the chosen override for the chosen duration. |
 | Stop battery override now | Button | Ends the running override, including one started in the mySigen app. |
+
+Options of **Battery override to start**:
+
+| Option | Key in automations | What happens |
+| --- | --- | --- |
+| Hold battery (no charging, no discharging) | `hold_battery` | The battery keeps its charge. The home runs on solar and grid. |
+| Charge battery | `charging` | The battery charges, from the grid if solar is not enough. |
+| Discharge battery | `discharging` | The battery supplies the home and can export to the grid. |
+| Use my own solar first (self-consumption) | `self_consumption` | Solar and battery are used before the grid. |
+
+Charging from the grid and discharging to the grid can cost or earn money depending on your tariff.
 
 ### From an automation
 
 | Action | What it does |
 | --- | --- |
-| `sigen_mysigen.start_battery_override` | Starts a timed override. `mode` is `hold_battery`, `duration` is 30 to 120 minutes. |
+| `sigen_mysigen.start_battery_override` | Starts a timed override. `mode` is one of the keys above, `duration` is 30 to 120 minutes, and the optional `power_limit` (kW) caps charging or discharging. |
 | `sigen_mysigen.cancel_battery_override` | Ends the running override. |
 
 ```yaml
 action: sigen_mysigen.start_battery_override
 data:
-  mode: hold_battery
+  mode: charging
   duration: 60
+  power_limit: 3.5
 ```
 
-In the dropdown and in automations the option is `hold_battery` in every language; only the text shown to the user is translated.
+The keys are the same in every language; only the text shown to the user is translated.
 
 ### What to expect
 
@@ -114,7 +127,7 @@ If Home Assistant is unavailable, an override can always be stopped in the mySig
 - **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.
 - **Verified on one system:** a European account, one inverter, one Gateway. Other regions, models and firmware are untested.
 - **One system per account.** The add-on uses the system the account opens by default.
-- **Only Hold Battery can be started.** Charging, discharging and self-consumption are shown when started elsewhere, but cannot be started from Home Assistant yet.
+- **All four override modes and the power limit are tested on one plant.** Other models and firmware may behave differently.
 - **Eleven languages, nine of them unreviewed.** Danish, German, English, Spanish, Finnish, French, Italian, Norwegian, Dutch, Polish and Swedish, the same as Sigenergy Local Modbus. Only English and Swedish have been checked by a speaker. Entity names follow the plant's **Entity name language** setting in the Modbus integration.
 - **The password is stored** in Home Assistant so the add-on can sign in again.
 

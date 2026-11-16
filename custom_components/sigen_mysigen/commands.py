@@ -25,6 +25,7 @@ async def async_run_command(
     *,
     mode: str | None = None,
     minutes: int | None = None,
+    power_kw: float | None = None,
 ) -> None:
     """Start an override when a mode is given, otherwise cancel the running one."""
     try:
@@ -36,6 +37,7 @@ async def async_run_command(
             coordinator,
             mode=mode,
             minutes=minutes,
+            power_kw=power_kw,
             remote_ems=lambda: remote_ems_state(hass, plant_entry_id),
         )
     except CommandRefused as err:

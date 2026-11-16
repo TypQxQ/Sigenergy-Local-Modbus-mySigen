@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Laissez vide pour conserver le mot de passe actuel.",
           "scan_interval": "Entre 15 et 60 secondes. Des intervalles plus courts envoient davantage de requêtes à mySigen.",
-          "allow_control": "Permet à Home Assistant de démarrer et d'annuler un forçage temporisé de la batterie (Hold Battery) via mySigen. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit."
+          "allow_control": "Permet à Home Assistant de démarrer et d'annuler un forçage temporisé de la batterie via mySigen. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Maintenir la batterie (ni charge, ni décharge)"
+        "hold_battery": "Maintenir la batterie (ni charge, ni décharge)",
+        "charging": "Charger la batterie",
+        "discharging": "Décharger la batterie",
+        "self_consumption": "Utiliser d'abord ma propre énergie solaire (autoconsommation)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Durée du forçage de la batterie"
+      },
+      "battery_override_power_limit": {
+        "name": "Limite de puissance du forçage de la batterie (0 = aucune limite)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Forçage de la batterie à démarrer",
         "state": {
-          "hold_battery": "Maintenir la batterie (ni charge, ni décharge)"
+          "hold_battery": "Maintenir la batterie (ni charge, ni décharge)",
+          "charging": "Charger la batterie",
+          "discharging": "Décharger la batterie",
+          "self_consumption": "Utiliser d'abord ma propre énergie solaire (autoconsommation)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Durée",
           "description": "Minutes avant que l'installation ne revienne à sa stratégie normale (30 à 120)."
+        },
+        "power_limit": {
+          "name": "Limite de puissance",
+          "description": "Puissance maximale en kW pour une charge ou une décharge. Omettez-la pour aucune limite. Non utilisée pour le maintien de la batterie ni l'autoconsommation."
         }
       }
     },

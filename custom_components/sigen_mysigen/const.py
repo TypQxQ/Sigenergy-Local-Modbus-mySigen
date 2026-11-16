@@ -30,6 +30,8 @@ CONF_OVERRIDE_MINUTES = "override_minutes"
 CONF_OVERRIDE_MODE = "override_mode"
 DEFAULT_OVERRIDE_MINUTES = 60
 DEFAULT_OVERRIDE_MODE = "hold_battery"
+# 0 means no limit.
+CONF_OVERRIDE_POWER = "override_power_kw"
 
 # The Modbus integration's per-plant display language for entity names.
 MODBUS_CONF_ENTITY_NAME_LANGUAGE = "entity_name_language"

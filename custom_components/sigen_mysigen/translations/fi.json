@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan.",
           "scan_interval": "15–60 sekuntia. Lyhyemmät välit lähettävät enemmän pyyntöjä mySigeniin.",
-          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa ajastetun akun ohituksen (Hold Battery) mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit."
+          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa ajastetun akun ohituksen mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Pidä akku (ei latausta, ei purkua)"
+        "hold_battery": "Pidä akku (ei latausta, ei purkua)",
+        "charging": "Lataa akku",
+        "discharging": "Pura akku",
+        "self_consumption": "Käytä ensin omaa aurinkosähköä (omakäyttö)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Akun ohituksen kesto"
+      },
+      "battery_override_power_limit": {
+        "name": "Akun ohituksen tehoraja (0 = ei rajaa)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Käynnistettävä akun ohitus",
         "state": {
-          "hold_battery": "Pidä akku (ei latausta, ei purkua)"
+          "hold_battery": "Pidä akku (ei latausta, ei purkua)",
+          "charging": "Lataa akku",
+          "discharging": "Pura akku",
+          "self_consumption": "Käytä ensin omaa aurinkosähköä (omakäyttö)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Kesto",
           "description": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (30–120)."
+        },
+        "power_limit": {
+          "name": "Tehoraja",
+          "description": "Suurin teho kW:na latauksessa tai purussa. Jätä pois, jos rajaa ei tarvita. Ei käytössä akun pidossa eikä omakäytössä."
         }
       }
     },

@@ -23,6 +23,7 @@ from homeassistant.util import dt as dt_util
 from .api import (
     CONTROL_MODES,
     MAX_OVERRIDE_MINUTES,
+    MAX_POWER_LIMIT_KW,
     MIN_OVERRIDE_MINUTES,
     GatewayReadings,
     MySigenAuthError,
@@ -38,6 +39,7 @@ from .const import (
     CONF_ALLOW_CONTROL,
     CONF_OVERRIDE_MINUTES,
     CONF_OVERRIDE_MODE,
+    CONF_OVERRIDE_POWER,
     DEFAULT_OVERRIDE_MINUTES,
     DEFAULT_OVERRIDE_MODE,
     CONF_REGION,
@@ -159,6 +161,15 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         except (TypeError, ValueError):
             minutes = DEFAULT_OVERRIDE_MINUTES
         return min(MAX_OVERRIDE_MINUTES, max(MIN_OVERRIDE_MINUTES, minutes))
+
+    @property
+    def override_power_kw(self) -> float | None:
+        """The power limit the Start button uses; None means no limit."""
+        try:
+            power = float(self.config_entry.options.get(CONF_OVERRIDE_POWER, 0))
+        except (TypeError, ValueError):
+            return None
+        return power if 0 < power <= MAX_POWER_LIMIT_KW else None
 
     @property
     def override_mode(self) -> str:

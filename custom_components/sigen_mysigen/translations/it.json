@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Lascia vuoto per mantenere la password attuale.",
           "scan_interval": "Tra 15 e 60 secondi. Intervalli più brevi inviano più richieste a mySigen.",
-          "allow_control": "Consente a Home Assistant di avviare e annullare una forzatura temporizzata della batteria (Hold Battery) tramite mySigen. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit."
+          "allow_control": "Consente a Home Assistant di avviare e annullare una forzatura temporizzata della batteria tramite mySigen. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Mantieni la batteria (nessuna carica, nessuna scarica)"
+        "hold_battery": "Mantieni la batteria (nessuna carica, nessuna scarica)",
+        "charging": "Carica la batteria",
+        "discharging": "Scarica la batteria",
+        "self_consumption": "Usa prima la mia energia solare (autoconsumo)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Durata della forzatura batteria"
+      },
+      "battery_override_power_limit": {
+        "name": "Limite di potenza della forzatura batteria (0 = nessun limite)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Forzatura batteria da avviare",
         "state": {
-          "hold_battery": "Mantieni la batteria (nessuna carica, nessuna scarica)"
+          "hold_battery": "Mantieni la batteria (nessuna carica, nessuna scarica)",
+          "charging": "Carica la batteria",
+          "discharging": "Scarica la batteria",
+          "self_consumption": "Usa prima la mia energia solare (autoconsumo)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Durata",
           "description": "Minuti prima che l'impianto torni alla sua strategia normale (da 30 a 120)."
+        },
+        "power_limit": {
+          "name": "Limite di potenza",
+          "description": "Potenza massima in kW per una carica o scarica. Omettilo per nessun limite. Non usato per il mantenimento della batteria né per l'autoconsumo."
         }
       }
     },

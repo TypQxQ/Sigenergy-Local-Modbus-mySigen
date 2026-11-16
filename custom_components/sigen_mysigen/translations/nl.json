@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Laat leeg om het huidige wachtwoord te behouden.",
           "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
-          "allow_control": "Laat Home Assistant een tijdelijke batterij-override (Hold Battery) via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig."
+          "allow_control": "Laat Home Assistant een tijdelijke batterij-override via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)"
+        "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)",
+        "charging": "Batterij laden",
+        "discharging": "Batterij ontladen",
+        "self_consumption": "Eerst mijn eigen zonnestroom gebruiken (eigen verbruik)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Duur van batterij-override"
+      },
+      "battery_override_power_limit": {
+        "name": "Vermogenslimiet van batterij-override (0 = geen limiet)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Te starten batterij-override",
         "state": {
-          "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)"
+          "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)",
+          "charging": "Batterij laden",
+          "discharging": "Batterij ontladen",
+          "self_consumption": "Eerst mijn eigen zonnestroom gebruiken (eigen verbruik)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Duur",
           "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (30 tot 120)."
+        },
+        "power_limit": {
+          "name": "Vermogenslimiet",
+          "description": "Maximaal vermogen in kW bij laden of ontladen. Weglaten voor geen limiet. Niet gebruikt bij batterij vasthouden of eigen verbruik."
         }
       }
     },

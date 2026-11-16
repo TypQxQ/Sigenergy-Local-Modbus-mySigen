@@ -4,14 +4,14 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b5. Step A is built.
+Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B was tested on hardware on 2026-11-16.
 
 ## How to read the tables
 
 | Column | Meaning |
 | --- | --- |
 | **Step** | When it is built. See [Steps](#steps). |
-| **Status** | **Done**: released or merged. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. |
+| **Status** | **Done**: released or merged. **Testing**: built, waiting for a test on real hardware. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. |
 | **Default** | **Enabled**: appears as soon as the add-on is set up. **Disabled**: created but switched off until the user enables it. **If present**: only created when the equipment exists. Generator sensors are **Disabled** instead, because mySigen reports generator values on every Gateway, also without a generator. |
 | **Data** | **Have**: already read. **Free**: already inside an answer the add-on fetches on every poll, so it costs no extra request. **New read**: needs a request the add-on does not make yet. **Local**: stored in Home Assistant, nothing is sent. |
 
@@ -86,13 +86,13 @@ Options of **Battery override to start**, as the user sees them:
 | Option | What happens | Step | Status |
 | --- | --- | --- | --- |
 | Hold battery (no charging, no discharging) | The battery keeps its charge. The home runs on solar and grid. | – | Done |
-| Charge battery | The battery charges, from the grid if solar is not enough. | B | Planned |
-| Discharge battery | The battery supplies the home and can export. | B | Planned |
-| Use my own solar first (self-consumption) | The plant uses solar and battery before the grid. | B | Planned |
+| Charge battery | The battery charges, from the grid if solar is not enough. | B | Done |
+| Discharge battery | The battery supplies the home and can export. | B | Done |
+| Use my own solar first (self-consumption) | The plant uses solar and battery before the grid. | B | Done |
 
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Battery override power limit | Number, kW | The most power a charge or discharge override may use. Leave empty for no limit. | B | Planned | Disabled | Local |
+| Battery override power limit (0 = no limit) | Number, 0 to 100 kW | The most power a charge or discharge override may use. 0 means no limit. The start action takes the same value as `power_limit`. | B | Done | Disabled | Local |
 
 ### Settings that stay until changed back
 

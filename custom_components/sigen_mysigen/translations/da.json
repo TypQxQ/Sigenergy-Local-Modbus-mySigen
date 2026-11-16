@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Lad feltet være tomt for at beholde den nuværende adgangskode.",
           "scan_interval": "Mellem 15 og 60 sekunder. Kortere intervaller sender flere forespørgsler til mySigen.",
-          "allow_control": "Lader Home Assistant starte og annullere en tidsstyret batterioverstyring (Hold Battery) via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit."
+          "allow_control": "Lader Home Assistant starte og annullere en tidsstyret batterioverstyring via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)"
+        "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)",
+        "charging": "Oplad batteriet",
+        "discharging": "Aflad batteriet",
+        "self_consumption": "Brug min egen solstrøm først (egetforbrug)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Batterioverstyringens varighed"
+      },
+      "battery_override_power_limit": {
+        "name": "Effektgrænse for batterioverstyring (0 = ingen grænse)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Batterioverstyring, der skal startes",
         "state": {
-          "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)"
+          "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)",
+          "charging": "Oplad batteriet",
+          "discharging": "Aflad batteriet",
+          "self_consumption": "Brug min egen solstrøm først (egetforbrug)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Varighed",
           "description": "Minutter, indtil anlægget vender tilbage til sin normale strategi (30 til 120)."
+        },
+        "power_limit": {
+          "name": "Effektgrænse",
+          "description": "Største effekt i kW ved opladning eller afladning. Udelad for ingen grænse. Bruges ikke til at holde batteriet eller egetforbrug."
         }
       }
     },

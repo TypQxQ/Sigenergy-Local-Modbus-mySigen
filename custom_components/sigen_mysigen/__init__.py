@@ -30,6 +30,7 @@ from homeassistant.helpers.translation import async_get_translations
 from .api import (
     CONTROL_MODES,
     MAX_OVERRIDE_MINUTES,
+    MAX_POWER_LIMIT_KW,
     MIN_OVERRIDE_MINUTES,
     MySigenAuthError,
     MySigenError,
@@ -62,12 +63,16 @@ SERVICE_CANCEL = "cancel_battery_override"
 ATTR_ENTRY_ID = "config_entry_id"
 ATTR_MODE = "mode"
 ATTR_DURATION = "duration"
+ATTR_POWER = "power_limit"
 
 _CANCEL_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTRY_ID): cv.string})
 _START_SCHEMA = _CANCEL_SCHEMA.extend({
     vol.Required(ATTR_MODE): vol.In(CONTROL_MODES),
     vol.Required(ATTR_DURATION): vol.All(
         vol.Coerce(int), vol.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
+    ),
+    vol.Optional(ATTR_POWER): vol.All(
+        vol.Coerce(float), vol.Range(min=0, max=MAX_POWER_LIMIT_KW, min_included=False)
     ),
 })
 
@@ -103,6 +108,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                 coordinator,
                 mode=call.data[ATTR_MODE],
                 minutes=call.data[ATTR_DURATION],
+                power_kw=call.data.get(ATTR_POWER),
             )
         else:
             await async_run_command(hass, coordinator)

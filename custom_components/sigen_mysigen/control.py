@@ -21,6 +21,7 @@ from typing import Any
 from .api import (
     CONTROL_MODES,
     MAX_OVERRIDE_MINUTES,
+    MAX_POWER_LIMIT_KW,
     MIN_OVERRIDE_MINUTES,
     MySigenError,
     MySigenRateLimitError,
@@ -170,9 +171,13 @@ async def async_start_override(
     mode: str,
     minutes: int,
     remote_ems: Callable[[], str | None],
+    power_kw: float | None = None,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
-    """Start a timed override. Raises CommandError unless it is confirmed."""
+    """Start a timed override. Raises CommandError unless it is confirmed.
+
+    `power_kw` caps a charge or discharge override; None means no limit.
+    """
 
     async def start() -> str:
         if mode not in CONTROL_MODES:
@@ -181,6 +186,10 @@ async def async_start_override(
             raise CommandRefused(
                 f"Duration must be {MIN_OVERRIDE_MINUTES} to "
                 f"{MAX_OVERRIDE_MINUTES} minutes."
+            )
+        if power_kw is not None and not 0 < power_kw <= MAX_POWER_LIMIT_KW:
+            raise CommandRefused(
+                f"Power limit must be above 0 and at most {MAX_POWER_LIMIT_KW:g} kW."
             )
         _check_ready(coordinator)
         current = await _fresh_status(coordinator)
@@ -203,7 +212,7 @@ async def async_start_override(
             )
         await _send(
             coordinator,
-            lambda: coordinator.session.async_start_override(mode, minutes),
+            lambda: coordinator.session.async_start_override(mode, minutes, power_kw),
         )
         status = await _confirm(
             coordinator,
