@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b4. Step A is built.
+Last updated: 2026-11-16, at version 0.1.0b5. Step A is built.
 
 ## How to read the tables
 
@@ -141,5 +141,5 @@ These exist in mySigen too but are not added, because the Modbus integration alr
 ## Open questions
 
 - Which durations mySigen accepts outside 30 to 120 minutes.
-- Whether a system without a Gateway answers the Gateway read with an empty answer or an error.
+- Whether a system without a Gateway answers the Gateway read with an empty answer or an error. Either way it is asked again once an hour, not on every poll.
 - Whether Sigenergy permits a published integration to use this interface.

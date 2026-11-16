@@ -186,6 +186,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Show entity names in the language chosen for the Modbus plant, so the
     # entities of both integrations read the same on the shared device.
     language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
+    coordinator.entity_name_language = language
+
+    async def plant_changed(hass: HomeAssistant, plant: ConfigEntry) -> None:
+        """Reload when the plant's name language changes, so names match again."""
+        if (
+            plant.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
+            != coordinator.entity_name_language
+        ):
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(plant_entry.add_update_listener(plant_changed))
     if language in ENTITY_NAME_LANGUAGES:
         coordinator.entity_name_translations = await async_get_translations(
             hass, language, "entity", {DOMAIN}

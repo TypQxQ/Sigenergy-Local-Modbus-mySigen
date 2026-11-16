@@ -52,6 +52,10 @@ _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
+# How long "no Gateway" is trusted before mySigen is asked again. Long
+# enough not to bother the service, short enough that a Gateway that was
+# added, or an answer that was a temporary error, is picked up the same day.
+_GATEWAY_RECHECK = 3600.0
 
 
 def _write_session(hass: HomeAssistant) -> Any:
@@ -102,6 +106,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.last_success: datetime | None = None
         # Entity names in the plant's chosen language; None for Automatic.
         self.entity_name_translations: dict[str, str] | None = None
+        # The plant's setting those names were loaded for.
+        self.entity_name_language: str | None = None
         # Platforms set up for this entry, so unload matches setup.
         self.platforms: list[str] = []
         # One command at a time per connection.
@@ -109,9 +115,9 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # How the last start or cancel ended, for the sensor and diagnostics.
         self.last_command: dict[str, str] | None = None
         # None until mySigen has answered: True with readings, False without.
-        # False is kept until the next start, so a system without a Gateway
-        # is asked once per start and not on every poll.
+        # While False the Gateway is asked once an hour, not on every poll.
         self.has_gateway: bool | None = None
+        self._gateway_recheck_at = 0.0
         # Gateway sensors from an earlier start prove there is a Gateway; an
         # answer without readings then never switches the reads off.
         self.gateway_seen_before = any(
@@ -198,7 +204,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     async def _async_gateway(self) -> GatewayReadings | None:
         """Read the Gateway without letting it fail the whole poll."""
-        if self.has_gateway is False:
+        if self.has_gateway is False and time.monotonic() < self._gateway_recheck_at:
             return None
         try:
             gateway = await self.session.async_gateway_readings()
@@ -209,7 +215,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         except MySigenConnectionError as err:
             _LOGGER.debug("mySigen Gateway read failed: %s", err)
             if err.status is not None:
-                # mySigen answered with an error, which is an answer.
+                # mySigen answered with an error. That may mean no Gateway or
+                # a temporary fault, so it is asked again in an hour.
                 self._no_gateway_answer()
             # Without an answer nothing is known yet; the next poll asks again.
             return None
@@ -220,9 +227,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         return gateway
 
     def _no_gateway_answer(self) -> None:
-        """mySigen answered without Gateway readings: stop asking until restart."""
+        """mySigen answered without Gateway readings: ask again in an hour."""
         if self.has_gateway is not True and not self.gateway_seen_before:
             self.has_gateway = False
+            self._gateway_recheck_at = time.monotonic() + _GATEWAY_RECHECK
 
     async def _async_update_data(self) -> MySigenData:
         # Stay quiet while the service has asked for fewer requests.
