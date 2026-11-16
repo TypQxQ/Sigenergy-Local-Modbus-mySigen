@@ -1,0 +1,141 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Anslut mySigen",
+        "description": "Koppla ett mySigen-konto till en anläggning som redan är inlagd i Sigenergy ESS.\n\n**Använd ett separat konto för Home Assistant.** Om du loggar in här med kontot du använder i appen kan appen loggas ut.\n\n1. Logga in i mySigen-appen som anläggningens ägare och öppna **Inställningar**.\n2. Öppna avsnittet för konto eller delning och välj att lägga till en användare.\n3. Ange en e-postadress som inte redan används i mySigen och välj **View and Edit**. En användare som bara får visa kan läsa värden men inte starta åtgärder som Hold Battery.\n4. Aktivera det nya kontot via mejlet från mySigen och välj ett lösenord.\n5. Ange den e-postadressen och lösenordet nedan.\n\nHome Assistant sparar lösenordet för att kunna logga in igen senare.",
+        "data": {
+          "plant_entry_id": "Anläggning",
+          "region": "Region",
+          "username": "E-post",
+          "password": "Lösenord"
+        },
+        "data_description": {
+          "plant_entry_id": "Modbus-anläggningen som molnvärdena hör till.",
+          "region": "Regionen där ditt mySigen-konto skapades."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Logga in på mySigen igen",
+        "description": "Ange det aktuella lösenordet för {username}.",
+        "data": {
+          "password": "Lösenord"
+        }
+      },
+      "reconfigure": {
+        "title": "Ändra mySigen-anslutningen",
+        "description": "Ändra mySigen-konto, hur ofta Home Assistant läser från mySigen eller om batteriet får styras.",
+        "data": {
+          "username": "E-post",
+          "password": "Lösenord",
+          "scan_interval": "Avläsningsintervall",
+          "allow_control": "Tillåt batteristyrning"
+        },
+        "data_description": {
+          "password": "Lämna tomt för att behålla nuvarande lösenord.",
+          "scan_interval": "Mellan 15 och 60 sekunder. Kortare intervall skickar fler anrop till mySigen.",
+          "allow_control": "Låter åtgärder i Home Assistant starta och avbryta en tidsstyrd batteriöverstyrning (Hold Battery) via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen godtog inte e-postadressen och lösenordet för den valda regionen.",
+      "cannot_connect": "Det gick inte att nå mySigen. Kontrollera anslutningen och försök igen.",
+      "login_rejected": "mySigen svarade med ett serverfel i stället för att logga in. Nyare versioner av mySigen kanske inte längre godtar den här inloggningsmetoden.",
+      "rate_limited": "mySigen begränsar antalet anrop just nu. Vänta några minuter och försök igen.",
+      "no_local_serial": "Sigenergy ESS har inte läst växelriktarens serienummer för den här anläggningen ännu, så kontot kan inte kontrolleras. Försök igen när anläggningen är online.",
+      "no_cloud_serial": "mySigen listade inga enheter för kontot, så det kan inte kontrolleras mot anläggningen.",
+      "station_mismatch": "Det här mySigen-kontot hör till ett annat system än den valda anläggningen.",
+      "no_permission": "mySigen loggade in kontot men lät det inte läsa batteriinställningarna. Kontrollera i mySigen-appen att systemet är delat med kontot med behörigheten View and Edit."
+    },
+    "abort": {
+      "modbus_missing": "Installera och konfigurera Sigenergy ESS (Sigenergy Local Modbus) först.",
+      "modbus_too_old": "Uppdatera Sigenergy ESS (Sigenergy Local Modbus) till 2.0.3 eller senare först.",
+      "no_plant": "Lägg in en anläggning i Sigenergy ESS först.",
+      "already_configured": "Den här anläggningen har redan en mySigen-anslutning.",
+      "reauth_successful": "Inloggad igen.",
+      "reconfigure_successful": "mySigen-anslutningen har uppdaterats."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europa",
+        "aus": "Australien",
+        "apac": "Asien och Stillahavsområdet",
+        "us": "USA",
+        "cn": "Kina"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Håll batteriet"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "battery_override_mode": {
+        "state": {
+          "charging": "Laddar",
+          "discharging": "Laddar ur",
+          "hold_battery": "Håller batteriet",
+          "self_consumption": "Egenförbrukning"
+        }
+      },
+      "battery_override_command": {
+        "state": {
+          "confirmed": "Bekräftad",
+          "refused": "Nekad",
+          "unknown": "Okänt utfall",
+          "not_confirmed": "Inte bekräftad",
+          "no_override": "Inget att avbryta"
+        }
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "Anläggningen för {name} finns inte längre",
+      "description": "Anläggningen i Sigenergy ESS som {name} var kopplad till har tagits bort. Ta bort den här mySigen-anslutningen och lägg till den igen för den anläggning du vill använda."
+    },
+    "station_mismatch": {
+      "title": "{name} hör till ett annat system",
+      "description": "mySigen listar inte anläggningens växelriktare för kontot som {name} använder. Det händer när växelriktaren har bytts, systemet inte längre delas med kontot eller kontot har ändrats. Konfigurera om anslutningen med ett konto som har åtkomst, eller ta bort den och lägg till den igen."
+    },
+    "no_permission": {
+      "title": "{name} får inte läsa från mySigen",
+      "description": "mySigen loggade in kontot men lät det inte läsa batteriinställningarna. Kontrollera i mySigen-appen att systemet är delat med kontot med behörigheten View and Edit och ladda sedan om anslutningen."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Starta batteriöverstyrning",
+      "description": "Startar en tidsstyrd batteriöverstyrning via mySigen. Anläggningen avslutar den själv när tiden är ute, även om Home Assistant inte är igång. Nekas medan en annan överstyrning eller Remote EMS är aktiv.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-anslutning",
+          "description": "Vilken anslutning som ska användas. Kan utelämnas när det bara finns en."
+        },
+        "mode": {
+          "name": "Läge",
+          "description": "Vad batteriet ska göra."
+        },
+        "duration": {
+          "name": "Varaktighet",
+          "description": "Minuter tills anläggningen återgår till sin vanliga strategi (30 till 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Avbryt batteriöverstyrning",
+      "description": "Avslutar den pågående batteriöverstyrningen, även en som startats i mySigen-appen.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-anslutning",
+          "description": "Vilken anslutning som ska användas. Kan utelämnas när det bara finns en."
+        }
+      }
+    }
+  }
+}
