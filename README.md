@@ -95,7 +95,7 @@ If Home Assistant is unavailable, an override can always be cancelled in the myS
 - **Verified on one system:** a European account, one inverter, one Gateway. Other regions, models and firmware are untested.
 - **One system per account.** The add-on uses the system the account opens by default.
 - **Only Hold Battery can be started.** Charging, discharging and self-consumption are shown when started elsewhere, but cannot be started from Home Assistant yet.
-- **English only.**
+- **English and Swedish.** Entity names stay in English in every language, so entity IDs match this documentation.
 - **The password is stored** in Home Assistant so the add-on can sign in again.
 
 ## Troubleshooting

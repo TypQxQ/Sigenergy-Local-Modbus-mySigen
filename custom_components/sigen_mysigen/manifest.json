@@ -1,6 +1,9 @@
 {
   "domain": "sigen_mysigen",
   "name": "Sigenergy ESS – mySigen cloud",
+  "categories": [
+    "energy.solar_batteries"
+  ],
   "codeowners": [
     "@TypQxQ"
   ],
@@ -16,5 +19,5 @@
     "custom_components.sigen_mysigen"
   ],
   "requirements": [],
-  "version": "0.1.0b1"
+  "version": "0.1.0b2"
 }
