@@ -1,16 +1,21 @@
 """Polling of mySigen for one linked plant."""
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 import time
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import (
+    async_create_clientsession,
+    async_get_clientsession,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -23,8 +28,10 @@ from .api import (
     MySigenRateLimitError,
     MySigenSession,
     OverrideStatus,
+    single_send_trace_config,
 )
 from .const import (
+    CONF_ALLOW_CONTROL,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
@@ -39,6 +46,21 @@ _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
 # How long an answer without Gateway readings is trusted before asking again.
 _GATEWAY_RECHECK = 600.0
+
+
+def _write_session(hass: HomeAssistant) -> Any:
+    """Create the session used for changes; it never repeats a request.
+
+    One per coordinator. Home Assistant closes it when the config entry is
+    unloaded, so it must not be kept and reused across reloads.
+    """
+    session = async_create_clientsession(
+        hass, trace_configs=[single_send_trace_config()]
+    )
+    # Second safeguard for the same thing, where aiohttp offers it.
+    if hasattr(session, "_retry_connection"):
+        session._retry_connection = False  # noqa: SLF001
+    return session
 
 
 @dataclass(frozen=True)
@@ -69,8 +91,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             entry.data[CONF_REGION],
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
+            write_session=_write_session(hass),
         )
         self.last_success: datetime | None = None
+        # One command at a time per connection.
+        self.command_lock = asyncio.Lock()
+        # How the last start or cancel ended, for the sensor and diagnostics.
+        self.last_command: dict[str, str] | None = None
         # None until mySigen has answered: True with readings, False without.
         self.has_gateway: bool | None = None
         self._gateway_recheck_at = 0.0
@@ -83,6 +110,31 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self._limits: dict[str, float] = hass.data.setdefault(DOMAIN, {}).setdefault(
             entry.entry_id, {"blocked_until": 0.0, "streak": 0}
         )
+
+    @property
+    def link_verified(self) -> bool:
+        """True when startup matched the account's station to the plant."""
+        return self.link_problem is None
+
+    @property
+    def allow_control(self) -> bool:
+        """True only when the user switched control on for this connection."""
+        return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
+
+    def record_command(self, action: str, result: str) -> None:
+        """Remember how a command ended and tell the entities."""
+        self.last_command = {
+            "action": action,
+            "result": result,
+            "at": dt_util.utcnow().isoformat(),
+        }
+        self.async_update_listeners()
+
+    def publish_override(self, status: OverrideStatus) -> None:
+        """Show a freshly read override state without waiting for a poll."""
+        gateway = self.data.gateway if self.data else None
+        self.last_success = dt_util.utcnow()
+        self.async_set_updated_data(MySigenData(status, gateway))
 
     @property
     def rate_limit_wait(self) -> float:

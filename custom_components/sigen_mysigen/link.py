@@ -7,9 +7,10 @@ those serial numbers for its station.
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .api import MySigenSession, normalize_serial
+from .const import MODBUS_DOMAIN
 
 LINK_OK = None
 NO_LOCAL_SERIAL = "no_local_serial"
@@ -46,3 +47,31 @@ async def async_link_problem(
         # Nothing to compare with, so do not ask mySigen at all.
         return NO_LOCAL_SERIAL
     return match_station(local, await session.async_device_serials())
+
+
+def remote_ems_state(hass: HomeAssistant, plant_entry_id: str) -> str | None:
+    """Return "on" or "off" for the plant's Remote EMS switch, else None.
+
+    None means the Modbus integration has no current reading, which must
+    not be taken as off.
+    """
+    for entity in er.async_entries_for_config_entry(er.async_get(hass), plant_entry_id):
+        if (
+            entity.platform == MODBUS_DOMAIN
+            and entity.domain == "switch"
+            and entity.unique_id.endswith("_plant_remote_ems_enable")
+        ):
+            state = hass.states.get(entity.entity_id)
+            if state and state.state in ("on", "off"):
+                return state.state
+            break
+    # The switch may be disabled in Home Assistant. Its register is still
+    # read, also when the Modbus connection is set to read-only.
+    try:
+        coordinator = hass.data[MODBUS_DOMAIN][plant_entry_id]["coordinator"]
+        if not coordinator.last_update_success:
+            return None
+        value = coordinator.data["plant"]["plant_remote_ems_enable"]
+    except (AttributeError, KeyError, TypeError):
+        return None
+    return {0: "off", 1: "on"}.get(value)

@@ -19,3 +19,7 @@ CONF_SCAN_INTERVAL = "scan_interval"
 DEFAULT_SCAN_INTERVAL = 30
 MIN_SCAN_INTERVAL = 15
 MAX_SCAN_INTERVAL = 60
+
+# Whether Home Assistant may start and cancel the battery override.
+# Stored in the entry options; off unless the user switches it on.
+CONF_ALLOW_CONTROL = "allow_control"

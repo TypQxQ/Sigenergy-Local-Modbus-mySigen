@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_NAME, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -35,6 +36,7 @@ from .api import (
     async_validate_login,
 )
 from .const import (
+    CONF_ALLOW_CONTROL,
     CONF_PLANT_ENTRY_ID,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
@@ -252,6 +254,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                     options={
                         **entry.options,
                         CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+                        CONF_ALLOW_CONTROL: bool(user_input[CONF_ALLOW_CONTROL]),
                     },
                 )
             errors["base"] = error
@@ -273,6 +276,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                         mode=NumberSelectorMode.BOX,
                     )
                 ),
+                vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
             }
         )
         suggested = {
@@ -280,6 +284,9 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_SCAN_INTERVAL: (user_input or {}).get(
                 CONF_SCAN_INTERVAL,
                 entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            ),
+            CONF_ALLOW_CONTROL: (user_input or {}).get(
+                CONF_ALLOW_CONTROL, entry.options.get(CONF_ALLOW_CONTROL) is True
             ),
         }
         return self.async_show_form(

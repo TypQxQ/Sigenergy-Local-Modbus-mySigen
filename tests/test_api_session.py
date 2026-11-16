@@ -57,6 +57,14 @@ class TestSession(unittest.IsolatedAsyncioTestCase):
         status = api.parse_override({"enable": False, "mode": "2", "endTime": "1794760000"})
         self.assertEqual((status.enabled, status.mode, status.ends_at), (False, None, None))
 
+    async def test_on_or_off_must_be_stated_to_count_as_explicit(self):
+        for raw, enabled in ((True, True), (False, False), (1, True), (0, False),
+                             ("true", True), ("0", False)):
+            status = api.parse_override({"enable": raw})
+            self.assertEqual((status.enabled, status.explicit), (enabled, True), raw)
+        for data in ({}, {"enable": None}, {"enable": ""}, {"enable": "maybe"}, {"enable": 2}):
+            self.assertFalse(api.parse_override(data).explicit, data)
+
     async def test_seconds_and_unusable_end_times(self):
         self.assertIsNotNone(api.parse_override({"enable": 1, "endTime": 1794760000}).ends_at)
         for value in (None, "", 0, 3600, "x"):
