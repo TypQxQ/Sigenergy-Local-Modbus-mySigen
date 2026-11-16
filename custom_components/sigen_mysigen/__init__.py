@@ -16,15 +16,16 @@ from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
-    HomeAssistantError,
     ServiceValidationError,
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import (
     config_validation as cv,
     device_registry as dr,
+    entity_registry as er,
     issue_registry as ir,
 )
+from homeassistant.helpers.translation import async_get_translations
 
 from .api import (
     CONTROL_MODES,
@@ -34,20 +35,23 @@ from .api import (
     MySigenError,
     MySigenRateLimitError,
 )
-from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
-from .control import (
-    CommandError,
-    CommandRefused,
-    async_cancel_override,
-    async_start_override,
+from .const import (
+    CONF_PLANT_ENTRY_ID,
+    DOMAIN,
+    ENTITY_NAME_LANGUAGES,
+    MODBUS_CONF_ENTITY_NAME_LANGUAGE,
+    MODBUS_DOMAIN,
 )
+from .commands import async_run_command
 from .coordinator import MySigenCoordinator
-from .link import STATION_MISMATCH, async_link_problem, remote_ems_state
+from .link import STATION_MISMATCH, async_link_problem
 
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
+# Only set up while the user has switched control on.
+CONTROL_PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SELECT]
 
 NO_PERMISSION = "no_permission"
 _ISSUES = ("plant_missing", STATION_MISMATCH, NO_PERMISSION)
@@ -93,23 +97,15 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def handle(call: ServiceCall) -> None:
         coordinator = _target_coordinator(hass, call)
-        try:
-            if call.service == SERVICE_START:
-                plant_entry_id = coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
-                await async_start_override(
-                    coordinator,
-                    mode=call.data[ATTR_MODE],
-                    minutes=call.data[ATTR_DURATION],
-                    remote_ems=lambda: remote_ems_state(hass, plant_entry_id),
-                )
-            else:
-                await async_cancel_override(coordinator)
-        except CommandRefused as err:
-            raise ServiceValidationError(str(err)) from err
-        except CommandError as err:
-            # The plant may have changed; let the next poll show it soon.
-            await coordinator.async_request_refresh()
-            raise HomeAssistantError(str(err)) from err
+        if call.service == SERVICE_START:
+            await async_run_command(
+                hass,
+                coordinator,
+                mode=call.data[ATTR_MODE],
+                minutes=call.data[ATTR_DURATION],
+            )
+        else:
+            await async_run_command(hass, coordinator)
 
     hass.services.async_register(DOMAIN, SERVICE_START, handle, schema=_START_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_CANCEL, handle, schema=_CANCEL_SCHEMA)
@@ -187,8 +183,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Retrying cannot help; the account needs more access.
             _raise_link_issue(hass, entry, NO_PERMISSION)
         raise
+    # Show entity names in the language chosen for the Modbus plant, so the
+    # entities of both integrations read the same on the shared device.
+    language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
+    if language in ENTITY_NAME_LANGUAGES:
+        coordinator.entity_name_translations = await async_get_translations(
+            hass, language, "entity", {DOMAIN}
+        )
+
+    coordinator.platforms = list(PLATFORMS)
+    if coordinator.allow_control:
+        coordinator.platforms += CONTROL_PLATFORMS
+    else:
+        # Control was switched off: its entities must not linger unavailable.
+        registry = er.async_get(hass)
+        for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+            if entity.domain in CONTROL_PLATFORMS:
+                registry.async_remove(entity.entity_id)
+
     entry.runtime_data = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
     return True
 
 
@@ -201,4 +215,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a mySigen connection."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    return await hass.config_entries.async_unload_platforms(
+        entry, entry.runtime_data.platforms
+    )

@@ -23,3 +23,15 @@ MAX_SCAN_INTERVAL = 60
 # Whether Home Assistant may start and cancel the battery override.
 # Stored in the entry options; off unless the user switches it on.
 CONF_ALLOW_CONTROL = "allow_control"
+
+# What the Start battery override button uses. Stored in the entry options;
+# changing them sends nothing to the plant.
+CONF_OVERRIDE_MINUTES = "override_minutes"
+CONF_OVERRIDE_MODE = "override_mode"
+DEFAULT_OVERRIDE_MINUTES = 60
+DEFAULT_OVERRIDE_MODE = "hold_battery"
+
+# The Modbus integration's per-plant display language for entity names.
+MODBUS_CONF_ENTITY_NAME_LANGUAGE = "entity_name_language"
+MODBUS_ENTITY_NAME_LANGUAGE_AUTO = "auto"
+ENTITY_NAME_LANGUAGES = ("da", "de", "en", "es", "fi", "fr", "it", "nb", "nl", "pl", "sv")

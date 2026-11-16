@@ -1,4 +1,4 @@
-"""Translation files must match the English keys and placeholders."""
+"""Every language must carry exactly the English keys and placeholders."""
 from __future__ import annotations
 
 import json
@@ -9,6 +9,8 @@ import unittest
 TRANSLATIONS = (
     Path(__file__).resolve().parents[1] / "custom_components/sigen_mysigen/translations"
 )
+# The same languages the Sigenergy Local Modbus integration ships.
+LANGUAGES = ("da", "de", "en", "es", "fi", "fr", "it", "nb", "nl", "pl", "sv")
 
 
 def _flatten(node, prefix=""):
@@ -19,46 +21,46 @@ def _flatten(node, prefix=""):
         yield prefix[:-1], node
 
 
+def _load(language):
+    return dict(_flatten(
+        json.loads((TRANSLATIONS / f"{language}.json").read_text(encoding="utf-8"))
+    ))
+
+
 class TestTranslations(unittest.TestCase):
     def setUp(self):
-        self.english = dict(_flatten(
-            json.loads((TRANSLATIONS / "en.json").read_text(encoding="utf-8"))
-        ))
+        self.english = _load("en")
 
-    def test_other_languages_only_use_english_keys_and_placeholders(self):
-        for path in TRANSLATIONS.glob("*.json"):
-            if path.name == "en.json":
-                continue
-            other = dict(_flatten(json.loads(path.read_text(encoding="utf-8"))))
-            self.assertFalse(set(other) - set(self.english), path.name)
-            for key, text in other.items():
+    def test_the_expected_languages_exist_and_no_others(self):
+        found = sorted(path.stem for path in TRANSLATIONS.glob("*.json"))
+        self.assertEqual(found, sorted(LANGUAGES))
+
+    def test_every_language_has_exactly_the_english_keys(self):
+        for language in LANGUAGES:
+            other = _load(language)
+            self.assertEqual(set(other) - set(self.english), set(), f"{language}: extra")
+            self.assertEqual(set(self.english) - set(other), set(), f"{language}: missing")
+
+    def test_placeholders_match_english(self):
+        for language in LANGUAGES:
+            for key, text in _load(language).items():
                 self.assertEqual(
                     sorted(re.findall(r"\{\w+\}", text)),
                     sorted(re.findall(r"\{\w+\}", self.english[key])),
-                    f"{path.name}: {key}",
+                    f"{language}: {key}",
                 )
 
-    def test_entity_names_stay_english(self):
-        # Home Assistant builds entity IDs from the name in the system
-        # language. Translating names would give new installs different IDs
-        # than the documentation uses, so only states are translated.
-        for path in TRANSLATIONS.glob("*.json"):
-            if path.name == "en.json":
-                continue
-            other = dict(_flatten(json.loads(path.read_text(encoding="utf-8"))))
-            names = [key for key in other if key.startswith("entity.") and key.endswith(".name")]
-            self.assertEqual(names, [], path.name)
+    def test_nothing_is_left_empty(self):
+        for language in LANGUAGES:
+            for key, text in _load(language).items():
+                self.assertTrue(isinstance(text, str) and text.strip(), f"{language}: {key}")
 
-    def test_everything_but_entity_names_is_translated(self):
-        expected = {
-            key for key in self.english
-            if not (key.startswith("entity.") and key.endswith(".name"))
-        }
-        for path in TRANSLATIONS.glob("*.json"):
-            if path.name == "en.json":
-                continue
-            other = dict(_flatten(json.loads(path.read_text(encoding="utf-8"))))
-            self.assertFalse(expected - set(other), path.name)
+    def test_app_wording_is_kept_where_the_user_must_find_it(self):
+        # "View and Edit" is the label in the mySigen app, whatever the
+        # language of Home Assistant.
+        key = "config.step.user.description"
+        for language in LANGUAGES:
+            self.assertIn("View and Edit", _load(language)[key], language)
 
 
 if __name__ == "__main__":

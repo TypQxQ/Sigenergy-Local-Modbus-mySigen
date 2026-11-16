@@ -21,6 +21,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    CONTROL_MODES,
+    MAX_OVERRIDE_MINUTES,
+    MIN_OVERRIDE_MINUTES,
     GatewayReadings,
     MySigenAuthError,
     MySigenConnectionError,
@@ -33,6 +36,10 @@ from .api import (
 )
 from .const import (
     CONF_ALLOW_CONTROL,
+    CONF_OVERRIDE_MINUTES,
+    CONF_OVERRIDE_MODE,
+    DEFAULT_OVERRIDE_MINUTES,
+    DEFAULT_OVERRIDE_MODE,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
     DEFAULT_SCAN_INTERVAL,
@@ -93,6 +100,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             write_session=_write_session(hass),
         )
         self.last_success: datetime | None = None
+        # Entity names in the plant's chosen language; None for Automatic.
+        self.entity_name_translations: dict[str, str] | None = None
+        # Platforms set up for this entry, so unload matches setup.
+        self.platforms: list[str] = []
         # One command at a time per connection.
         self.command_lock = asyncio.Lock()
         # How the last start or cancel ended, for the sensor and diagnostics.
@@ -103,7 +114,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.has_gateway: bool | None = None
         # Gateway sensors from an earlier start prove there is a Gateway; an
         # answer without readings then never switches the reads off.
-        self._gateway_seen_before = any(
+        self.gateway_seen_before = any(
             entity.unique_id.startswith(f"{entry.entry_id}_gateway_grid_")
             for entity in er.async_entries_for_config_entry(
                 er.async_get(hass), entry.entry_id
@@ -131,6 +142,29 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def allow_control(self) -> bool:
         """True only when the user switched control on for this connection."""
         return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
+
+    @property
+    def override_minutes(self) -> int:
+        """The duration the Start button uses, kept inside the allowed range."""
+        try:
+            minutes = int(self.config_entry.options.get(
+                CONF_OVERRIDE_MINUTES, DEFAULT_OVERRIDE_MINUTES
+            ))
+        except (TypeError, ValueError):
+            minutes = DEFAULT_OVERRIDE_MINUTES
+        return min(MAX_OVERRIDE_MINUTES, max(MIN_OVERRIDE_MINUTES, minutes))
+
+    @property
+    def override_mode(self) -> str:
+        """The override the Start button starts."""
+        mode = self.config_entry.options.get(CONF_OVERRIDE_MODE)
+        return mode if mode in CONTROL_MODES else DEFAULT_OVERRIDE_MODE
+
+    def set_option(self, key: str, value: Any) -> None:
+        """Store a local setting. Nothing is sent and nothing is reloaded."""
+        self.hass.config_entries.async_update_entry(
+            self.config_entry, options={**self.config_entry.options, key: value}
+        )
 
     def record_command(self, action: str, result: str) -> None:
         """Remember how a command ended and tell the entities."""
@@ -187,7 +221,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     def _no_gateway_answer(self) -> None:
         """mySigen answered without Gateway readings: stop asking until restart."""
-        if self.has_gateway is not True and not self._gateway_seen_before:
+        if self.has_gateway is not True and not self.gateway_seen_before:
             self.has_gateway = False
 
     async def _async_update_data(self) -> MySigenData:

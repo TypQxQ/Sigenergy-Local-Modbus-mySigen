@@ -1,0 +1,247 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "mySigen verbinden",
+        "description": "Koppel een mySigen-account aan een installatie die al is ingesteld in Sigenergy ESS.\n\n**Gebruik een apart account voor Home Assistant.** Als je hier inlogt met het account dat je in de app gebruikt, kan de app worden uitgelogd.\n\n1. Log in de mySigen-app in als eigenaar van de installatie en open **Instellingen**.\n2. Open het gedeelte voor account of delen en kies ervoor een gebruiker toe te voegen.\n3. Voer een e-mailadres in dat nog niet in mySigen wordt gebruikt en kies **View and Edit**. Een gebruiker die alleen mag kijken kan waarden lezen, maar geen acties zoals Hold Battery starten.\n4. Activeer het nieuwe account via de e-mail van mySigen en stel een wachtwoord in.\n5. Voer dat e-mailadres en wachtwoord hieronder in.\n\nHome Assistant bewaart het wachtwoord om later opnieuw te kunnen inloggen.",
+        "data": {
+          "plant_entry_id": "Installatie",
+          "region": "Regio",
+          "username": "E-mail",
+          "password": "Wachtwoord"
+        },
+        "data_description": {
+          "plant_entry_id": "De Modbus-installatie waar deze cloudwaarden bij horen.",
+          "region": "De regio waarin je mySigen-account is aangemaakt."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw inloggen bij mySigen",
+        "description": "Voer het huidige wachtwoord voor {username} in.",
+        "data": {
+          "password": "Wachtwoord"
+        }
+      },
+      "reconfigure": {
+        "title": "mySigen-verbinding wijzigen",
+        "description": "Wijzig het mySigen-account, hoe vaak Home Assistant van mySigen leest of of de batterij mag worden aangestuurd.",
+        "data": {
+          "username": "E-mail",
+          "password": "Wachtwoord",
+          "scan_interval": "Uitleesinterval",
+          "allow_control": "Batterijbesturing toestaan"
+        },
+        "data_description": {
+          "password": "Laat leeg om het huidige wachtwoord te behouden.",
+          "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
+          "allow_control": "Laat Home Assistant een tijdelijke batterij-override (Hold Battery) via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "mySigen accepteerde dit e-mailadres en wachtwoord niet voor de gekozen regio.",
+      "cannot_connect": "mySigen is niet bereikbaar. Controleer de verbinding en probeer het opnieuw.",
+      "login_rejected": "mySigen antwoordde met een serverfout in plaats van in te loggen. Nieuwere versies van mySigen accepteren deze inlogmethode mogelijk niet meer.",
+      "rate_limited": "mySigen beperkt op dit moment het aantal verzoeken. Wacht een paar minuten en probeer het opnieuw.",
+      "no_local_serial": "Sigenergy ESS heeft het serienummer van de omvormer van deze installatie nog niet gelezen, dus het account kan niet worden gecontroleerd. Probeer het opnieuw wanneer de installatie online is.",
+      "no_cloud_serial": "mySigen toonde geen apparaten voor dit account, dus het kan niet met de installatie worden vergeleken.",
+      "station_mismatch": "Dit mySigen-account hoort bij een ander systeem dan de gekozen installatie.",
+      "no_permission": "mySigen heeft het account ingelogd, maar stond niet toe dat het de batterij-instellingen las. Controleer in de mySigen-app of het systeem met de machtiging View and Edit met dit account is gedeeld."
+    },
+    "abort": {
+      "modbus_missing": "Installeer en configureer eerst Sigenergy ESS (Sigenergy Local Modbus).",
+      "modbus_too_old": "Werk Sigenergy ESS (Sigenergy Local Modbus) eerst bij naar 2.0.3 of nieuwer.",
+      "no_plant": "Stel eerst een installatie in Sigenergy ESS in.",
+      "already_configured": "Deze installatie heeft al een mySigen-verbinding.",
+      "reauth_successful": "Opnieuw ingelogd.",
+      "reconfigure_successful": "De mySigen-verbinding is bijgewerkt."
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "eu": "Europa",
+        "aus": "Australië",
+        "apac": "Azië-Pacific",
+        "us": "Verenigde Staten",
+        "cn": "China"
+      }
+    },
+    "override_mode": {
+      "options": {
+        "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Batterij-override actief"
+      }
+    },
+    "sensor": {
+      "battery_override_mode": {
+        "name": "Modus van batterij-override",
+        "state": {
+          "charging": "Laden",
+          "discharging": "Ontladen",
+          "hold_battery": "Batterij vasthouden",
+          "self_consumption": "Eigen verbruik"
+        }
+      },
+      "battery_override_end": {
+        "name": "Batterij-override eindigt"
+      },
+      "last_update": {
+        "name": "mySigen laatste update"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway netspanning fase A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway netstroom fase A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway netspanning fase B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway netstroom fase B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway netspanning fase C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway netstroom fase C"
+      },
+      "battery_override_command": {
+        "name": "Laatste resultaat van batterij-override",
+        "state": {
+          "confirmed": "Bevestigd",
+          "refused": "Geweigerd",
+          "unknown": "Uitkomst onbekend",
+          "not_confirmed": "Niet bevestigd",
+          "no_override": "Niets te annuleren"
+        }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway hoogste netspanning afgelopen minuut fase A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway laagste netspanning afgelopen minuut fase A"
+      },
+      "generator_voltage_a": {
+        "name": "Generatorspanning fase A"
+      },
+      "generator_current_a": {
+        "name": "Generatorstroom fase A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway hoogste netspanning afgelopen minuut fase B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway laagste netspanning afgelopen minuut fase B"
+      },
+      "generator_voltage_b": {
+        "name": "Generatorspanning fase B"
+      },
+      "generator_current_b": {
+        "name": "Generatorstroom fase B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway hoogste netspanning afgelopen minuut fase C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway laagste netspanning afgelopen minuut fase C"
+      },
+      "generator_voltage_c": {
+        "name": "Generatorspanning fase C"
+      },
+      "generator_current_c": {
+        "name": "Generatorstroom fase C"
+      },
+      "generator_power": {
+        "name": "Generatorvermogen"
+      },
+      "generator_frequency": {
+        "name": "Generatorfrequentie"
+      },
+      "generator_contactor": {
+        "name": "Generatorcontactor"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway fasevolgorde netzijde"
+      },
+      "gateway_firmware": {
+        "name": "Gateway firmwareversie"
+      },
+      "gateway_model": {
+        "name": "Gateway model"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Duur van batterij-override"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Te starten batterij-override",
+        "state": {
+          "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Batterij-override nu starten"
+      },
+      "stop_battery_override": {
+        "name": "Batterij-override nu stoppen"
+      }
+    }
+  },
+  "issues": {
+    "plant_missing": {
+      "title": "De installatie voor {name} bestaat niet meer",
+      "description": "De installatie in Sigenergy ESS waaraan {name} was gekoppeld, is verwijderd. Verwijder deze mySigen-verbinding en voeg haar opnieuw toe voor de gewenste installatie."
+    },
+    "station_mismatch": {
+      "title": "{name} hoort bij een ander systeem",
+      "description": "mySigen toont de omvormer van deze installatie niet voor het account dat {name} gebruikt. Dat gebeurt wanneer de omvormer is vervangen, het systeem niet meer met het account wordt gedeeld of het account is gewijzigd. Configureer de verbinding opnieuw met een account dat toegang heeft, of verwijder haar en voeg haar opnieuw toe."
+    },
+    "no_permission": {
+      "title": "{name} mag niet lezen van mySigen",
+      "description": "mySigen heeft het account ingelogd, maar stond niet toe dat het de batterij-instellingen las. Controleer in de mySigen-app of het systeem met de machtiging View and Edit met het account is gedeeld en laad de verbinding daarna opnieuw."
+    }
+  },
+  "services": {
+    "start_battery_override": {
+      "name": "Batterij-override starten",
+      "description": "Start een tijdelijke batterij-override via mySigen. De installatie beëindigt deze zelf wanneer de tijd om is, ook als Home Assistant niet draait. Wordt geweigerd zolang een andere override of Remote EMS actief is.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-verbinding",
+          "description": "Welke verbinding moet worden gebruikt. Kan worden weggelaten als er maar één is."
+        },
+        "mode": {
+          "name": "Modus",
+          "description": "Wat de batterij moet doen."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (30 tot 120)."
+        }
+      }
+    },
+    "cancel_battery_override": {
+      "name": "Batterij-override annuleren",
+      "description": "Beëindigt de lopende batterij-override, ook een die in de mySigen-app is gestart.",
+      "fields": {
+        "config_entry_id": {
+          "name": "mySigen-verbinding",
+          "description": "Welke verbinding moet worden gebruikt. Kan worden weggelaten als er maar één is."
+        }
+      }
+    }
+  }
+}

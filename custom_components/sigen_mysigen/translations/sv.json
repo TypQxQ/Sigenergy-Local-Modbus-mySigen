@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Lämna tomt för att behålla nuvarande lösenord.",
           "scan_interval": "Mellan 15 och 60 sekunder. Kortare intervall skickar fler anrop till mySigen.",
-          "allow_control": "Låter åtgärder i Home Assistant starta och avbryta en tidsstyrd batteriöverstyrning (Hold Battery) via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit."
+          "allow_control": "Låter Home Assistant starta och avbryta en tidsstyrd batteriöverstyrning (Hold Battery) via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit."
         }
       }
     },
@@ -69,13 +69,19 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Håll batteriet"
+        "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)"
       }
     }
   },
   "entity": {
+    "binary_sensor": {
+      "battery_override": {
+        "name": "Batteriöverstyrning aktiv"
+      }
+    },
     "sensor": {
       "battery_override_mode": {
+        "name": "Batteriöverstyrningens läge",
         "state": {
           "charging": "Laddar",
           "discharging": "Laddar ur",
@@ -83,7 +89,32 @@
           "self_consumption": "Egenförbrukning"
         }
       },
+      "battery_override_end": {
+        "name": "Batteriöverstyrningen slutar"
+      },
+      "last_update": {
+        "name": "mySigen senaste uppdatering"
+      },
+      "gateway_grid_voltage_a": {
+        "name": "Gateway nätspänning fas A"
+      },
+      "gateway_grid_current_a": {
+        "name": "Gateway nätström fas A"
+      },
+      "gateway_grid_voltage_b": {
+        "name": "Gateway nätspänning fas B"
+      },
+      "gateway_grid_current_b": {
+        "name": "Gateway nätström fas B"
+      },
+      "gateway_grid_voltage_c": {
+        "name": "Gateway nätspänning fas C"
+      },
+      "gateway_grid_current_c": {
+        "name": "Gateway nätström fas C"
+      },
       "battery_override_command": {
+        "name": "Senaste resultat för batteriöverstyrning",
         "state": {
           "confirmed": "Bekräftad",
           "refused": "Nekad",
@@ -91,6 +122,81 @@
           "not_confirmed": "Inte bekräftad",
           "no_override": "Inget att avbryta"
         }
+      },
+      "gateway_grid_voltage_max_a": {
+        "name": "Gateway högsta nätspänning senaste minuten fas A"
+      },
+      "gateway_grid_voltage_min_a": {
+        "name": "Gateway lägsta nätspänning senaste minuten fas A"
+      },
+      "generator_voltage_a": {
+        "name": "Generatorspänning fas A"
+      },
+      "generator_current_a": {
+        "name": "Generatorström fas A"
+      },
+      "gateway_grid_voltage_max_b": {
+        "name": "Gateway högsta nätspänning senaste minuten fas B"
+      },
+      "gateway_grid_voltage_min_b": {
+        "name": "Gateway lägsta nätspänning senaste minuten fas B"
+      },
+      "generator_voltage_b": {
+        "name": "Generatorspänning fas B"
+      },
+      "generator_current_b": {
+        "name": "Generatorström fas B"
+      },
+      "gateway_grid_voltage_max_c": {
+        "name": "Gateway högsta nätspänning senaste minuten fas C"
+      },
+      "gateway_grid_voltage_min_c": {
+        "name": "Gateway lägsta nätspänning senaste minuten fas C"
+      },
+      "generator_voltage_c": {
+        "name": "Generatorspänning fas C"
+      },
+      "generator_current_c": {
+        "name": "Generatorström fas C"
+      },
+      "generator_power": {
+        "name": "Generatoreffekt"
+      },
+      "generator_frequency": {
+        "name": "Generatorfrekvens"
+      },
+      "generator_contactor": {
+        "name": "Generatorkontaktor"
+      },
+      "gateway_grid_phase_sequence": {
+        "name": "Gateway fasföljd på nätsidan"
+      },
+      "gateway_firmware": {
+        "name": "Gateway firmwareversion"
+      },
+      "gateway_model": {
+        "name": "Gateway modell"
+      }
+    },
+    "number": {
+      "battery_override_duration": {
+        "name": "Batteriöverstyrningens längd"
+      }
+    },
+    "select": {
+      "battery_override_to_start": {
+        "name": "Batteriöverstyrning att starta",
+        "state": {
+          "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)"
+        }
+      }
+    },
+    "button": {
+      "start_battery_override": {
+        "name": "Starta batteriöverstyrning nu"
+      },
+      "stop_battery_override": {
+        "name": "Stoppa batteriöverstyrning nu"
       }
     }
   },
@@ -122,7 +228,7 @@
           "description": "Vad batteriet ska göra."
         },
         "duration": {
-          "name": "Varaktighet",
+          "name": "Längd",
           "description": "Minuter tills anläggningen återgår till sin vanliga strategi (30 till 120)."
         }
       }
