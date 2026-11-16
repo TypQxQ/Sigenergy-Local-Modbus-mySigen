@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B was tested on hardware on 2026-11-16. Steps E and F were added to the plan on 2026-11-17.
+Last updated: 2026-11-16, at version 0.1.0b7. Steps A and B are built and tested; step C is built and waiting for hardware tests, except smart loads.
 
 ## How to read the tables
 
@@ -100,15 +100,17 @@ Options of **Battery override to start**, as the user sees them:
 
 ### Settings that stay until changed back
 
+These are read when the connection starts and every ten minutes after that, and only while **Allow battery control** is on. A change reads the setting back at once. Each change follows the same rules as the battery override: nothing is sent when the fresh read already shows the requested value, the request is sent once, and it only succeeds when the plant shows the new value. Peak shaving changes write the whole schedule back, with everything else unchanged.
+
 Unlike an override, these do not end by themselves.
 
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Operating mode | Dropdown | Chooses how the plant runs day to day: Sigen AI, self-consumption or time-of-use. Modbus shows the mode but cannot choose it. | C | Later | Disabled | New read |
-| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. | C | Later | Disabled | New read |
-| Peak shaving | Switch | On: the battery helps keep grid power under the limit below. | C | Later | Disabled | New read |
-| Peak shaving grid limit | Number, kW | The grid power the plant tries to stay under while peak shaving is on. | C | Later | Disabled | New read |
-| Smart load: *name from mySigen* | Switch, one per configured load | Turns that smart load on or off. Modbus shows its power and energy but cannot switch it. | C | Later | If present, disabled | New read |
+| Operating mode | Dropdown | Chooses how the plant runs day to day: **Sigen AI**, **Use my own power first (maximum self-consumption)**, **Time of use (TOU)** or **Send all solar to the grid (fully fed to grid)**, as far as the plant offers them. Shows no option while Remote EMS or a custom profile is in use. Refused while Remote EMS is on. Modbus shows the mode but cannot choose it. | C | Testing | Disabled | New read |
+| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, since an installer setting can override it. | C | Testing | Disabled | New read |
+| Peak shaving | Switch | On: the battery helps keep grid power under the limit below. Refused when the schedule has no time slot. | C | Testing | Disabled | New read |
+| Peak shaving grid limit | Number, kW | The grid power the plant tries to stay under while peak shaving is on. Only available when the schedule has a single time slot; a schedule with several slots is changed in the mySigen app. | C | Testing | Disabled | New read |
+| Smart load: *name from mySigen* | Switch, one per configured load | Turns that smart load on or off. Modbus shows its power and energy but cannot switch it. Waits for a system with smart loads to build against; the dev plant has none. | C | Later | If present, disabled | New read |
 
 ### Highest risk
 

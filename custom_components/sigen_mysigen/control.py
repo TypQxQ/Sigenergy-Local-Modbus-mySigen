@@ -20,6 +20,8 @@ from typing import Any
 
 from .api import (
     CONTROL_MODES,
+    MAX_PEAK_SHAVING_KW,
+    OPERATING_MODES,
     MAX_OVERRIDE_MINUTES,
     MAX_POWER_LIMIT_KW,
     MIN_OVERRIDE_MINUTES,
@@ -248,3 +250,176 @@ async def async_cancel_override(
 
     async with coordinator.command_lock:
         return await _run(coordinator, "cancel", cancel())
+
+
+async def _change_setting(
+    coordinator: Any,
+    action: str,
+    *,
+    read: Callable[[], Awaitable[Any]],
+    send: Callable[[Any], Awaitable[None]],
+    expected: Callable[[Any], bool],
+    publish: Callable[[Any], None],
+    sleep: Callable[[float], Awaitable[None]],
+    before: Callable[[Any], None] | None = None,
+) -> str:
+    """Change a setting that stays: read, send once, read back.
+
+    Nothing is sent when the fresh read already shows the requested value.
+    `before` may refuse after the read, with nothing awaited before the send.
+    """
+
+    async def change() -> str:
+        _check_ready(coordinator)
+        try:
+            current = await read()
+        except MySigenRateLimitError as err:
+            coordinator.note_rate_limit(err)
+            raise CommandRefused("mySigen is limiting requests. Nothing was sent.") from err
+        except MySigenError as err:
+            raise CommandRefused(
+                f"Could not read the current setting ({err}). Nothing was sent."
+            ) from err
+        if current is None:
+            raise CommandRefused(
+                "mySigen did not report the current setting. Nothing was sent."
+            )
+        if expected(current):
+            publish(current)
+            return RESULT_CONFIRMED
+        if before is not None:
+            before(current)
+        await _send(coordinator, lambda: send(current))
+        latest = None
+        for attempt in range(2):
+            if attempt:
+                await sleep(_READBACK_DELAY)
+            try:
+                latest = await read()
+            except MySigenRateLimitError as err:
+                coordinator.note_rate_limit(err)
+                break
+            except MySigenError:
+                continue
+            if latest is not None and expected(latest):
+                publish(latest)
+                return RESULT_CONFIRMED
+        if latest is None:
+            raise CommandUnknown(
+                "mySigen accepted the change, but the setting could not be read back."
+            )
+        publish(latest)
+        raise CommandNotConfirmed("mySigen accepted the change but does not show it.")
+
+    async with coordinator.command_lock:
+        try:
+            result = await change()
+        except CommandError as err:
+            coordinator.record_setting(action, err.result)
+            raise
+        coordinator.record_setting(action, result)
+        return result
+
+
+async def async_set_operating_mode(
+    coordinator: Any,
+    *,
+    mode: str,
+    remote_ems: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Choose the operating mode. It stays until changed back."""
+    code = OPERATING_MODES.get(mode)
+    if code is None or (coordinator.available_modes and code not in coordinator.available_modes):
+        raise CommandRefused(f"Operating mode {mode!r} is not available on this plant.")
+
+    def before(_current: Any) -> None:
+        state = remote_ems()
+        if state == REMOTE_EMS_ON:
+            raise CommandRefused(
+                "Remote EMS is active on the plant. The operating mode was left unchanged."
+            )
+        if state != REMOTE_EMS_OFF:
+            raise CommandRefused(
+                "Could not confirm that Remote EMS is off. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "operating_mode",
+        read=coordinator.session.async_operating_mode,
+        send=lambda _current: coordinator.session.async_set_operating_mode(code),
+        expected=lambda current: current == code,
+        publish=coordinator.publish_operating_mode,
+        sleep=sleep,
+        before=before,
+    )
+
+
+async def async_set_battery_export(
+    coordinator: Any,
+    *,
+    enabled: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Allow or block exporting from the battery. It stays until changed back."""
+    return await _change_setting(
+        coordinator,
+        "battery_export",
+        read=coordinator.session.async_battery_export,
+        send=lambda current: coordinator.session.async_set_battery_export(current, enabled),
+        expected=lambda current: current.owner is enabled,
+        publish=coordinator.publish_battery_export,
+        sleep=sleep,
+    )
+
+
+async def async_set_peak_shaving(
+    coordinator: Any,
+    *,
+    enabled: bool | None = None,
+    limit_kw: float | None = None,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Switch peak shaving on or off, or change its limit. It stays until changed."""
+    if limit_kw is not None and not 0 < limit_kw <= MAX_PEAK_SHAVING_KW:
+        raise CommandRefused(
+            f"Peak shaving limit must be above 0 and at most {MAX_PEAK_SHAVING_KW:g} kW."
+        )
+
+    def before(current: Any) -> None:
+        if enabled and not current.slots:
+            raise CommandRefused(
+                "Peak shaving has no time slot. Set one up in the mySigen app first."
+            )
+        if limit_kw is not None and len(current.slots) != 1:
+            raise CommandRefused(
+                "The peak shaving schedule has more than one time slot. "
+                "Change the limits in the mySigen app."
+            )
+
+    def expected(current: Any) -> bool:
+        if enabled is not None and current.enabled is not enabled:
+            return False
+        if limit_kw is not None and (
+            current.single_limit is None or round(current.single_limit, 1) != round(limit_kw, 1)
+        ):
+            return False
+        return True
+
+    def schedule(current: Any) -> dict[str, Any]:
+        raw = current.with_enabled(enabled) if enabled is not None else dict(current.raw)
+        if limit_kw is not None:
+            raw = type(current)(raw).with_limit(limit_kw)
+        return raw
+
+    return await _change_setting(
+        coordinator,
+        "peak_shaving" if limit_kw is None else "peak_shaving_limit",
+        read=coordinator.session.async_peak_shaving,
+        send=lambda current: coordinator.session.async_set_peak_shaving(schedule(current)),
+        expected=expected,
+        publish=coordinator.publish_peak_shaving,
+        sleep=sleep,
+        before=before,
+    )

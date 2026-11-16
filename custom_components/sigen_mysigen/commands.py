@@ -5,6 +5,8 @@ reading and turns the outcome into Home Assistant errors.
 """
 from __future__ import annotations
 
+from collections.abc import Awaitable
+
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
@@ -44,5 +46,18 @@ async def async_run_command(
         raise ServiceValidationError(str(err)) from err
     except CommandError as err:
         # The plant may have changed; let the next poll show it soon.
+        await coordinator.async_request_refresh()
+        raise HomeAssistantError(str(err)) from err
+
+
+async def async_run_setting(coordinator: MySigenCoordinator, change: Awaitable[str]) -> None:
+    """Run a setting change for a switch, number or dropdown."""
+    try:
+        await change
+    except CommandRefused as err:
+        raise ServiceValidationError(str(err)) from err
+    except CommandError as err:
+        # The setting may have changed; read the settings again at the next poll.
+        coordinator.read_settings_soon()
         await coordinator.async_request_refresh()
         raise HomeAssistantError(str(err)) from err

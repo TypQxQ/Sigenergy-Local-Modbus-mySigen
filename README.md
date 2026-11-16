@@ -122,6 +122,19 @@ A failed action or button press raises an error, so an automation can react to i
 
 If Home Assistant is unavailable, an override can always be stopped in the mySigen app.
 
+### Settings that stay until changed back
+
+Unlike an override, these do not end by themselves. They only exist while **Allow battery control** is on, and start disabled; enable the ones you want in the entity settings.
+
+| Control | Type | What it does |
+| --- | --- | --- |
+| Operating mode | Dropdown | How the plant runs day to day: Sigen AI, Use my own power first (maximum self-consumption), Time of use (TOU) or Send all solar to the grid (fully fed to grid). Refused while Remote EMS is on. Shows no option while the plant runs in Remote EMS or a custom profile. |
+| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies right now. |
+| Peak shaving | Switch | On: the battery helps keep grid power under the peak shaving limit. |
+| Peak shaving grid limit | Number, kW | The limit, when the schedule has a single time slot. A schedule with several slots is changed in the mySigen app. |
+
+These are read every ten minutes, so a change made in the mySigen app can take that long to show. Each change is sent once and confirmed by reading it back.
+
 ## Limitations
 
 - **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.
