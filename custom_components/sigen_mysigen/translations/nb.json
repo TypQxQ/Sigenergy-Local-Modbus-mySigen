@@ -34,7 +34,7 @@
         "data_description": {
           "password": "La feltet stå tomt for å beholde gjeldende passord.",
           "scan_interval": "Mellom 15 og 60 sekunder. Kortere intervaller sender flere forespørsler til mySigen.",
-          "allow_control": "Lar Home Assistant starte og avbryte en tidsstyrt batterioverstyring (Hold Battery) via mySigen. Av som standard. Kontoen trenger tilgangen View and Edit."
+          "allow_control": "Lar Home Assistant starte og avbryte en tidsstyrt batterioverstyring via mySigen. Av som standard. Kontoen trenger tilgangen View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Hold batteriet (ingen lading, ingen utlading)"
+        "hold_battery": "Hold batteriet (ingen lading, ingen utlading)",
+        "charging": "Lad batteriet",
+        "discharging": "Lad ut batteriet",
+        "self_consumption": "Bruk min egen solstrøm først (egetforbruk)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Batterioverstyringens varighet"
+      },
+      "battery_override_power_limit": {
+        "name": "Effektgrense for batterioverstyring (0 = ingen grense)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Batterioverstyring som skal startes",
         "state": {
-          "hold_battery": "Hold batteriet (ingen lading, ingen utlading)"
+          "hold_battery": "Hold batteriet (ingen lading, ingen utlading)",
+          "charging": "Lad batteriet",
+          "discharging": "Lad ut batteriet",
+          "self_consumption": "Bruk min egen solstrøm først (egetforbruk)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Varighet",
           "description": "Minutter til anlegget går tilbake til sin vanlige strategi (30 til 120)."
+        },
+        "power_limit": {
+          "name": "Effektgrense",
+          "description": "Høyeste effekt i kW ved lading eller utlading. Utelat for ingen grense. Brukes ikke for å holde batteriet eller egetforbruk."
         }
       }
     },

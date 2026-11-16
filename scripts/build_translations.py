@@ -105,6 +105,17 @@ KEYS: dict[str, str] = {
     "services.cancel_battery_override.fields.config_entry_id.name": "v_entry",
     "services.cancel_battery_override.fields.config_entry_id.description": "v_entry_desc",
 }
+KEYS.update({
+    "selector.override_mode.options.charging": "c_long",
+    "selector.override_mode.options.discharging": "d_long",
+    "selector.override_mode.options.self_consumption": "sc_long",
+    "entity.select.battery_override_to_start.state.charging": "c_long",
+    "entity.select.battery_override_to_start.state.discharging": "d_long",
+    "entity.select.battery_override_to_start.state.self_consumption": "sc_long",
+    "entity.number.battery_override_power_limit.name": "n_power",
+    "services.start_battery_override.fields.power_limit.name": "v_power",
+    "services.start_battery_override.fields.power_limit.description": "v_power_desc",
+})
 for _phase in "abc":
     KEYS[f"entity.sensor.gateway_grid_voltage_{_phase}.name"] = f"n_volt|{_phase.upper()}"
     KEYS[f"entity.sensor.gateway_grid_current_{_phase}.name"] = f"n_curr|{_phase.upper()}"
@@ -848,6 +859,87 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_cancel_desc": "Kończy trwające wymuszenie baterii, także uruchomione w aplikacji mySigen.",
     },
 }
+
+
+# Step B: the other override modes and the power limit.
+_STEP_B: dict[str, dict[str, str]] = {
+    "sv": {
+        "c_long": "Ladda batteriet", "d_long": "Ladda ur batteriet",
+        "sc_long": "Använd min egen solel först (egenförbrukning)",
+        "n_power": "Effektgräns för batteriöverstyrning (0 = ingen gräns)",
+        "v_power": "Effektgräns",
+        "v_power_desc": "Högsta effekt i kW för laddning eller urladdning. Utelämna för ingen gräns. Används inte för att hålla batteriet eller egenförbrukning.",
+    },
+    "da": {
+        "c_long": "Oplad batteriet", "d_long": "Aflad batteriet",
+        "sc_long": "Brug min egen solstrøm først (egetforbrug)",
+        "n_power": "Effektgrænse for batterioverstyring (0 = ingen grænse)",
+        "v_power": "Effektgrænse",
+        "v_power_desc": "Største effekt i kW ved opladning eller afladning. Udelad for ingen grænse. Bruges ikke til at holde batteriet eller egetforbrug.",
+    },
+    "nb": {
+        "c_long": "Lad batteriet", "d_long": "Lad ut batteriet",
+        "sc_long": "Bruk min egen solstrøm først (egetforbruk)",
+        "n_power": "Effektgrense for batterioverstyring (0 = ingen grense)",
+        "v_power": "Effektgrense",
+        "v_power_desc": "Høyeste effekt i kW ved lading eller utlading. Utelat for ingen grense. Brukes ikke for å holde batteriet eller egetforbruk.",
+    },
+    "de": {
+        "c_long": "Batterie laden", "d_long": "Batterie entladen",
+        "sc_long": "Zuerst meinen eigenen Solarstrom nutzen (Eigenverbrauch)",
+        "n_power": "Leistungsgrenze der Batterie-Übersteuerung (0 = keine Grenze)",
+        "v_power": "Leistungsgrenze",
+        "v_power_desc": "Höchstleistung in kW beim Laden oder Entladen. Weglassen für keine Grenze. Wird beim Halten der Batterie und beim Eigenverbrauch nicht verwendet.",
+    },
+    "nl": {
+        "c_long": "Batterij laden", "d_long": "Batterij ontladen",
+        "sc_long": "Eerst mijn eigen zonnestroom gebruiken (eigen verbruik)",
+        "n_power": "Vermogenslimiet van batterij-override (0 = geen limiet)",
+        "v_power": "Vermogenslimiet",
+        "v_power_desc": "Maximaal vermogen in kW bij laden of ontladen. Weglaten voor geen limiet. Niet gebruikt bij batterij vasthouden of eigen verbruik.",
+    },
+    "fr": {
+        "c_long": "Charger la batterie", "d_long": "Décharger la batterie",
+        "sc_long": "Utiliser d'abord ma propre énergie solaire (autoconsommation)",
+        "n_power": "Limite de puissance du forçage de la batterie (0 = aucune limite)",
+        "v_power": "Limite de puissance",
+        "v_power_desc": "Puissance maximale en kW pour une charge ou une décharge. Omettez-la pour aucune limite. Non utilisée pour le maintien de la batterie ni l'autoconsommation.",
+    },
+    "es": {
+        "c_long": "Cargar la batería", "d_long": "Descargar la batería",
+        "sc_long": "Usar primero mi propia energía solar (autoconsumo)",
+        "n_power": "Límite de potencia del forzado de batería (0 = sin límite)",
+        "v_power": "Límite de potencia",
+        "v_power_desc": "Potencia máxima en kW para una carga o descarga. Omítelo para no poner límite. No se usa al mantener la batería ni en autoconsumo.",
+    },
+    "it": {
+        "c_long": "Carica la batteria", "d_long": "Scarica la batteria",
+        "sc_long": "Usa prima la mia energia solare (autoconsumo)",
+        "n_power": "Limite di potenza della forzatura batteria (0 = nessun limite)",
+        "v_power": "Limite di potenza",
+        "v_power_desc": "Potenza massima in kW per una carica o scarica. Omettilo per nessun limite. Non usato per il mantenimento della batteria né per l'autoconsumo.",
+    },
+    "fi": {
+        "c_long": "Lataa akku", "d_long": "Pura akku",
+        "sc_long": "Käytä ensin omaa aurinkosähköä (omakäyttö)",
+        "n_power": "Akun ohituksen tehoraja (0 = ei rajaa)",
+        "v_power": "Tehoraja",
+        "v_power_desc": "Suurin teho kW:na latauksessa tai purussa. Jätä pois, jos rajaa ei tarvita. Ei käytössä akun pidossa eikä omakäytössä.",
+    },
+    "pl": {
+        "c_long": "Ładuj baterię", "d_long": "Rozładuj baterię",
+        "sc_long": "Najpierw używaj własnej energii słonecznej (autokonsumpcja)",
+        "n_power": "Limit mocy wymuszenia baterii (0 = bez limitu)",
+        "v_power": "Limit mocy",
+        "v_power_desc": "Maksymalna moc w kW przy ładowaniu lub rozładowaniu. Pomiń, aby nie ustawiać limitu. Nie dotyczy wstrzymania baterii ani autokonsumpcji.",
+    },
+}
+for _language, _extra in _STEP_B.items():
+    LANGUAGES[_language].update(_extra)
+    # Control now covers every override mode, not only Hold Battery.
+    LANGUAGES[_language]["allow_help"] = LANGUAGES[_language]["allow_help"].replace(
+        " (Hold Battery)", ""
+    )
 
 
 def _flatten(node, prefix=""):

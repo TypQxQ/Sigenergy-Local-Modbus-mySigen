@@ -44,8 +44,8 @@ class _FakeSession:
             raise answer
         return answer
 
-    async def async_start_override(self, mode, minutes):
-        self.writes.append(("start", mode, minutes))
+    async def async_start_override(self, mode, minutes, power_kw=None):
+        self.writes.append(("start", mode, minutes) + ((power_kw,) if power_kw else ()))
         if self.write_error:
             raise self.write_error
 
@@ -79,12 +79,14 @@ async def _no_sleep(_seconds):
 
 
 class TestStart(unittest.IsolatedAsyncioTestCase):
-    async def _start(self, coordinator, mode="hold_battery", minutes=60, remote_ems="off"):
+    async def _start(self, coordinator, mode="hold_battery", minutes=60, remote_ems="off",
+                     power_kw=None):
         if not callable(remote_ems):
             state = remote_ems
             remote_ems = lambda: state  # noqa: E731
         return await control.async_start_override(
-            coordinator, mode=mode, minutes=minutes, remote_ems=remote_ems, sleep=_no_sleep
+            coordinator, mode=mode, minutes=minutes, remote_ems=remote_ems,
+            power_kw=power_kw, sleep=_no_sleep,
         )
 
     async def test_confirmed_start_sends_once_and_publishes(self):
@@ -101,7 +103,9 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
             (dict(verified=False), {}, "could not be checked"),
             ({}, dict(remote_ems="on"), "Remote EMS is active"),
             ({}, dict(remote_ems=None), "Could not confirm"),
-            ({}, dict(mode="charging"), "not available"),
+            ({}, dict(mode="turbo"), "not available"),
+            ({}, dict(power_kw=0.0), "Power limit"),
+            ({}, dict(power_kw=100.5), "Power limit"),
             ({}, dict(minutes=29), "Duration"),
             ({}, dict(minutes=121), "Duration"),
         ]
@@ -131,6 +135,21 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(control.CommandRefused, "did not state"):
             await self._start(coordinator)
         self.assertEqual(coordinator.session.writes, [])
+
+    async def test_every_mode_is_started_and_confirmed_by_its_own_state(self):
+        for mode, power in (("charging", 3.5), ("discharging", None),
+                            ("self_consumption", None)):
+            running = api.OverrideStatus(True, mode, None)
+            coordinator = _FakeCoordinator([OFF, running])
+            self.assertEqual(await self._start(coordinator, mode=mode, power_kw=power),
+                             "confirmed")
+            expected = ("start", mode, 60) + ((power,) if power else ())
+            self.assertEqual(coordinator.session.writes, [expected])
+
+    async def test_a_different_running_mode_is_not_confirmation(self):
+        coordinator = _FakeCoordinator([OFF, HOLD, HOLD])
+        with self.assertRaises(control.CommandNotConfirmed):
+            await self._start(coordinator, mode="charging")
 
     async def test_running_override_is_left_alone(self):
         for running in (HOLD, CHARGE):
@@ -280,9 +299,32 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
 
     async def test_only_verified_modes_and_durations_can_be_sent(self):
         http, client = self._client()
-        for mode, minutes in (("charging", 60), ("hold_battery", 29), ("hold_battery", 121)):
+        for mode, minutes in (("turbo", 60), ("hold_battery", 29), ("hold_battery", 121)):
             with self.assertRaises(ValueError):
                 await client.async_start_override(mode, minutes)
+        self.assertEqual(len(http.requests), 0)
+
+    async def test_power_limit_is_sent_only_for_charging_and_discharging(self):
+        ok = _Response(200, {"code": 0, "data": True})
+        cases = [
+            (("charging", 60, 3.5), "0", "3.500"),
+            (("charging", 60, None), "0", "4294967.295"),
+            (("discharging", 45, 0.25), "1", "0.250"),
+            (("self_consumption", 30, 5.0), "3", ""),
+            (("hold_battery", 30, 5.0), "2", ""),
+        ]
+        for args, code, limit in cases:
+            http, client = self._client(ok)
+            await client.async_start_override(*args)
+            body = http.requests[1][2]
+            self.assertEqual((body["mode"], body["powerLimitation"]), (code, limit), args)
+            self.assertEqual(body["duration"], str(args[1]))
+
+    async def test_power_limit_out_of_range_sends_nothing(self):
+        http, client = self._client()
+        for power in (0.0, -1.0, 100.1):
+            with self.assertRaises(ValueError):
+                await client.async_start_override("charging", 60, power)
         self.assertEqual(len(http.requests), 0)
 
     async def test_write_answers_are_sorted_by_meaning(self):

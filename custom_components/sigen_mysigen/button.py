@@ -32,6 +32,7 @@ class StartOverride(MySigenEntity, ButtonEntity):
             self.coordinator,
             mode=self.coordinator.override_mode,
             minutes=self.coordinator.override_minutes,
+            power_kw=self.coordinator.override_power_kw,
         )
 
 

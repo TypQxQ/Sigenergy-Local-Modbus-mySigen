@@ -38,7 +38,14 @@ OVERRIDE_MODES: dict[str, str] = {
 
 # Modes that may be started from Home Assistant. Others are added only
 # after each has been verified on hardware.
-CONTROL_MODES: tuple[str, ...] = ("hold_battery",)
+CONTROL_MODES: tuple[str, ...] = (
+    "hold_battery", "charging", "discharging", "self_consumption",
+)
+# Modes where a power limit applies.
+POWER_MODES: tuple[str, ...] = ("charging", "discharging")
+MAX_POWER_LIMIT_KW = 100.0
+# What the app sends for "no limit" in the power modes.
+_UNLIMITED_POWER = "4294967.295"
 # The range the reference client enforces; wider ranges are unverified.
 MIN_OVERRIDE_MINUTES = 30
 MAX_OVERRIDE_MINUTES = 120
@@ -606,19 +613,33 @@ class MySigenSession:
         station_id = await self.async_station_id()
         return int(station_id) if station_id.isdigit() else station_id
 
-    async def async_start_override(self, mode: str, minutes: int) -> None:
-        """Ask the plant to start a timed override. Sent once."""
+    async def async_start_override(
+        self, mode: str, minutes: int, power_kw: float | None = None
+    ) -> None:
+        """Ask the plant to start a timed override. Sent once.
+
+        `power_kw` caps charging or discharging; None means no limit. It is
+        ignored for the other modes, as the app does.
+        """
         if mode not in CONTROL_MODES:
             raise ValueError(f"Mode {mode!r} is not available for control")
         if not MIN_OVERRIDE_MINUTES <= minutes <= MAX_OVERRIDE_MINUTES:
             raise ValueError("Duration is outside the allowed range")
+        if power_kw is not None and not 0 < power_kw <= MAX_POWER_LIMIT_KW:
+            raise ValueError("Power limit is outside the allowed range")
         code = next(key for key, name in OVERRIDE_MODES.items() if name == mode)
+        if mode not in POWER_MODES:
+            limit = ""
+        elif power_kw is None:
+            limit = _UNLIMITED_POWER
+        else:
+            limit = f"{power_kw:.3f}"
         await self._async_put("start battery override", _OVERRIDE_WRITE_PATH, {
             "enable": True,
             "stationId": await self._async_station_number(),
             "mode": code,
             "duration": str(minutes),
-            "powerLimitation": "",
+            "powerLimitation": limit,
         })
 
     async def async_cancel_override(self) -> None:

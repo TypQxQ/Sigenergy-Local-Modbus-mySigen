@@ -81,6 +81,7 @@ async def async_get_config_entry_diagnostics(
         "allowed": coordinator.allow_control,
         "button_mode": coordinator.override_mode,
         "button_minutes": coordinator.override_minutes,
+        "button_power_kw": coordinator.override_power_kw,
         "last_command": coordinator.last_command,
     }
     gateway = data.gateway if data else None

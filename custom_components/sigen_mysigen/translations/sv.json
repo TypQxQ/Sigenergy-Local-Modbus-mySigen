@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Lämna tomt för att behålla nuvarande lösenord.",
           "scan_interval": "Mellan 15 och 60 sekunder. Kortare intervall skickar fler anrop till mySigen.",
-          "allow_control": "Låter Home Assistant starta och avbryta en tidsstyrd batteriöverstyrning (Hold Battery) via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit."
+          "allow_control": "Låter Home Assistant starta och avbryta en tidsstyrd batteriöverstyrning via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)"
+        "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)",
+        "charging": "Ladda batteriet",
+        "discharging": "Ladda ur batteriet",
+        "self_consumption": "Använd min egen solel först (egenförbrukning)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Batteriöverstyrningens längd"
+      },
+      "battery_override_power_limit": {
+        "name": "Effektgräns för batteriöverstyrning (0 = ingen gräns)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Batteriöverstyrning att starta",
         "state": {
-          "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)"
+          "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)",
+          "charging": "Ladda batteriet",
+          "discharging": "Ladda ur batteriet",
+          "self_consumption": "Använd min egen solel först (egenförbrukning)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Längd",
           "description": "Minuter tills anläggningen återgår till sin vanliga strategi (30 till 120)."
+        },
+        "power_limit": {
+          "name": "Effektgräns",
+          "description": "Högsta effekt i kW för laddning eller urladdning. Utelämna för ingen gräns. Används inte för att hålla batteriet eller egenförbrukning."
         }
       }
     },

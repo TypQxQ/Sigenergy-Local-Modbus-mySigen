@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Pozostaw puste, aby zachować obecne hasło.",
           "scan_interval": "Od 15 do 60 sekund. Krótsze interwały wysyłają więcej żądań do mySigen.",
-          "allow_control": "Pozwala Home Assistant uruchamiać i anulować czasowe wymuszenie pracy baterii (Hold Battery) przez mySigen. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit."
+          "allow_control": "Pozwala Home Assistant uruchamiać i anulować czasowe wymuszenie pracy baterii przez mySigen. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Wstrzymaj baterię (bez ładowania i rozładowania)"
+        "hold_battery": "Wstrzymaj baterię (bez ładowania i rozładowania)",
+        "charging": "Ładuj baterię",
+        "discharging": "Rozładuj baterię",
+        "self_consumption": "Najpierw używaj własnej energii słonecznej (autokonsumpcja)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Czas trwania wymuszenia baterii"
+      },
+      "battery_override_power_limit": {
+        "name": "Limit mocy wymuszenia baterii (0 = bez limitu)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Wymuszenie baterii do uruchomienia",
         "state": {
-          "hold_battery": "Wstrzymaj baterię (bez ładowania i rozładowania)"
+          "hold_battery": "Wstrzymaj baterię (bez ładowania i rozładowania)",
+          "charging": "Ładuj baterię",
+          "discharging": "Rozładuj baterię",
+          "self_consumption": "Najpierw używaj własnej energii słonecznej (autokonsumpcja)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Czas trwania",
           "description": "Minuty do powrotu instalacji do zwykłej strategii (od 30 do 120)."
+        },
+        "power_limit": {
+          "name": "Limit mocy",
+          "description": "Maksymalna moc w kW przy ładowaniu lub rozładowaniu. Pomiń, aby nie ustawiać limitu. Nie dotyczy wstrzymania baterii ani autokonsumpcji."
         }
       }
     },

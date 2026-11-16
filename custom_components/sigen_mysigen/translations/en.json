@@ -34,7 +34,7 @@
         "data_description": {
           "password": "Leave empty to keep the current password.",
           "scan_interval": "Between 15 and 60 seconds. Shorter intervals send more requests to mySigen.",
-          "allow_control": "Lets Home Assistant actions start and cancel a timed battery override (Hold Battery) through mySigen. Off by default. The account needs View and Edit access."
+          "allow_control": "Lets Home Assistant actions start and cancel a timed battery override through mySigen. Off by default. The account needs View and Edit access."
         }
       }
     },
@@ -69,7 +69,10 @@
     },
     "override_mode": {
       "options": {
-        "hold_battery": "Hold battery (no charging, no discharging)"
+        "hold_battery": "Hold battery (no charging, no discharging)",
+        "charging": "Charge battery",
+        "discharging": "Discharge battery",
+        "self_consumption": "Use my own solar first (self-consumption)"
       }
     }
   },
@@ -181,13 +184,19 @@
     "number": {
       "battery_override_duration": {
         "name": "Battery override duration"
+      },
+      "battery_override_power_limit": {
+        "name": "Battery override power limit (0 = no limit)"
       }
     },
     "select": {
       "battery_override_to_start": {
         "name": "Battery override to start",
         "state": {
-          "hold_battery": "Hold battery (no charging, no discharging)"
+          "hold_battery": "Hold battery (no charging, no discharging)",
+          "charging": "Charge battery",
+          "discharging": "Discharge battery",
+          "self_consumption": "Use my own solar first (self-consumption)"
         }
       }
     },
@@ -230,6 +239,10 @@
         "duration": {
           "name": "Duration",
           "description": "Minutes until the plant returns to its normal strategy (30 to 120)."
+        },
+        "power_limit": {
+          "name": "Power limit",
+          "description": "Most power in kW for a charge or discharge override. Leave out for no limit. Not used for hold or self-consumption."
         }
       }
     },
