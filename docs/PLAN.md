@@ -4,14 +4,14 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B was tested on hardware on 2026-11-16.
+Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B was tested on hardware on 2026-11-16. Steps E and F were added to the plan on 2026-11-17.
 
 ## How to read the tables
 
 | Column | Meaning |
 | --- | --- |
 | **Step** | When it is built. See [Steps](#steps). |
-| **Status** | **Done**: released or merged. **Testing**: built, waiting for a test on real hardware. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. |
+| **Status** | **Done**: released or merged. **Testing**: built, waiting for a test on real hardware. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. **Not planned**: no way through mySigen is known. |
 | **Default** | **Enabled**: appears as soon as the add-on is set up. **Disabled**: created but switched off until the user enables it. **If present**: only created when the equipment exists. Generator sensors are **Disabled** instead, because mySigen reports generator values on every Gateway, also without a generator. |
 | **Data** | **Have**: already read. **Free**: already inside an answer the add-on fetches on every poll, so it costs no extra request. **New read**: needs a request the add-on does not make yet. **Local**: stored in Home Assistant, nothing is sent. |
 
@@ -23,8 +23,12 @@ Last updated: 2026-11-16, at version 0.1.0b6. Steps A and B are built. Step B wa
 | **B** | More override modes: charge, discharge, self-consumption | No | Yes, timed and self-ending |
 | **C** | Settings that stay until changed back: operating mode, battery export, peak shaving, smart loads | Yes | Yes, permanently |
 | **D** | Going off-grid, tariff windows | Yes | Yes, highest risk |
+| **E** | AC and DC charger sensors and controls that Modbus does not have, or that Modbus only offers with Remote EMS on | Yes | Yes, charging and vehicle discharging |
+| **F** | What Modbus can only do with Remote EMS on, offered through mySigen so it also works in Sigen AI mode | Mostly no | Yes, timed and self-ending |
 
-Each mode or setting in steps B to D is tested on real hardware before it is switched on for users.
+Each mode or setting in steps B to F is tested on real hardware before it is switched on for users.
+
+The steps are groups, not a fixed order. Step F is largely done already through step B.
 
 ## Sensors
 
@@ -113,6 +117,71 @@ Unlike an override, these do not end by themselves.
 | Disconnect from the grid (run on battery and solar) | Switch | On: the home is separated from the grid and runs as an island. Off: reconnects. Needs its own setting in addition to Allow battery control. | D | Later | Disabled | New read |
 | Set price windows | Action | Replaces the list of buy and sell price windows used by the plant. | D | Later | Disabled | New read |
 
+## Step E: EV chargers
+
+The Modbus integration already covers the basics, and those stay there:
+
+| Charger | Modbus already has |
+| --- | --- |
+| AC charger | Start charging, Stop charging, Charger output current. System state, charging power, total energy, ratings, alarms. |
+| DC charger | Start charging, Stop charging, Maximum charging power limit, Maximum discharging power limit. Running state, vehicle charge level and voltage, current, power, energy and duration per session, totals, ratings. |
+
+None of those Modbus charger controls needs Remote EMS. The one charger function that does is letting the car supply power (V2G), which Modbus only offers as a Remote EMS control mode.
+
+**Everything below is a candidate.** No charger answer from mySigen has been read yet. As with the Gateway, the first piece of work is to read the real answer with its values masked, then keep the rows that exist and drop the rest. The development plant has a DC charger and no AC charger, so AC charger rows need a second tester.
+
+### Charger sensors
+
+| Sensor | What it tells you | Charger | Step | Status | Default | Data |
+| --- | --- | --- | --- | --- | --- | --- |
+| Charging mode in use | How the charger decides when to charge: straight away, on solar surplus only, or on a schedule. | AC, DC | E | Later | Enabled | New read |
+| Next scheduled charging start | When the next scheduled charging session begins. | AC, DC | E | Later | Enabled | New read |
+| Energy this session | How much energy has gone into the car in this session. Modbus has it for the DC charger only. | AC | E | Later | Enabled | New read |
+| Session duration | How long the current session has lasted. Modbus has it for the DC charger only. | AC | E | Later | Enabled | New read |
+| Charging current and voltage per phase | What each phase delivers to the car. Modbus has charging power only. | AC | E | Later | Disabled | New read |
+| Vehicle charge level to stop at | The charge level at which charging stops. | DC | E | Later | Enabled | New read |
+| Vehicle discharging allowed | Whether the car may supply power to the home or grid. | DC | E | Later | Enabled | New read |
+| Charger firmware version | The charger's software version. | AC, DC | E | Later | Enabled | New read |
+
+### Charger controls
+
+These follow the same rules as the battery override: only created while control is allowed, sent once, checked afterwards.
+
+| Control | Type | What it does | Charger | In Modbus | Step | Status | Default | Data |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Charging mode | Dropdown | Chooses when the charger charges: **Charge now**, **Charge on solar surplus only**, or **Charge on schedule**. | AC, DC | No | E | Later | Disabled | New read |
+| Set charging schedule | Action | Sets the times at which scheduled charging runs. | AC, DC | No | E | Later | Disabled | New read |
+| Stop charging at vehicle charge level | Number, % | Charging stops when the car reaches this level. | DC | No | E | Later | Disabled | New read |
+| Let the car power the home | Switch or timed start | The car supplies the home, and the grid if allowed. Works without switching the plant to Remote EMS. | DC | Only with Remote EMS (V2G mode) | E | Later | Disabled | New read |
+| Keep at least this much in the car | Number, % | The car stops supplying power at this charge level. | DC | No | E | Later | Disabled | New read |
+
+## Step F: what Modbus only does with Remote EMS on
+
+Switching on Remote EMS takes the plant out of Sigen AI mode, and it stays that way until something switches it back. The controls below reach the same result through mySigen while Sigen AI stays the operating mode, and they end by themselves.
+
+| Modbus control (needs Remote EMS) | What it does | Through mySigen | Step | Status |
+| --- | --- | --- | --- | --- |
+| Remote EMS control mode: **Standby** | The battery neither charges nor discharges. | Battery override: Hold battery | B | Done |
+| Remote EMS control mode: **Maximum Self Consumption** | Solar and battery are used before the grid. | Battery override: Use my own solar first | B | Done |
+| Remote EMS control mode: **Command Charging (Grid First)** | The battery charges, taking grid power first. | Battery override: Charge battery | B | Done |
+| Remote EMS control mode: **Command Charging (PV First)** | The battery charges, taking solar power first. | Battery override: Charge battery, with a choice of **solar first** or **grid first** | F | Later |
+| Remote EMS control mode: **Command Discharging (ESS First)** | The plant sends power out, taking it from the battery first. | Battery override: Discharge battery | B | Done |
+| Remote EMS control mode: **Command Discharging (PV First)** | The plant sends power out, taking it from solar first. | Battery override: Discharge battery, with a choice of **battery first** or **solar first** | F | Later |
+| Remote EMS control mode: **V2G** | The car supplies power through the DC charger. | Let the car power the home | E | Later |
+| Active power fixed adjustment | Asks for an exact power in kW. | Battery override power limit. It caps the power; it does not set an exact value. | B | Done |
+| Active power percentage adjustment | Asks for power as a share of the rating. | Battery override power limit, in kW | B | Done |
+| Reactive power, Q/S and power factor adjustments | Shape the reactive power the inverter delivers. | None known | – | Not planned |
+| Per-phase active and reactive power setpoints | Set power separately for each phase. | None known | – | Not planned |
+
+New in step F:
+
+| Control | Type | What it does | Step | Status | Default | Data |
+| --- | --- | --- | --- | --- | --- | --- |
+| Charge the battery from | Dropdown | **Solar first, then grid** or **Grid first**. Used by a Charge battery override. | F | Later | Disabled | New read |
+| Discharge from | Dropdown | **Battery first** or **Solar first**. Used by a Discharge battery override. | F | Later | Disabled | New read |
+
+Whether mySigen lets an override choose its source is not known. If it does not, these two rows become Not planned, and the Remote EMS route in Modbus remains the way to do it.
+
 ## Languages
 
 The add-on follows the Sigenergy Local Modbus integration, so entities from both read the same on one device.
@@ -135,11 +204,13 @@ These exist in mySigen too but are not added, because the Modbus integration alr
 - power, energy and battery readings, including per-phase power at the grid connection;
 - inverter voltage, current and frequency;
 - grid import and export limits, battery charge and discharge power limits, backup and cut-off charge levels;
-- EV charger readings and controls;
+- EV charger start and stop, current and power limits, and the readings listed under [Step E](#step-e-ev-chargers);
 - plant status, alarms and smart load readings.
 
 ## Open questions
 
 - Which durations mySigen accepts outside 30 to 120 minutes.
 - Whether a system without a Gateway answers the Gateway read with an empty answer or an error. Either way it is asked again once an hour, not on every poll.
+- What mySigen offers for AC and DC chargers. Every row in step E is a candidate until a real answer has been read.
+- Whether an override can choose between solar and grid, or battery and solar, as its source (step F).
 - Whether Sigenergy permits a published integration to use this interface.
