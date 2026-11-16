@@ -506,7 +506,7 @@ class MySigenSession:
 
     async def _async_put(self, what: str, path: str, body: dict[str, Any]) -> None:
         """Send one change. It is never repeated, not even after a sign-out."""
-        if self._write_session is None:
+        if self._write_session is None or self._write_session.closed:
             raise MySigenRejectedError(f"{what}: not sent, no single-send connection")
         try:
             await self._async_ensure_token()
@@ -535,7 +535,7 @@ class MySigenSession:
             raise MySigenUnknownOutcome(
                 f"{what}: connection dropped after sending"
             ) from err
-        except (aiohttp.ClientError, TimeoutError) as err:
+        except Exception as err:  # noqa: BLE001 - any failure here is ambiguous
             # The request may have arrived. Only a later read can tell.
             raise MySigenUnknownOutcome(f"{what}: {type(err).__name__}") from err
 

@@ -49,17 +49,18 @@ _GATEWAY_RECHECK = 600.0
 
 
 def _write_session(hass: HomeAssistant) -> Any:
-    """Return the one session used for changes; it never repeats a request."""
-    store = hass.data.setdefault(DOMAIN, {})
-    if "write_session" not in store:
-        session = async_create_clientsession(
-            hass, trace_configs=[single_send_trace_config()]
-        )
-        # Second safeguard for the same thing, where aiohttp offers it.
-        if hasattr(session, "_retry_connection"):
-            session._retry_connection = False  # noqa: SLF001
-        store["write_session"] = session
-    return store["write_session"]
+    """Create the session used for changes; it never repeats a request.
+
+    One per coordinator. Home Assistant closes it when the config entry is
+    unloaded, so it must not be kept and reused across reloads.
+    """
+    session = async_create_clientsession(
+        hass, trace_configs=[single_send_trace_config()]
+    )
+    # Second safeguard for the same thing, where aiohttp offers it.
+    if hasattr(session, "_retry_connection"):
+        session._retry_connection = False  # noqa: SLF001
+    return session
 
 
 @dataclass(frozen=True)

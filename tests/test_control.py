@@ -224,6 +224,8 @@ class TestCancel(unittest.IsolatedAsyncioTestCase):
 
 
 class _Http:
+    closed = False
+
     """Fake aiohttp session that records the method and body of each request."""
 
     def __init__(self, replies):
@@ -360,6 +362,24 @@ class TestSingleSend(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(api.MySigenRejectedError):
             await client.async_start_override("hold_battery", 30)
         self.assertEqual([r[0] for r in http.requests].count("PUT"), 0)
+
+    async def test_closed_write_session_sends_nothing(self):
+        http, closed = _Http([STATION]), _Http([])
+        closed.closed = True
+        client = api.MySigenSession(
+            http, "eu", "u@example.invalid", "p", write_session=closed
+        )
+        with self.assertRaises(api.MySigenRejectedError):
+            await client.async_start_override("hold_battery", 30)
+        self.assertEqual(closed.requests, [])
+
+    async def test_unexpected_failure_while_sending_is_unknown(self):
+        http = _Http([STATION, RuntimeError("boom")])
+        client = api.MySigenSession(
+            http, "eu", "u@example.invalid", "p", write_session=http
+        )
+        with self.assertRaises(api.MySigenUnknownOutcome):
+            await client.async_start_override("hold_battery", 30)
 
 
 if __name__ == "__main__":
