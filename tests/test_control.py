@@ -9,6 +9,8 @@ import types
 import unittest
 from unittest.mock import patch
 
+import aiohttp
+
 from test_api_login import _Response, api
 
 # control.py imports ".api" relatively; give it a package to live in.
@@ -250,7 +252,9 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
 
     def _client(self, *replies):
         http = _Http([STATION, *replies])
-        return http, api.MySigenSession(http, "eu", "u@example.invalid", "p")
+        return http, api.MySigenSession(
+            http, "eu", "u@example.invalid", "p", write_session=http
+        )
 
     async def test_start_and_cancel_bodies(self):
         ok = _Response(200, {"code": 0, "data": True})
@@ -277,7 +281,9 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
             (aiohttp.ClientError("x"), api.MySigenUnknownOutcome),
             (TimeoutError(), api.MySigenUnknownOutcome),
             (_Response(200, ValueError("no json")), api.MySigenUnknownOutcome),
-            (_Response(500, None), api.MySigenRejectedError),
+            (_Response(500, None), api.MySigenUnknownOutcome),
+            (_Response(502, {"code": 0}), api.MySigenUnknownOutcome),
+            (_Response(400, {}), api.MySigenRejectedError),
             (_Response(200, {"code": 1234}), api.MySigenRejectedError),
             (_Response(403, {}), api.MySigenPermissionError),
             (_Response(401, {}), api.MySigenAuthError),
@@ -289,6 +295,71 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
                 await client.async_start_override("hold_battery", 30)
             # One change request, never repeated, not even after a sign-out.
             self.assertEqual([r[0] for r in http.requests].count("PUT"), 1)
+
+
+class TestSingleSend(unittest.IsolatedAsyncioTestCase):
+    """Against a real aiohttp session and a server that drops the connection."""
+
+    def setUp(self):
+        patcher = patch.object(api, "encrypt_password", return_value="ENC")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    async def _serve(self):
+        received = []
+
+        async def handle(reader, writer):
+            # Read the whole request, then hang up without answering.
+            head = await reader.readuntil(b"\r\n\r\n")
+            length = int(next(
+                (line.split(b":")[1] for line in head.split(b"\r\n")
+                 if line.lower().startswith(b"content-length")), b"0"))
+            await reader.readexactly(length)
+            received.append(head.split(b" ")[0])
+            writer.close()
+
+        server = await asyncio.start_server(handle, "127.0.0.1", 0)
+        self.addAsyncCleanup(self._close, server)
+        return server.sockets[0].getsockname()[1], received
+
+    @staticmethod
+    async def _close(server):
+        server.close()
+        await server.wait_closed()
+
+    async def _send(self, write_session, port):
+        reads = _Http([STATION])
+        client = api.MySigenSession(
+            reads, "eu", "u@example.invalid", "p", write_session=write_session
+        )
+        with patch.dict(api.REGIONS, {"eu": f"http://127.0.0.1:{port}/"}):
+            await client.async_start_override("hold_battery", 30)
+
+    @unittest.skipUnless(hasattr(aiohttp, "TraceConfig"), "needs the real aiohttp")
+    async def test_dropped_connection_is_not_sent_again(self):
+        port, received = await self._serve()
+        session = aiohttp.ClientSession(trace_configs=[api.single_send_trace_config()])
+        self.addAsyncCleanup(session.close)
+        with self.assertRaises(api.MySigenUnknownOutcome):
+            await self._send(session, port)
+        self.assertEqual(received, [b"PUT"])
+
+    @unittest.skipUnless(hasattr(aiohttp, "TraceConfig"), "needs the real aiohttp")
+    async def test_without_the_guard_aiohttp_would_send_twice(self):
+        # Documents why the guard exists; fails if aiohttp stops repeating.
+        port, received = await self._serve()
+        session = aiohttp.ClientSession()
+        self.addAsyncCleanup(session.close)
+        with self.assertRaises(api.MySigenUnknownOutcome):
+            await self._send(session, port)
+        self.assertEqual(received, [b"PUT", b"PUT"])
+
+    async def test_no_write_session_sends_nothing(self):
+        http = _Http([STATION])
+        client = api.MySigenSession(http, "eu", "u@example.invalid", "p")
+        with self.assertRaises(api.MySigenRejectedError):
+            await client.async_start_override("hold_battery", 30)
+        self.assertEqual([r[0] for r in http.requests].count("PUT"), 0)
 
 
 if __name__ == "__main__":

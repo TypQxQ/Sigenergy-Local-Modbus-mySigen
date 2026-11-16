@@ -94,6 +94,32 @@ class MySigenUnknownOutcome(MySigenError):
     """A change was sent and no usable answer came back."""
 
 
+class _ResendBlocked(Exception):
+    """Raised inside aiohttp when it is about to send a change again."""
+
+
+def single_send_trace_config() -> aiohttp.TraceConfig:
+    """Return a hook that lets a request use one connection attempt only.
+
+    aiohttp repeats PUT requests once by itself when the connection drops,
+    because PUT counts as safe to repeat. A timed override is not: a repeat
+    could restart its duration. Every attempt first takes a connection, so
+    refusing the second one stops the repeat before anything is sent.
+    """
+
+    async def on_connection(_session: Any, context: Any, _params: Any) -> None:
+        counter = context.trace_request_ctx
+        if isinstance(counter, dict):
+            counter["attempts"] = counter.get("attempts", 0) + 1
+            if counter["attempts"] > 1:
+                raise _ResendBlocked
+
+    config = aiohttp.TraceConfig()
+    config.on_connection_create_start.append(on_connection)
+    config.on_connection_reuseconn.append(on_connection)
+    return config
+
+
 class MySigenConnectionError(MySigenError):
     """The service could not be reached or gave an unusable answer."""
 
@@ -344,9 +370,17 @@ class MySigenSession:
     """One signed-in account. Tokens are kept in memory only."""
 
     def __init__(
-        self, session: aiohttp.ClientSession, region: str, username: str, password: str
+        self,
+        session: aiohttp.ClientSession,
+        region: str,
+        username: str,
+        password: str,
+        write_session: aiohttp.ClientSession | None = None,
     ) -> None:
         self._session = session
+        # Changes go through a session built with single_send_trace_config().
+        # Without one, nothing that changes the plant is sent.
+        self._write_session = write_session
         self._region = region
         self._username = username
         self._password = password
@@ -472,15 +506,19 @@ class MySigenSession:
 
     async def _async_put(self, what: str, path: str, body: dict[str, Any]) -> None:
         """Send one change. It is never repeated, not even after a sign-out."""
+        if self._write_session is None:
+            raise MySigenRejectedError(f"{what}: not sent, no single-send connection")
         try:
             await self._async_ensure_token()
         except MySigenConnectionError as err:
             raise MySigenRejectedError(f"{what}: not sent, {err}") from err
         try:
-            async with self._session.request(
+            async with self._write_session.request(
                 "PUT",
                 f"{REGIONS[self._region]}{path}",
                 json=body,
+                allow_redirects=False,
+                trace_request_ctx={},
                 headers={
                     "Authorization": f"Bearer {self._access_token}",
                     "Content-Type": "application/json",
@@ -493,6 +531,10 @@ class MySigenSession:
                     payload = await response.json(content_type=None)
                 except (ValueError, aiohttp.ClientError):
                     payload = None
+        except _ResendBlocked as err:
+            raise MySigenUnknownOutcome(
+                f"{what}: connection dropped after sending"
+            ) from err
         except (aiohttp.ClientError, TimeoutError) as err:
             # The request may have arrived. Only a later read can tell.
             raise MySigenUnknownOutcome(f"{what}: {type(err).__name__}") from err
@@ -505,6 +547,9 @@ class MySigenSession:
             raise MySigenAuthError(detail)
         if status == 403 or code in (403, "403"):
             raise MySigenPermissionError(detail)
+        if status >= 500:
+            # A server or gateway error can follow a change that was applied.
+            raise MySigenUnknownOutcome(detail)
         if status >= 400 or (isinstance(payload, dict) and code not in _SUCCESS_CODES):
             raise MySigenRejectedError(detail)
         if not isinstance(payload, dict):

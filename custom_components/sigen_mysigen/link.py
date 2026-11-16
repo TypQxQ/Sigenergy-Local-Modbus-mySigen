@@ -62,5 +62,16 @@ def remote_ems_state(hass: HomeAssistant, plant_entry_id: str) -> str | None:
             and entity.unique_id.endswith("_plant_remote_ems_enable")
         ):
             state = hass.states.get(entity.entity_id)
-            return state.state if state and state.state in ("on", "off") else None
-    return None
+            if state and state.state in ("on", "off"):
+                return state.state
+            break
+    # The switch may be disabled in Home Assistant. Its register is still
+    # read, also when the Modbus connection is set to read-only.
+    try:
+        coordinator = hass.data[MODBUS_DOMAIN][plant_entry_id]["coordinator"]
+        if not coordinator.last_update_success:
+            return None
+        value = coordinator.data["plant"]["plant_remote_ems_enable"]
+    except (AttributeError, KeyError, TypeError):
+        return None
+    return {0: "off", 1: "on"}.get(value)

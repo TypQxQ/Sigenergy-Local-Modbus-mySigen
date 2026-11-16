@@ -6,12 +6,16 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 import time
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.aiohttp_client import (
+    async_create_clientsession,
+    async_get_clientsession,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -24,6 +28,7 @@ from .api import (
     MySigenRateLimitError,
     MySigenSession,
     OverrideStatus,
+    single_send_trace_config,
 )
 from .const import (
     CONF_ALLOW_CONTROL,
@@ -41,6 +46,20 @@ _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
 # How long an answer without Gateway readings is trusted before asking again.
 _GATEWAY_RECHECK = 600.0
+
+
+def _write_session(hass: HomeAssistant) -> Any:
+    """Return the one session used for changes; it never repeats a request."""
+    store = hass.data.setdefault(DOMAIN, {})
+    if "write_session" not in store:
+        session = async_create_clientsession(
+            hass, trace_configs=[single_send_trace_config()]
+        )
+        # Second safeguard for the same thing, where aiohttp offers it.
+        if hasattr(session, "_retry_connection"):
+            session._retry_connection = False  # noqa: SLF001
+        store["write_session"] = session
+    return store["write_session"]
 
 
 @dataclass(frozen=True)
@@ -71,6 +90,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             entry.data[CONF_REGION],
             entry.data[CONF_USERNAME],
             entry.data[CONF_PASSWORD],
+            write_session=_write_session(hass),
         )
         self.last_success: datetime | None = None
         # One command at a time per connection.
