@@ -56,7 +56,8 @@ class _FakeSession:
 
 
 class _FakeCoordinator:
-    def __init__(self, reads, write_error=None, allow=True, wait=0.0):
+    def __init__(self, reads, write_error=None, allow=True, wait=0.0, verified=True):
+        self.link_verified = verified
         self.session = _FakeSession(reads, write_error)
         self.allow_control, self.rate_limit_wait = allow, wait
         self.command_lock = asyncio.Lock()
@@ -97,6 +98,7 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
         cases = [
             (dict(allow=False), {}, "switched off"),
             (dict(wait=40.0), {}, "pause"),
+            (dict(verified=False), {}, "could not be checked"),
             ({}, dict(remote_ems="on"), "Remote EMS is active"),
             ({}, dict(remote_ems=None), "Could not confirm"),
             ({}, dict(mode="charging"), "not available"),
@@ -200,6 +202,12 @@ class TestCancel(unittest.IsolatedAsyncioTestCase):
         coordinator = _FakeCoordinator([OFF])
         result = await control.async_cancel_override(coordinator, sleep=_no_sleep)
         self.assertEqual(result, "no_override")
+        self.assertEqual(coordinator.session.writes, [])
+
+    async def test_cancel_needs_a_verified_station(self):
+        coordinator = _FakeCoordinator([HOLD], verified=False)
+        with self.assertRaisesRegex(control.CommandRefused, "could not be checked"):
+            await control.async_cancel_override(coordinator, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [])
 
     async def test_cancel_needs_control_switched_on(self):

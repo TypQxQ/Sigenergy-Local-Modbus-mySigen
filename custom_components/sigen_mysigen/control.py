@@ -75,6 +75,14 @@ def _check_ready(coordinator: Any) -> None:
             "Control is switched off for this mySigen connection. "
             "Switch it on under Reconfigure."
         )
+    if not coordinator.link_verified:
+        # Reading may continue unverified; changing a plant may not. The
+        # account's station could be a different system than the plant
+        # whose Remote EMS state is checked.
+        raise CommandRefused(
+            "The mySigen system could not be checked against the plant when "
+            "this connection started. Reload the connection and try again."
+        )
     if wait := coordinator.rate_limit_wait:
         raise CommandRefused(f"mySigen asked for a pause; try again in {wait:.0f} s.")
 

@@ -112,6 +112,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         )
 
     @property
+    def link_verified(self) -> bool:
+        """True when startup matched the account's station to the plant."""
+        return self.link_problem is None
+
+    @property
     def allow_control(self) -> bool:
         """True only when the user switched control on for this connection."""
         return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
