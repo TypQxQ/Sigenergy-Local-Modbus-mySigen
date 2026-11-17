@@ -110,7 +110,8 @@ class PeakShavingLimit(MySigenEntity, NumberEntity):
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.peak_shaving.single_limit
+        peak = self.coordinator.peak_shaving
+        return peak.single_limit if peak is not None else None
 
     async def async_set_native_value(self, value: float) -> None:
         await async_run_setting(

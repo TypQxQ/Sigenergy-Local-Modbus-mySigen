@@ -220,7 +220,15 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.async_update_listeners()
 
     async def _async_read_settings(self) -> None:
-        """Read the settings step C shows. One failing read keeps its old value."""
+        """Read the settings step C shows. One failing read keeps its old value.
+
+        Holds the command lock, so a read cannot overlap a change and then
+        overwrite the value the change confirmed.
+        """
+        async with self.command_lock:
+            await self._async_read_settings_locked()
+
+    async def _async_read_settings_locked(self) -> None:
         self._settings_read_at = time.monotonic()
         if not self.available_modes:
             try:

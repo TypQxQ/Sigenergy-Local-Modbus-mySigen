@@ -123,7 +123,7 @@ class _Coordinator:
     def __init__(self, reads, write_error=None, allow=True, verified=True, modes=None):
         self.session = _Session(reads, write_error)
         self.allow_control, self.link_verified, self.rate_limit_wait = allow, verified, 0.0
-        self.available_modes = frozenset(modes or {0, 1, 2, 5, 7, 9})
+        self.available_modes = frozenset({0, 1, 2, 5, 7, 9} if modes is None else modes)
         self.command_lock = asyncio.Lock()
         self.settings, self.published = [], []
 
@@ -176,6 +176,7 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         cases = [
             (dict(), dict(mode="remote_ems"), "not available"),
             (dict(modes={0, 1}), dict(mode="time_of_use"), "not available"),
+            (dict(modes=set()), dict(), "not available"),
             (dict(allow=False), dict(), "switched off"),
             (dict(verified=False), dict(), "could not be checked"),
         ]

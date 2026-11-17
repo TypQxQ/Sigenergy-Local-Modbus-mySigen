@@ -38,12 +38,14 @@ class BatteryExport(MySigenEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.coordinator.battery_export.owner
+        export = self.coordinator.battery_export
+        return export.owner if export is not None else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
         # What applies right now; an installer setting can override the owner's.
-        return {"in_effect": self.coordinator.battery_export.effective}
+        export = self.coordinator.battery_export
+        return {"in_effect": export.effective} if export is not None else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await async_run_setting(
@@ -68,11 +70,13 @@ class PeakShaving(MySigenEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool | None:
-        return self.coordinator.peak_shaving.enabled
+        peak = self.coordinator.peak_shaving
+        return peak.enabled if peak is not None else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        return {"time_slots": len(self.coordinator.peak_shaving.slots)}
+        peak = self.coordinator.peak_shaving
+        return {"time_slots": len(peak.slots)} if peak is not None else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await async_run_setting(

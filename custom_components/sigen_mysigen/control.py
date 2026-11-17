@@ -330,7 +330,8 @@ async def async_set_operating_mode(
 ) -> str:
     """Choose the operating mode. It stays until changed back."""
     code = OPERATING_MODES.get(mode)
-    if code is None or (coordinator.available_modes and code not in coordinator.available_modes):
+    if code is None or code not in coordinator.available_modes:
+        # Unknown until the plant has listed its modes.
         raise CommandRefused(f"Operating mode {mode!r} is not available on this plant.")
 
     def before(_current: Any) -> None:

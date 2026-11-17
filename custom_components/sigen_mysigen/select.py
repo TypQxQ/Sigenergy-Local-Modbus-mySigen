@@ -63,13 +63,16 @@ class OperatingMode(MySigenEntity, SelectEntity):
     @property
     def options(self) -> list[str]:
         offered = self.coordinator.available_modes
-        return [
-            key for key, code in OPERATING_MODES.items() if not offered or code in offered
-        ]
+        return [key for key, code in OPERATING_MODES.items() if code in offered]
 
     @property
     def available(self) -> bool:
-        return super().available and self.coordinator.operating_mode is not None
+        # Unavailable until the plant has listed the modes it offers.
+        return (
+            super().available
+            and self.coordinator.operating_mode is not None
+            and any(code in self.coordinator.available_modes for code in OPERATING_MODES.values())
+        )
 
     @property
     def current_option(self) -> str | None:
