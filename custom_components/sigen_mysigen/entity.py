@@ -3,9 +3,12 @@ from __future__ import annotations
 
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
 
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .coordinator import MySigenCoordinator
+
+ID_SUFFIX = "mySigen"
 
 
 class MySigenEntity(CoordinatorEntity[MySigenCoordinator]):
@@ -55,7 +58,20 @@ class MySigenEntity(CoordinatorEntity[MySigenCoordinator]):
 
     @property
     def suggested_object_id(self) -> str | None:
-        """Keep the chosen display language out of entity ID generation."""
+        """Keep the chosen display language out of entity ID generation.
+
+        The ID always ends in "_mysigen", so these entities stand apart from
+        the Modbus ones on the same device. The unique ID never depends on it.
+        """
         if hasattr(self, "_language_suggested_object_id"):
-            return self._language_suggested_object_id
-        return super().suggested_object_id
+            return with_mysigen_suffix(self._language_suggested_object_id)
+        return with_mysigen_suffix(super().suggested_object_id)
+
+
+def with_mysigen_suffix(object_id: str | None) -> str | None:
+    """End a suggested object ID with "mySigen" exactly once."""
+    if object_id is None:
+        return None
+    if slugify(object_id).endswith("mysigen"):
+        return object_id
+    return f"{object_id} {ID_SUFFIX}"

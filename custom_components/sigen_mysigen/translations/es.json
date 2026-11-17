@@ -81,15 +81,15 @@
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Forzado de batería activo"
+        "name": "Forzado de batería activo (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "Cargador DC: el coche puede suministrar energía"
+        "name": "Cargador DC V2X permitido (mySigen)"
       }
     },
     "sensor": {
       "battery_override_mode": {
-        "name": "Modo del forzado de batería",
+        "name": "Modo del forzado de batería (mySigen)",
         "state": {
           "charging": "Cargando",
           "discharging": "Descargando",
@@ -98,31 +98,31 @@
         }
       },
       "battery_override_end": {
-        "name": "Fin del forzado de batería"
+        "name": "Fin del forzado de batería (mySigen)"
       },
       "last_update": {
-        "name": "mySigen última actualización"
+        "name": "Última actualización (mySigen)"
       },
       "gateway_grid_voltage_a": {
-        "name": "Gateway tensión de red fase A"
+        "name": "Gateway tensión de red fase A (mySigen)"
       },
       "gateway_grid_current_a": {
-        "name": "Gateway corriente de red fase A"
+        "name": "Gateway corriente de red fase A (mySigen)"
       },
       "gateway_grid_voltage_b": {
-        "name": "Gateway tensión de red fase B"
+        "name": "Gateway tensión de red fase B (mySigen)"
       },
       "gateway_grid_current_b": {
-        "name": "Gateway corriente de red fase B"
+        "name": "Gateway corriente de red fase B (mySigen)"
       },
       "gateway_grid_voltage_c": {
-        "name": "Gateway tensión de red fase C"
+        "name": "Gateway tensión de red fase C (mySigen)"
       },
       "gateway_grid_current_c": {
-        "name": "Gateway corriente de red fase C"
+        "name": "Gateway corriente de red fase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Último resultado del forzado de batería",
+        "name": "Resultado del forzado de batería (mySigen)",
         "state": {
           "confirmed": "Confirmado",
           "refused": "Rechazado",
@@ -132,61 +132,61 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway tensión de red máxima en el último minuto fase A"
+        "name": "Gateway tensión de red máx. fase A (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway tensión de red mínima en el último minuto fase A"
+        "name": "Gateway tensión de red mín. fase A (mySigen)"
       },
       "generator_voltage_a": {
-        "name": "Tensión del generador fase A"
+        "name": "Tensión del generador fase A (mySigen)"
       },
       "generator_current_a": {
-        "name": "Corriente del generador fase A"
+        "name": "Corriente del generador fase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway tensión de red máxima en el último minuto fase B"
+        "name": "Gateway tensión de red máx. fase B (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway tensión de red mínima en el último minuto fase B"
+        "name": "Gateway tensión de red mín. fase B (mySigen)"
       },
       "generator_voltage_b": {
-        "name": "Tensión del generador fase B"
+        "name": "Tensión del generador fase B (mySigen)"
       },
       "generator_current_b": {
-        "name": "Corriente del generador fase B"
+        "name": "Corriente del generador fase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway tensión de red máxima en el último minuto fase C"
+        "name": "Gateway tensión de red máx. fase C (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway tensión de red mínima en el último minuto fase C"
+        "name": "Gateway tensión de red mín. fase C (mySigen)"
       },
       "generator_voltage_c": {
-        "name": "Tensión del generador fase C"
+        "name": "Tensión del generador fase C (mySigen)"
       },
       "generator_current_c": {
-        "name": "Corriente del generador fase C"
+        "name": "Corriente del generador fase C (mySigen)"
       },
       "generator_power": {
-        "name": "Potencia del generador"
+        "name": "Potencia del generador (mySigen)"
       },
       "generator_frequency": {
-        "name": "Frecuencia del generador"
+        "name": "Frecuencia del generador (mySigen)"
       },
       "generator_contactor": {
-        "name": "Contactor del generador"
+        "name": "Contactor del generador (mySigen)"
       },
       "gateway_grid_phase_sequence": {
-        "name": "Gateway secuencia de fases del lado de red"
+        "name": "Gateway secuencia de fases de red (mySigen)"
       },
       "gateway_firmware": {
-        "name": "Gateway versión de firmware"
+        "name": "Gateway firmware (mySigen)"
       },
       "gateway_model": {
-        "name": "Gateway modelo"
+        "name": "Gateway modelo (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "Modo de carga en uso del cargador DC",
+        "name": "Cargador DC modo (mySigen)",
         "state": {
           "fast_charging": "Cargar ahora a plena potencia",
           "solar_surplus": "Cargar solo con excedente solar",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "El cargador DC deja de cargar al nivel del vehículo"
+        "name": "Cargador DC nivel de parada (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Duración del forzado de batería"
+        "name": "Duración del forzado de batería (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Límite de potencia del forzado de batería (0 = sin límite)"
+        "name": "Límite de potencia del forzado (mySigen)"
       },
       "peak_shaving_limit": {
-        "name": "Límite de red del recorte de picos"
+        "name": "Límite de red del recorte de picos (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "Cargador DC: dejar de cargar al nivel del vehículo"
+        "name": "Cargador DC ajustar nivel de parada (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "Cargador DC: mantener al menos esto en el coche"
+        "name": "Cargador DC reserva V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Forzado de batería que se iniciará",
+        "name": "Forzado de batería que se iniciará (mySigen)",
         "state": {
           "hold_battery": "Mantener la batería (sin carga ni descarga)",
           "charging": "Cargar la batería",
@@ -225,7 +225,7 @@
         }
       },
       "operating_mode": {
-        "name": "Modo de funcionamiento",
+        "name": "Modo de funcionamiento (mySigen)",
         "state": {
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Usar primero mi propia energía (autoconsumo máximo)",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "Modo de carga del cargador DC",
+        "name": "Cargador DC ajustar modo (mySigen)",
         "state": {
           "fast_charging": "Cargar ahora a plena potencia",
           "solar_surplus": "Cargar solo con excedente solar",
@@ -244,24 +244,24 @@
     },
     "button": {
       "start_battery_override": {
-        "name": "Iniciar el forzado de batería ahora"
+        "name": "Iniciar el forzado de batería (mySigen)"
       },
       "stop_battery_override": {
-        "name": "Detener el forzado de batería ahora"
+        "name": "Detener el forzado de batería (mySigen)"
       }
     },
     "switch": {
       "battery_export": {
-        "name": "Permitir que la batería exporte a la red"
+        "name": "Exportación de la batería a la red (mySigen)"
       },
       "peak_shaving": {
-        "name": "Recorte de picos"
+        "name": "Recorte de picos (mySigen)"
       },
       "grid_disconnect": {
-        "name": "Desconectarse de la red (funcionar con batería y solar)"
+        "name": "Desconectarse de la red (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "Cargador DC: el coche alimenta la casa (V2X)"
+        "name": "Cargador DC permitir V2X (mySigen)"
       }
     }
   },

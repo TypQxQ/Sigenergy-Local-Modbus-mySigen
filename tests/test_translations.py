@@ -55,6 +55,27 @@ class TestTranslations(unittest.TestCase):
             for key, text in _load(language).items():
                 self.assertTrue(isinstance(text, str) and text.strip(), f"{language}: {key}")
 
+    def test_every_entity_name_ends_with_the_mysigen_suffix_once(self):
+        # The suffix keeps these apart from the Modbus entities on the same
+        # device and gives the suggested entity ID its "_mysigen" ending.
+        for language in LANGUAGES:
+            for key, text in _load(language).items():
+                if key.startswith("entity.") and key.endswith(".name"):
+                    self.assertTrue(text.endswith(" (mySigen)"), f"{language}: {key}")
+                    self.assertEqual(text.count("mySigen"), 1, f"{language}: {key}")
+
+    def test_entity_names_stay_short(self):
+        # Details such as "0 = no limit" belong in the usage guide, and a
+        # button needs no "now".
+        for language in LANGUAGES:
+            for key, text in _load(language).items():
+                if key.startswith("entity.") and key.endswith(".name"):
+                    self.assertNotIn("=", text, f"{language}: {key}")
+                    self.assertLessEqual(len(text), 50, f"{language}: {key}")
+        for key in ("start_battery_override", "stop_battery_override"):
+            name = self.english[f"entity.button.{key}.name"]
+            self.assertNotIn(" now", name)
+
     def test_app_wording_is_kept_where_the_user_must_find_it(self):
         # "View and Edit" is the label in the mySigen app, whatever the
         # language of Home Assistant.

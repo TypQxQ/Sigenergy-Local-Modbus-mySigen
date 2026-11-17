@@ -81,15 +81,15 @@
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Akun ohitus aktiivinen"
+        "name": "Akun ohitus aktiivinen (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC-laturi: auto saa syöttää sähköä"
+        "name": "DC-laturi V2X sallittu (mySigen)"
       }
     },
     "sensor": {
       "battery_override_mode": {
-        "name": "Akun ohituksen tila",
+        "name": "Akun ohituksen tila (mySigen)",
         "state": {
           "charging": "Lataa",
           "discharging": "Purkaa",
@@ -98,31 +98,31 @@
         }
       },
       "battery_override_end": {
-        "name": "Akun ohitus päättyy"
+        "name": "Akun ohitus päättyy (mySigen)"
       },
       "last_update": {
-        "name": "mySigen viimeisin päivitys"
+        "name": "Viimeisin päivitys (mySigen)"
       },
       "gateway_grid_voltage_a": {
-        "name": "Gateway verkkojännite vaihe A"
+        "name": "Gateway verkkojännite vaihe A (mySigen)"
       },
       "gateway_grid_current_a": {
-        "name": "Gateway verkkovirta vaihe A"
+        "name": "Gateway verkkovirta vaihe A (mySigen)"
       },
       "gateway_grid_voltage_b": {
-        "name": "Gateway verkkojännite vaihe B"
+        "name": "Gateway verkkojännite vaihe B (mySigen)"
       },
       "gateway_grid_current_b": {
-        "name": "Gateway verkkovirta vaihe B"
+        "name": "Gateway verkkovirta vaihe B (mySigen)"
       },
       "gateway_grid_voltage_c": {
-        "name": "Gateway verkkojännite vaihe C"
+        "name": "Gateway verkkojännite vaihe C (mySigen)"
       },
       "gateway_grid_current_c": {
-        "name": "Gateway verkkovirta vaihe C"
+        "name": "Gateway verkkovirta vaihe C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Akun ohituksen viimeisin tulos",
+        "name": "Akun ohituksen tulos (mySigen)",
         "state": {
           "confirmed": "Vahvistettu",
           "refused": "Hylätty",
@@ -132,61 +132,61 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe A"
+        "name": "Gateway verkkojännite maks. vaihe A (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe A"
+        "name": "Gateway verkkojännite min. vaihe A (mySigen)"
       },
       "generator_voltage_a": {
-        "name": "Generaattorin jännite vaihe A"
+        "name": "Generaattorin jännite vaihe A (mySigen)"
       },
       "generator_current_a": {
-        "name": "Generaattorin virta vaihe A"
+        "name": "Generaattorin virta vaihe A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe B"
+        "name": "Gateway verkkojännite maks. vaihe B (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe B"
+        "name": "Gateway verkkojännite min. vaihe B (mySigen)"
       },
       "generator_voltage_b": {
-        "name": "Generaattorin jännite vaihe B"
+        "name": "Generaattorin jännite vaihe B (mySigen)"
       },
       "generator_current_b": {
-        "name": "Generaattorin virta vaihe B"
+        "name": "Generaattorin virta vaihe B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway korkein verkkojännite viime minuutin aikana vaihe C"
+        "name": "Gateway verkkojännite maks. vaihe C (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway matalin verkkojännite viime minuutin aikana vaihe C"
+        "name": "Gateway verkkojännite min. vaihe C (mySigen)"
       },
       "generator_voltage_c": {
-        "name": "Generaattorin jännite vaihe C"
+        "name": "Generaattorin jännite vaihe C (mySigen)"
       },
       "generator_current_c": {
-        "name": "Generaattorin virta vaihe C"
+        "name": "Generaattorin virta vaihe C (mySigen)"
       },
       "generator_power": {
-        "name": "Generaattorin teho"
+        "name": "Generaattorin teho (mySigen)"
       },
       "generator_frequency": {
-        "name": "Generaattorin taajuus"
+        "name": "Generaattorin taajuus (mySigen)"
       },
       "generator_contactor": {
-        "name": "Generaattorin kontaktori"
+        "name": "Generaattorin kontaktori (mySigen)"
       },
       "gateway_grid_phase_sequence": {
-        "name": "Gateway vaihejärjestys verkon puolella"
+        "name": "Gateway vaihejärjestys verkon puolella (mySigen)"
       },
       "gateway_firmware": {
-        "name": "Gateway laiteohjelmiston versio"
+        "name": "Gateway laiteohjelmisto (mySigen)"
       },
       "gateway_model": {
-        "name": "Gateway malli"
+        "name": "Gateway malli (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "DC-laturin käytössä oleva lataustila",
+        "name": "DC-laturi tila (mySigen)",
         "state": {
           "fast_charging": "Lataa nyt täydellä teholla",
           "solar_surplus": "Lataa vain aurinkoylijäämällä",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC-laturi lopettaa latauksen auton varaustasolla"
+        "name": "DC-laturi pysäytystaso (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Akun ohituksen kesto"
+        "name": "Akun ohituksen kesto (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Akun ohituksen tehoraja (0 = ei rajaa)"
+        "name": "Akun ohituksen tehoraja (mySigen)"
       },
       "peak_shaving_limit": {
-        "name": "Huipputehon leikkauksen verkkoraja"
+        "name": "Huipputehon leikkauksen verkkoraja (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC-laturi: lopeta lataus auton varaustasolla"
+        "name": "DC-laturi aseta pysäytystaso (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC-laturi: pidä autossa vähintään tämä"
+        "name": "DC-laturi V2X-varaus (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Käynnistettävä akun ohitus",
+        "name": "Käynnistettävä akun ohitus (mySigen)",
         "state": {
           "hold_battery": "Pidä akku (ei latausta, ei purkua)",
           "charging": "Lataa akku",
@@ -225,7 +225,7 @@
         }
       },
       "operating_mode": {
-        "name": "Toimintatila",
+        "name": "Toimintatila (mySigen)",
         "state": {
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Käytä ensin omaa sähköä (maksimaalinen omakäyttö)",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "DC-laturin lataustila",
+        "name": "DC-laturi aseta tila (mySigen)",
         "state": {
           "fast_charging": "Lataa nyt täydellä teholla",
           "solar_surplus": "Lataa vain aurinkoylijäämällä",
@@ -244,24 +244,24 @@
     },
     "button": {
       "start_battery_override": {
-        "name": "Käynnistä akun ohitus nyt"
+        "name": "Käynnistä akun ohitus (mySigen)"
       },
       "stop_battery_override": {
-        "name": "Pysäytä akun ohitus nyt"
+        "name": "Pysäytä akun ohitus (mySigen)"
       }
     },
     "switch": {
       "battery_export": {
-        "name": "Salli akun syöttää verkkoon"
+        "name": "Akun syöttö verkkoon (mySigen)"
       },
       "peak_shaving": {
-        "name": "Huipputehon leikkaus"
+        "name": "Huipputehon leikkaus (mySigen)"
       },
       "grid_disconnect": {
-        "name": "Irrota sähköverkosta (akku- ja aurinkokäyttö)"
+        "name": "Irrota sähköverkosta (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC-laturi: auto syöttää kotia (V2X)"
+        "name": "DC-laturi salli V2X (mySigen)"
       }
     }
   },
