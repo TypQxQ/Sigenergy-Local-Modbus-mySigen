@@ -1,47 +1,68 @@
-# <img src="https://raw.githubusercontent.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/main/custom_components/sigen_mysigen/brand/icon.png" alt="" width="50" /> Sigenergy ESS – mySigen cloud
+<div align="center">
 
-[![Release][releases-shield]][releases] [![License][license-shield]](LICENSE) [![Testers wanted][testers-shield]][testers]
+<img src="https://raw.githubusercontent.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/main/custom_components/sigen_mysigen/brand/icon.png" alt="" width="120" />
 
-[releases-shield]: https://img.shields.io/github/v/release/TypQxQ/Sigenergy-Local-Modbus-mySigen?include_prereleases
-[releases]: https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases
-[license-shield]: https://img.shields.io/github/license/TypQxQ/Sigenergy-Local-Modbus-mySigen.svg
-[testers-shield]: https://img.shields.io/badge/testers-wanted-orange
-[testers]: https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20
+# Sigenergy ESS – mySigen cloud
 
-**Control your Sigenergy battery from Home Assistant without Remote EMS.** Sigen AI stays in charge and Modbus can stay read-only. This add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) talks to mySigen, the same way the app does.
+**Control your Sigenergy battery from Home Assistant, without Remote EMS.**<br>
+Sigen AI stays in charge. Modbus can stay read-only.
 
-- 🔋 **Battery overrides:** hold, charge or discharge for up to two hours, ending by themselves.
-- ⚙️ **Plant settings:** operating mode, battery export and peak shaving.
-- 🔌 **Off-grid:** run the home on battery and solar.
-- 🚗 **DC charger:** charging mode, stop level and V2X.
-- 📈 **Gateway:** grid voltage and current per phase.
+[![Release](https://img.shields.io/github/v/release/TypQxQ/Sigenergy-Local-Modbus-mySigen?include_prereleases&style=for-the-badge&label=release)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases)
+[![Testers wanted](https://img.shields.io/badge/testers-wanted-f0a500?style=for-the-badge)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.11+-18bcf2?style=for-the-badge&logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 
-> **Beta, testers wanted.** [Tell us how it runs on your system →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+</div>
 
-## Install
+---
 
-[![Open in Marketplace](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=TypQxQ&repository=Sigenergy-Local-Modbus-mySigen&category=integration)
+An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) that talks to mySigen the way the app does, and adds what Modbus can't do. Everything appears on the plant device you already have.
 
-Needs Home Assistant 2026.11+ and [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 2.0.3+ with a plant set up.
+| | | |
+| :-: | --- | --- |
+| 🔋 | **Battery overrides** | Hold, charge or discharge for up to two hours. They end by themselves, even if Home Assistant is down. |
+| ⚙️ | **Plant settings** | Operating mode, battery export and peak shaving. |
+| 🔌 | **Off-grid** | Run the home on battery and solar alone. |
+| 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
+| 📈 | **Gateway** | Grid voltage and current on every phase. |
 
-1. Click the button to add this repository to the Marketplace. Until it is listed in the catalog, it is added as a custom repository, which needs a GitHub connection.
+> [!TIP]
+> **Beta, and ready for real testing.** [Tell us how it runs on your system →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+
+## 🚀 Install
+
+<a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=TypQxQ&repository=Sigenergy-Local-Modbus-mySigen&category=integration"><img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open in Marketplace" /></a>
+
+1. Click the button to add the add-on to the Marketplace. Until it is listed in the catalog, it is added as a custom repository, which needs a GitHub connection.
 2. Install **Sigenergy ESS – mySigen cloud**. Releases are betas for now, so you may have to enable prereleases.
 3. Restart if Home Assistant asks.
 
-Or install it by hand: extract `sigen_mysigen.zip` from a [release](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases) into `config/custom_components/sigen_mysigen/` and restart.
+You need Home Assistant 2026.11+ and [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 2.0.3+ with a plant set up.
 
-## Set up
+<details>
+<summary>Install by hand instead</summary>
 
-1. In the mySigen app, share your system with a **new** email address, with **View and Edit** access. Using your own app account here can sign the app out.
-2. **Settings → Devices & services → Add integration → Sigenergy ESS – mySigen cloud.** Pick the plant and enter the new account.
-3. To control anything, open **Reconfigure** and switch on **Allow battery control**, then enable the controls you want.
+Download `sigen_mysigen.zip` from a [release](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases), extract it into `config/custom_components/sigen_mysigen/`, and restart. A manual install gets no update notices.
+
+</details>
+
+## 🔧 Set up
+
+1. **Share your system** in the mySigen app with a *new* email address, with **View and Edit** access.
+2. **Add the integration:** **Settings → Devices & services → Add integration → Sigenergy ESS – mySigen cloud**. Pick your plant and sign in with the new account.
+3. **Allow control:** open **Reconfigure**, switch on **Allow battery control**, and enable the controls you want.
+
+> [!IMPORTANT]
+> Use a separate account. Signing in with the account you use in the app can sign the app out.
 
 Every change is checked first, sent once, and only counts when the plant shows it.
 
-## More
+---
 
-- [Full guide](docs/USAGE.md): every entity and control, automations, safety checks, troubleshooting.
-- [Roadmap](docs/PLAN.md)
-- [Testers wanted](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · [Issues](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
+<div align="center">
 
-<sub>Unofficial and not affiliated with Sigenergy. It uses mySigen's private interface, which can change at any time. MIT licensed; request formats follow [solidfox/sigenergy-cloud](https://github.com/solidfox/sigenergy-cloud).</sub>
+📖 [Full guide](docs/USAGE.md) · 🗺️ [Roadmap](docs/PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
+
+<sub>Unofficial and not affiliated with Sigenergy. It uses mySigen's private interface, which can change at any time.<br>
+MIT licensed · request formats follow <a href="https://github.com/solidfox/sigenergy-cloud">solidfox/sigenergy-cloud</a></sub>
+
+</div>
