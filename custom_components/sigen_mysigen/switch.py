@@ -9,8 +9,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .commands import async_run_setting
-from .control import async_set_battery_export, async_set_peak_shaving
+from .const import CONF_PLANT_ENTRY_ID
+from .control import async_set_battery_export, async_set_off_grid, async_set_peak_shaving
 from .entity import MySigenEntity
+from .link import plant_grid_state
 
 
 async def async_setup_entry(
@@ -20,10 +22,13 @@ async def async_setup_entry(
 ) -> None:
     """Add the switches. Only set up while control is allowed."""
     coordinator = entry.runtime_data
-    async_add_entities([
+    entities: list[SwitchEntity] = [
         BatteryExport(coordinator, "battery_export"),
         PeakShaving(coordinator, "peak_shaving"),
-    ])
+    ]
+    if coordinator.allow_grid_disconnect:
+        entities.append(GridDisconnect(coordinator, "grid_disconnect"))
+    async_add_entities(entities)
 
 
 class BatteryExport(MySigenEntity, SwitchEntity):
@@ -87,3 +92,42 @@ class PeakShaving(MySigenEntity, SwitchEntity):
         await async_run_setting(
             self.coordinator, async_set_peak_shaving(self.coordinator, enabled=False)
         )
+
+
+class GridDisconnect(MySigenEntity, SwitchEntity):
+    """On: the home is separated from the grid and runs on battery and solar."""
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.grid_connection is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        connection = self.coordinator.grid_connection
+        return connection.off_grid if connection is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        connection = self.coordinator.grid_connection
+        if connection is None:
+            return None
+        return {"grid_connection": connection.state, "offered_by_mysigen": connection.offered}
+
+    async def _async_set(self, off_grid: bool) -> None:
+        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
+        await async_run_setting(
+            self.coordinator,
+            async_set_off_grid(
+                self.coordinator,
+                off_grid=off_grid,
+                plant_grid=lambda: plant_grid_state(self.hass, plant_entry_id),
+            ),
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)

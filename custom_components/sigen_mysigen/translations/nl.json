@@ -29,12 +29,14 @@
           "username": "E-mail",
           "password": "Wachtwoord",
           "scan_interval": "Uitleesinterval",
-          "allow_control": "Batterijbesturing toestaan"
+          "allow_control": "Batterijbesturing toestaan",
+          "allow_grid_disconnect": "Loskoppelen van het net toestaan"
         },
         "data_description": {
           "password": "Laat leeg om het huidige wachtwoord te behouden.",
           "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
-          "allow_control": "Laat Home Assistant een tijdelijke batterij-override via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig."
+          "allow_control": "Laat Home Assistant een tijdelijke batterij-override via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
+          "allow_grid_disconnect": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Piekbegrenzing"
+      },
+      "grid_disconnect": {
+        "name": "Loskoppelen van het net (draaien op batterij en zon)"
       }
     }
   },

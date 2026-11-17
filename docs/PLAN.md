@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-17, at version 0.1.0b7. Steps A, B and C are built and tested, except smart loads.
+Last updated: 2026-11-17, at version 0.1.0b8. Steps A, B and C are built and tested, except smart loads. Step D is built and waiting for a hardware test.
 
 ## How to read the tables
 
@@ -114,9 +114,11 @@ Unlike an override, these do not end by themselves.
 
 ### Highest risk
 
+The grid connection is read with the other settings every ten minutes, and on every poll while the plant is on its way off or back onto the grid. A change is never delayed: during a rate-limit pause it is refused instead.
+
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Disconnect from the grid (run on battery and solar) | Switch | On: the home is separated from the grid and runs as an island. Off: reconnects. Needs its own setting in addition to Allow battery control. | D | Later | Disabled | New read |
+| Disconnect from the grid (run on battery and solar) | Switch | On: the home is separated from the grid and runs as an island. Off: reconnects. Only exists while **Allow disconnecting from the grid** is on as well as Allow battery control. Sent only when mySigen offers the switch, its fresh read shows the plant settled in the other state, and the Modbus **Grid connection status** agrees. Reconnecting is only done after a manual disconnect, never during a grid outage. The `grid_connection` attribute shows on grid, going off grid, off grid or returning to grid. Modbus shows the grid connection but cannot change it. | D | Testing | Disabled | New read |
 | Set price windows | Action | Replaces the list of buy and sell price windows used by the plant. Taken out of step D. | – | Not planned | – | New read |
 
 ## Step E: EV chargers

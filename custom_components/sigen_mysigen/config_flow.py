@@ -37,6 +37,7 @@ from .api import (
 )
 from .const import (
     CONF_ALLOW_CONTROL,
+    CONF_ALLOW_GRID_DISCONNECT,
     CONF_PLANT_ENTRY_ID,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
@@ -255,6 +256,9 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                         **entry.options,
                         CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
                         CONF_ALLOW_CONTROL: bool(user_input[CONF_ALLOW_CONTROL]),
+                        CONF_ALLOW_GRID_DISCONNECT: bool(
+                            user_input.get(CONF_ALLOW_GRID_DISCONNECT)
+                        ),
                     },
                 )
             errors["base"] = error
@@ -277,6 +281,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 ),
                 vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
+                vol.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
             }
         )
         suggested = {
@@ -287,6 +292,10 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             ),
             CONF_ALLOW_CONTROL: (user_input or {}).get(
                 CONF_ALLOW_CONTROL, entry.options.get(CONF_ALLOW_CONTROL) is True
+            ),
+            CONF_ALLOW_GRID_DISCONNECT: (user_input or {}).get(
+                CONF_ALLOW_GRID_DISCONNECT,
+                entry.options.get(CONF_ALLOW_GRID_DISCONNECT) is True,
             ),
         }
         return self.async_show_form(

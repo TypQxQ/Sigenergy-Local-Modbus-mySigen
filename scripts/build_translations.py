@@ -986,6 +986,46 @@ _STEP_C: dict[str, dict[str, str]] = {
            "n_export": "Pozwól baterii oddawać energię do sieci",
            "n_peak": "Ograniczanie szczytów mocy", "n_peak_limit": "Limit sieci dla ograniczania szczytów mocy"},
 }
+KEYS.update({
+    "config.step.reconfigure.data.allow_grid_disconnect": "allow_grid",
+    "config.step.reconfigure.data_description.allow_grid_disconnect": "allow_grid_help",
+    "entity.switch.grid_disconnect.name": "n_grid_off",
+})
+# Step D: disconnecting from the grid.
+_STEP_D: dict[str, dict[str, str]] = {
+    "sv": {"allow_grid": "Tillåt frånkoppling från elnätet",
+           "allow_grid_help": "Lägger till en brytare som kopplar bort anläggningen från elnätet, så att hemmet drivs enbart av batteri och solel, och kopplar in den igen. Kräver Tillåt batteristyrning och en Sigenergy Gateway. Avstängt som standard.",
+           "n_grid_off": "Koppla bort från elnätet (drift på batteri och sol)"},
+    "da": {"allow_grid": "Tillad frakobling fra elnettet",
+           "allow_grid_help": "Tilføjer en kontakt, der kobler anlægget fra elnettet, så hjemmet kun kører på batteri og solstrøm, og kobler det til igen. Kræver Tillad batteristyring og en Sigenergy Gateway. Slået fra som standard.",
+           "n_grid_off": "Kobl fra elnettet (drift på batteri og sol)"},
+    "nb": {"allow_grid": "Tillat frakobling fra strømnettet",
+           "allow_grid_help": "Legger til en bryter som kobler anlegget fra strømnettet, slik at hjemmet bare går på batteri og solstrøm, og kobler det til igjen. Krever Tillat batteristyring og en Sigenergy Gateway. Av som standard.",
+           "n_grid_off": "Koble fra strømnettet (drift på batteri og sol)"},
+    "de": {"allow_grid": "Trennen vom Stromnetz erlauben",
+           "allow_grid_help": "Fügt einen Schalter hinzu, der die Anlage vom Stromnetz trennt, sodass das Haus nur mit Batterie und Solarstrom läuft, und sie wieder verbindet. Erfordert Batteriesteuerung erlauben und ein Sigenergy Gateway. Standardmäßig aus.",
+           "n_grid_off": "Vom Stromnetz trennen (Betrieb mit Batterie und Solar)"},
+    "nl": {"allow_grid": "Loskoppelen van het net toestaan",
+           "allow_grid_help": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit.",
+           "n_grid_off": "Loskoppelen van het net (draaien op batterij en zon)"},
+    "fr": {"allow_grid": "Autoriser la déconnexion du réseau",
+           "allow_grid_help": "Ajoute un interrupteur qui déconnecte l'installation du réseau, pour que la maison fonctionne uniquement sur batterie et solaire, puis la reconnecte. Nécessite Autoriser le pilotage de la batterie et une Sigenergy Gateway. Désactivé par défaut.",
+           "n_grid_off": "Se déconnecter du réseau (batterie et solaire)"},
+    "es": {"allow_grid": "Permitir desconectarse de la red",
+           "allow_grid_help": "Añade un interruptor que desconecta la instalación de la red, para que la casa funcione solo con batería y energía solar, y la vuelve a conectar. Requiere Permitir el control de la batería y un Sigenergy Gateway. Desactivado de forma predeterminada.",
+           "n_grid_off": "Desconectarse de la red (funcionar con batería y solar)"},
+    "it": {"allow_grid": "Consenti la disconnessione dalla rete",
+           "allow_grid_help": "Aggiunge un interruttore che disconnette l'impianto dalla rete, così la casa funziona solo con batteria e solare, e lo ricollega. Richiede Consenti il controllo della batteria e un Sigenergy Gateway. Disattivato per impostazione predefinita.",
+           "n_grid_off": "Disconnetti dalla rete (funzionamento a batteria e solare)"},
+    "fi": {"allow_grid": "Salli irtikytkentä sähköverkosta",
+           "allow_grid_help": "Lisää kytkimen, joka irrottaa laitteiston sähköverkosta, jolloin koti toimii pelkällä akulla ja aurinkosähköllä, ja kytkee sen takaisin. Vaatii asetuksen Salli akun ohjaus ja Sigenergy Gatewayn. Oletuksena pois päältä.",
+           "n_grid_off": "Irrota sähköverkosta (akku- ja aurinkokäyttö)"},
+    "pl": {"allow_grid": "Zezwól na odłączanie od sieci",
+           "allow_grid_help": "Dodaje przełącznik, który odłącza instalację od sieci, tak że dom działa tylko na baterii i energii słonecznej, i podłącza ją ponownie. Wymaga opcji Zezwól na sterowanie baterią i bramy Sigenergy Gateway. Domyślnie wyłączone.",
+           "n_grid_off": "Odłącz od sieci (praca na baterii i energii słonecznej)"},
+}
+for _language, _extra in _STEP_D.items():
+    _STEP_C[_language].update(_extra)
 for _language, _extra in _STEP_C.items():
     _STEP_B[_language].update(_extra, m_ai="Sigen AI")
 for _language, _extra in _STEP_B.items():

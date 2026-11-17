@@ -29,12 +29,14 @@
           "username": "E-mail",
           "password": "Password",
           "scan_interval": "Intervallo di lettura",
-          "allow_control": "Consenti il controllo della batteria"
+          "allow_control": "Consenti il controllo della batteria",
+          "allow_grid_disconnect": "Consenti la disconnessione dalla rete"
         },
         "data_description": {
           "password": "Lascia vuoto per mantenere la password attuale.",
           "scan_interval": "Tra 15 e 60 secondi. Intervalli più brevi inviano più richieste a mySigen.",
-          "allow_control": "Consente a Home Assistant di avviare e annullare una forzatura temporizzata della batteria tramite mySigen. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit."
+          "allow_control": "Consente a Home Assistant di avviare e annullare una forzatura temporizzata della batteria tramite mySigen. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit.",
+          "allow_grid_disconnect": "Aggiunge un interruttore che disconnette l'impianto dalla rete, così la casa funziona solo con batteria e solare, e lo ricollega. Richiede Consenti il controllo della batteria e un Sigenergy Gateway. Disattivato per impostazione predefinita."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Riduzione dei picchi"
+      },
+      "grid_disconnect": {
+        "name": "Disconnetti dalla rete (funzionamento a batteria e solare)"
       }
     }
   },

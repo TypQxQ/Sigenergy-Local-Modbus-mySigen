@@ -29,12 +29,14 @@
           "username": "E-mail",
           "password": "Adgangskode",
           "scan_interval": "Aflæsningsinterval",
-          "allow_control": "Tillad batteristyring"
+          "allow_control": "Tillad batteristyring",
+          "allow_grid_disconnect": "Tillad frakobling fra elnettet"
         },
         "data_description": {
           "password": "Lad feltet være tomt for at beholde den nuværende adgangskode.",
           "scan_interval": "Mellem 15 og 60 sekunder. Kortere intervaller sender flere forespørgsler til mySigen.",
-          "allow_control": "Lader Home Assistant starte og annullere en tidsstyret batterioverstyring via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit."
+          "allow_control": "Lader Home Assistant starte og annullere en tidsstyret batterioverstyring via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit.",
+          "allow_grid_disconnect": "Tilføjer en kontakt, der kobler anlægget fra elnettet, så hjemmet kun kører på batteri og solstrøm, og kobler det til igen. Kræver Tillad batteristyring og en Sigenergy Gateway. Slået fra som standard."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Spidslastbegrænsning"
+      },
+      "grid_disconnect": {
+        "name": "Kobl fra elnettet (drift på batteri og sol)"
       }
     }
   },

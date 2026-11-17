@@ -29,12 +29,14 @@
           "username": "Correo electrónico",
           "password": "Contraseña",
           "scan_interval": "Intervalo de lectura",
-          "allow_control": "Permitir el control de la batería"
+          "allow_control": "Permitir el control de la batería",
+          "allow_grid_disconnect": "Permitir desconectarse de la red"
         },
         "data_description": {
           "password": "Déjalo vacío para conservar la contraseña actual.",
           "scan_interval": "Entre 15 y 60 segundos. Los intervalos más cortos envían más solicitudes a mySigen.",
-          "allow_control": "Permite que Home Assistant inicie y cancele un forzado temporizado de la batería a través de mySigen. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit."
+          "allow_control": "Permite que Home Assistant inicie y cancele un forzado temporizado de la batería a través de mySigen. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit.",
+          "allow_grid_disconnect": "Añade un interruptor que desconecta la instalación de la red, para que la casa funcione solo con batería y energía solar, y la vuelve a conectar. Requiere Permitir el control de la batería y un Sigenergy Gateway. Desactivado de forma predeterminada."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Recorte de picos"
+      },
+      "grid_disconnect": {
+        "name": "Desconectarse de la red (funcionar con batería y solar)"
       }
     }
   },

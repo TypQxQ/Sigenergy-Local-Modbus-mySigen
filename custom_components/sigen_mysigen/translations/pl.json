@@ -29,12 +29,14 @@
           "username": "E-mail",
           "password": "Hasło",
           "scan_interval": "Interwał odczytu",
-          "allow_control": "Zezwól na sterowanie baterią"
+          "allow_control": "Zezwól na sterowanie baterią",
+          "allow_grid_disconnect": "Zezwól na odłączanie od sieci"
         },
         "data_description": {
           "password": "Pozostaw puste, aby zachować obecne hasło.",
           "scan_interval": "Od 15 do 60 sekund. Krótsze interwały wysyłają więcej żądań do mySigen.",
-          "allow_control": "Pozwala Home Assistant uruchamiać i anulować czasowe wymuszenie pracy baterii przez mySigen. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit."
+          "allow_control": "Pozwala Home Assistant uruchamiać i anulować czasowe wymuszenie pracy baterii przez mySigen. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit.",
+          "allow_grid_disconnect": "Dodaje przełącznik, który odłącza instalację od sieci, tak że dom działa tylko na baterii i energii słonecznej, i podłącza ją ponownie. Wymaga opcji Zezwól na sterowanie baterią i bramy Sigenergy Gateway. Domyślnie wyłączone."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Ograniczanie szczytów mocy"
+      },
+      "grid_disconnect": {
+        "name": "Odłącz od sieci (praca na baterii i energii słonecznej)"
       }
     }
   },
