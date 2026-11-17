@@ -149,6 +149,19 @@ During a grid outage the plant reconnects by itself, so reconnecting is refused 
 
 Running off the grid drains the battery. When it is empty, the home loses power until you reconnect.
 
+### DC charger
+
+When mySigen lists a DC charger for the station, the add-on shows its charging mode, the vehicle level it stops charging at, and whether the car may supply power. While **Allow battery control** is on, these controls are added, disabled to start with:
+
+| Control | Type | What it does |
+| --- | --- | --- |
+| DC charger charging mode | Dropdown | Charge now at full power, Charge on solar surplus only, or Charge and let the car supply power (V2X). |
+| DC charger stop charging at vehicle level | Number, % | Charging stops when the car reaches this level. |
+| DC charger keep at least this much in the car | Number, % | The car stops supplying power at this level. |
+| DC charger let the car power the home (V2X) | Switch | Allows or blocks the car supplying power, without Remote EMS. |
+
+Changes are refused while Remote EMS is on. These are built from other mySigen clients and have not yet been checked against a real charger; please report how they behave.
+
 ## Limitations
 
 - **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.

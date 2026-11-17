@@ -77,6 +77,13 @@ _PEAK_PATH = "device/dischargesetting/peak/shaving/{station_id}"
 _PEAK_WRITE_PATH = "device/dischargesetting/peak/shaving"
 _GRID_STATUS_PATH = "device/gateway/gateway-status"
 _GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
+# DC charger (step E). Taken from the solidfox clients; not yet read on a
+# system with a charger.
+_DC_MODE_PATH = "device/charge/mode/dc"
+_DC_SETTING_PATH = "device/dcevse/charge/setting"
+_DC_V2X_PATH = "device/station-v2x/select"
+_DC_V2X_WRITE_PATH = "device/station-v2x/open-close"
+_SOC_RANGE_PATH = "device/charge/mode/soc/range"
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
 # Rows of the Gateway answer that become readings. Labels are compared in
@@ -359,6 +366,86 @@ def parse_peak_shaving(data: Any) -> PeakShaving | None:
     return schedule if schedule.enabled is not None else None
 
 
+# DC charger chargeMode codes as solidfox's integration observed them.
+DC_CHARGE_MODES = {"fast_charging": 0, "solar_surplus": 1, "bidirectional": 2}
+# Fields the app sends back with a mode change; written as they were read.
+_DC_MODE_FIELDS = (
+    "enableFromPack", "cutoffSocFromPack", "allowsDischargePower", "vehicleDischargeCutoffSoc",
+)
+
+
+@dataclass(frozen=True)
+class DcChargeMode:
+    """The DC charger's mode and the settings that go with it."""
+
+    raw: dict[str, Any]
+
+    @property
+    def mode(self) -> str | None:
+        code = _int_or_none(self.raw.get("chargeMode"))
+        return next((name for name, value in DC_CHARGE_MODES.items() if value == code), None)
+
+    @property
+    def discharge_floor(self) -> int | None:
+        """The car stops supplying power at this charge level."""
+        return _int_or_none(self.raw.get("vehicleDischargeCutoffSoc"))
+
+    def body(self, mode: str | None = None, discharge_floor: int | None = None) -> dict[str, Any]:
+        """A change: the mode code plus the read fields, one of them changed."""
+        body: dict[str, Any] = {
+            key: self.raw[key] for key in _DC_MODE_FIELDS if self.raw.get(key) is not None
+        }
+        if discharge_floor is not None:
+            body["vehicleDischargeCutoffSoc"] = int(discharge_floor)
+        body["chargeMode"] = DC_CHARGE_MODES[mode] if mode else self.raw["chargeMode"]
+        return body
+
+
+def parse_dc_charge_mode(data: Any) -> DcChargeMode | None:
+    if not isinstance(data, dict) or _int_or_none(data.get("chargeMode")) is None:
+        return None
+    return DcChargeMode(dict(data))
+
+
+@dataclass(frozen=True)
+class DcChargeSetting:
+    """Charging power allowed and the vehicle level charging stops at."""
+
+    allowed_power: float
+    stop_level: int
+
+
+def parse_dc_charge_setting(data: Any) -> DcChargeSetting | None:
+    if not isinstance(data, dict):
+        return None
+    level = _int_or_none(data.get("vehicleChargingCutoffSoc"))
+    try:
+        power = float(data.get("allowedChargePower"))
+    except (TypeError, ValueError):
+        return None
+    if level is None or isinstance(data.get("allowedChargePower"), bool):
+        return None
+    return DcChargeSetting(allowed_power=power, stop_level=level)
+
+
+def parse_v2x_enabled(data: Any) -> bool | None:
+    """Whether the car may supply power (V2X)."""
+    value = data.get("dischargeEnable") if isinstance(data, dict) else None
+    if isinstance(value, bool):
+        return value
+    return {0: False, 1: True}.get(_int_or_none(value))
+
+
+def parse_soc_range(data: Any) -> tuple[int, int] | None:
+    if not isinstance(data, dict):
+        return None
+    low = _int_or_none(data.get("socLowerLimit"))
+    high = _int_or_none(data.get("socUpperLimit"))
+    if low is None or high is None or not 0 <= low < high <= 100:
+        return None
+    return low, high
+
+
 GRID_ON = "on_grid"
 GRID_GOING_OFF = "going_off_grid"
 GRID_OFF = "off_grid"
@@ -613,6 +700,8 @@ class MySigenSession:
         self._refresh_token: str | None = None
         self._expires_at = 0.0
         self._station_id: str | None = None
+        # DC chargers mySigen lists for the station, read with the station id.
+        self.dc_serials: tuple[str, ...] = ()
         self._logged_keys = False
 
     def _store(self, tokens: dict[str, Any]) -> None:
@@ -703,12 +792,81 @@ class MySigenSession:
     async def async_station_id(self) -> str:
         """Return the account's station id, read once and then kept."""
         if self._station_id is None:
-            data = await self._async_get("station", _STATION_PATH)
-            station_id = data.get("stationId") if isinstance(data, dict) else None
-            if station_id in (None, ""):
-                raise MySigenConnectionError("The account has no station")
-            self._station_id = str(station_id)
+            await self.async_read_station()
         return self._station_id
+
+    async def async_read_station(self) -> bool:
+        """Read the station: its id and the DC chargers listed for it.
+
+        Returns False, and changes nothing, when the account now opens a
+        different station than the one this session started with. Only a
+        new session, whose station is checked against the plant again, may
+        use it.
+        """
+        data = await self._async_get("station", _STATION_PATH)
+        station_id = data.get("stationId") if isinstance(data, dict) else None
+        if station_id in (None, ""):
+            raise MySigenConnectionError("The account has no station")
+        if self._station_id is not None and str(station_id) != self._station_id:
+            return False
+        self._station_id = str(station_id)
+        serials = data.get("dcSnList")
+        self.dc_serials = tuple(
+            str(sn) for sn in serials if sn not in (None, "")
+        ) if isinstance(serials, list) else ()
+        return True
+
+    @property
+    def dc_serial(self) -> str | None:
+        """The first DC charger mySigen lists for the station; None without one."""
+        return self.dc_serials[0] if self.dc_serials else None
+
+    async def _async_dc_get(self, what: str, path: str) -> Any:
+        if self.dc_serial is None:
+            raise MySigenConnectionError(f"{what}: no DC charger")
+        return await self._async_get(what, path, {
+            "stationId": await self.async_station_id(), "snCode": self.dc_serial,
+        })
+
+    async def _async_dc_post(self, what: str, path: str, body: dict[str, Any]) -> None:
+        if self.dc_serial is None:
+            raise MySigenRejectedError(f"{what}: not sent, no DC charger")
+        await self._async_put(what, path, {
+            "stationId": await self._async_station_number(), "snCode": self.dc_serial, **body,
+        }, method="POST")
+
+    async def async_dc_charge_mode(self) -> DcChargeMode | None:
+        return parse_dc_charge_mode(await self._async_dc_get("charger mode", _DC_MODE_PATH))
+
+    async def async_dc_charge_setting(self) -> DcChargeSetting | None:
+        return parse_dc_charge_setting(
+            await self._async_dc_get("charger setting", _DC_SETTING_PATH)
+        )
+
+    async def async_v2x_enabled(self) -> bool | None:
+        return parse_v2x_enabled(await self._async_dc_get("vehicle discharging", _DC_V2X_PATH))
+
+    async def async_soc_range(self) -> tuple[int, int] | None:
+        return parse_soc_range(await self._async_get(
+            "charge level range", _SOC_RANGE_PATH, {"stationId": await self.async_station_id()}
+        ))
+
+    async def async_set_dc_charge_mode(self, body: dict[str, Any]) -> None:
+        """Change the charger mode or its settings. Sent once."""
+        await self._async_dc_post("set charger mode", _DC_MODE_PATH, body)
+
+    async def async_set_dc_stop_level(self, current: DcChargeSetting, level: int) -> None:
+        """Change the stop level, keeping the allowed power. Sent once."""
+        await self._async_dc_post("set charger stop level", _DC_SETTING_PATH, {
+            "allowedChargePower": current.allowed_power,
+            "vehicleChargingCutoffSoc": int(level),
+        })
+
+    async def async_set_v2x_enabled(self, enabled: bool) -> None:
+        """Allow or block the car supplying power. Sent once."""
+        await self._async_dc_post(
+            "set vehicle discharging", _DC_V2X_WRITE_PATH, {"dischargeEnable": 1 if enabled else 0}
+        )
 
     async def async_device_serials(self) -> set[str]:
         """Return the serial numbers mySigen lists for the account's station.

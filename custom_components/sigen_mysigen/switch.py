@@ -10,9 +10,14 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .commands import async_run_setting
 from .const import CONF_PLANT_ENTRY_ID
-from .control import async_set_battery_export, async_set_off_grid, async_set_peak_shaving
+from .control import (
+    async_set_battery_export,
+    async_set_off_grid,
+    async_set_peak_shaving,
+    async_set_v2x_enabled,
+)
 from .entity import MySigenEntity
-from .link import plant_grid_state
+from .link import plant_grid_state, remote_ems_state
 
 
 async def async_setup_entry(
@@ -28,6 +33,8 @@ async def async_setup_entry(
     ]
     if coordinator.allow_grid_disconnect:
         entities.append(GridDisconnect(coordinator, "grid_disconnect"))
+    if coordinator.has_dc_charger:
+        entities.append(AllowV2x(coordinator, "dc_charger_allow_v2x"))
     async_add_entities(entities)
 
 
@@ -125,6 +132,34 @@ class GridDisconnect(MySigenEntity, SwitchEntity):
                 plant_grid=lambda: plant_grid_state(self.hass, plant_entry_id),
             ),
         )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)
+
+
+class AllowV2x(MySigenEntity, SwitchEntity):
+    """On: the car may supply power to the home through the DC charger."""
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.v2x_enabled is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.coordinator.v2x_enabled
+
+    async def _async_set(self, enabled: bool) -> None:
+        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
+        await async_run_setting(self.coordinator, async_set_v2x_enabled(
+            self.coordinator,
+            enabled=enabled,
+            remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
+        ))
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._async_set(True)

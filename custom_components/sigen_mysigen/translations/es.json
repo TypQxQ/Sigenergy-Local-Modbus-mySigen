@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Forzado de batería activo"
+      },
+      "dc_charger_v2x": {
+        "name": "Cargador DC: el coche puede suministrar energía"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway modelo"
+      },
+      "dc_charger_mode": {
+        "name": "Modo de carga en uso del cargador DC",
+        "state": {
+          "fast_charging": "Cargar ahora a plena potencia",
+          "solar_surplus": "Cargar solo con excedente solar",
+          "bidirectional": "Cargar y dejar que el coche suministre energía (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "El cargador DC deja de cargar al nivel del vehículo"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Límite de red del recorte de picos"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "Cargador DC: dejar de cargar al nivel del vehículo"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "Cargador DC: mantener al menos esto en el coche"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Por franjas horarias (TOU)",
           "fully_fed_to_grid": "Verter toda la energía solar a la red (vertido total)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Modo de carga del cargador DC",
+        "state": {
+          "fast_charging": "Cargar ahora a plena potencia",
+          "solar_surplus": "Cargar solo con excedente solar",
+          "bidirectional": "Cargar y dejar que el coche suministre energía (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Desconectarse de la red (funcionar con batería y solar)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "Cargador DC: el coche alimenta la casa (V2X)"
       }
     }
   },

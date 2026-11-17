@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Batterie-Übersteuerung aktiv"
+      },
+      "dc_charger_v2x": {
+        "name": "DC-Lader: Auto darf Strom liefern"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway Modell"
+      },
+      "dc_charger_mode": {
+        "name": "Verwendeter Lademodus des DC-Laders",
+        "state": {
+          "fast_charging": "Jetzt mit voller Leistung laden",
+          "solar_surplus": "Nur mit Solarüberschuss laden",
+          "bidirectional": "Laden und das Auto Strom liefern lassen (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC-Lader beendet das Laden bei Fahrzeugladestand"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Netzgrenze der Lastspitzenkappung"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC-Lader: Laden beenden bei Fahrzeugladestand"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC-Lader: mindestens so viel im Auto behalten"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Zeitabhängiger Tarif (TOU)",
           "fully_fed_to_grid": "Gesamten Solarstrom ins Netz einspeisen (Volleinspeisung)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Lademodus des DC-Laders",
+        "state": {
+          "fast_charging": "Jetzt mit voller Leistung laden",
+          "solar_surplus": "Nur mit Solarüberschuss laden",
+          "bidirectional": "Laden und das Auto Strom liefern lassen (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Vom Stromnetz trennen (Betrieb mit Batterie und Solar)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC-Lader: Auto versorgt das Haus (V2X)"
       }
     }
   },

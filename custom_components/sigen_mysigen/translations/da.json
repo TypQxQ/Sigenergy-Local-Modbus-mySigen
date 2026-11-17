@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Batterioverstyring aktiv"
+      },
+      "dc_charger_v2x": {
+        "name": "DC-laderen: bilen må levere strøm"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway model"
+      },
+      "dc_charger_mode": {
+        "name": "Ladetilstand i brug for DC-laderen",
+        "state": {
+          "fast_charging": "Oplad nu med fuld effekt",
+          "solar_surplus": "Oplad kun med soloverskud",
+          "bidirectional": "Oplad og lad bilen levere strøm (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC-laderen stopper opladning ved bilens niveau"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Netgrænse for spidslastbegrænsning"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC-laderen: stop opladning ved bilens niveau"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC-laderen: behold mindst så meget i bilen"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Tidsstyret (TOU)",
           "fully_fed_to_grid": "Send al solstrøm til nettet (fuld levering)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Ladetilstand for DC-laderen",
+        "state": {
+          "fast_charging": "Oplad nu med fuld effekt",
+          "solar_surplus": "Oplad kun med soloverskud",
+          "bidirectional": "Oplad og lad bilen levere strøm (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Kobl fra elnettet (drift på batteri og sol)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC-laderen: lad bilen forsyne hjemmet (V2X)"
       }
     }
   },

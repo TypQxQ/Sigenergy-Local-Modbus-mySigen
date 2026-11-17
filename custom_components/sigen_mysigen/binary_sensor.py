@@ -15,7 +15,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add the override state."""
-    async_add_entities([BatteryOverrideActive(entry.runtime_data, "battery_override")])
+    coordinator = entry.runtime_data
+    entities: list[BinarySensorEntity] = [BatteryOverrideActive(coordinator, "battery_override")]
+    if coordinator.has_dc_charger:
+        entities.append(V2xAllowed(coordinator, "dc_charger_v2x"))
+    async_add_entities(entities)
 
 
 class BatteryOverrideActive(MySigenEntity, BinarySensorEntity):
@@ -24,3 +28,11 @@ class BatteryOverrideActive(MySigenEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.override.enabled
+
+
+class V2xAllowed(MySigenEntity, BinarySensorEntity):
+    """On when the car may supply power through the DC charger."""
+
+    @property
+    def is_on(self) -> bool | None:
+        return self.coordinator.v2x_enabled

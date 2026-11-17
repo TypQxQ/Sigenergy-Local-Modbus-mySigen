@@ -11,6 +11,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    PERCENTAGE,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -21,7 +22,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import OVERRIDE_MODES
+from .api import DC_CHARGE_MODES, OVERRIDE_MODES
 from .const import DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
@@ -109,6 +110,11 @@ async def async_setup_entry(
         LastUpdate(coordinator, "last_update"),
         LastCommand(coordinator, "battery_override_command"),
     ]
+    if coordinator.has_dc_charger:
+        entities += [
+            DcChargeModeInUse(coordinator, "dc_charger_mode"),
+            DcStopLevel(coordinator, "dc_charger_stop_level"),
+        ]
 
     def gateway_entities() -> list[SensorEntity]:
         return [
@@ -238,3 +244,26 @@ class GatewayText(_GatewayEntity):
     @property
     def native_value(self) -> str | None:
         return self.coordinator.data.gateway.texts.get(self._reading)
+
+
+class DcChargeModeInUse(MySigenEntity, SensorEntity):
+    """How the DC charger decides when to charge."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(DC_CHARGE_MODES)
+
+    @property
+    def native_value(self) -> str | None:
+        mode = self.coordinator.dc_charge_mode
+        return mode.mode if mode is not None else None
+
+
+class DcStopLevel(MySigenEntity, SensorEntity):
+    """The vehicle charge level at which the DC charger stops charging."""
+
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    @property
+    def native_value(self) -> int | None:
+        setting = self.coordinator.dc_charge_setting
+        return setting.stop_level if setting is not None else None

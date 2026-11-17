@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Forzatura batteria attiva"
+      },
+      "dc_charger_v2x": {
+        "name": "Caricatore DC: l'auto può fornire energia"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway modello"
+      },
+      "dc_charger_mode": {
+        "name": "Modalità di ricarica in uso del caricatore DC",
+        "state": {
+          "fast_charging": "Ricarica ora a piena potenza",
+          "solar_surplus": "Ricarica solo con l'eccedenza solare",
+          "bidirectional": "Ricarica e lascia che l'auto fornisca energia (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "Il caricatore DC smette di caricare al livello del veicolo"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Limite di rete della riduzione dei picchi"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "Caricatore DC: smetti di caricare al livello del veicolo"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "Caricatore DC: mantieni almeno questo nell'auto"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Fasce orarie (TOU)",
           "fully_fed_to_grid": "Immetti tutta l'energia solare in rete (cessione totale)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Modalità di ricarica del caricatore DC",
+        "state": {
+          "fast_charging": "Ricarica ora a piena potenza",
+          "solar_surplus": "Ricarica solo con l'eccedenza solare",
+          "bidirectional": "Ricarica e lascia che l'auto fornisca energia (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Disconnetti dalla rete (funzionamento a batteria e solare)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "Caricatore DC: l'auto alimenta la casa (V2X)"
       }
     }
   },

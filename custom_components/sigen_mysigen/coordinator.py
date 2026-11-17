@@ -22,6 +22,8 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     BatteryExport,
+    DcChargeMode,
+    DcChargeSetting,
     GridConnection,
     PeakShaving,
     CONTROL_MODES,
@@ -61,6 +63,10 @@ _BACKOFF_MAX = 900.0
 # Settings that stay until changed are read this often, and only while
 # control is allowed. A change reads them back at once.
 _SETTINGS_INTERVAL = 600.0
+# How often the station's charger list is read again.
+_CHARGER_RECHECK = 3600.0
+# A failed charger read is tried once more this soon.
+_CHARGER_RETRY = 60.0
 # How long "no Gateway" is trusted before mySigen is asked again. Long
 # enough not to bother the service, short enough that a Gateway that was
 # added, or an answer that was a temporary error, is picked up the same day.
@@ -134,6 +140,15 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # True from a state between on and off until a settled answer arrives,
         # also through answers that could not be read.
         self._grid_following = False
+        # DC charger (step E); read whenever mySigen lists a charger.
+        self.dc_charge_mode: DcChargeMode | None = None
+        self.dc_charge_setting: DcChargeSetting | None = None
+        self.v2x_enabled: bool | None = None
+        self.soc_range: tuple[int, int] | None = None
+        self._charger_read_at = float("-inf")
+        self._charger_retrying = False
+        # The charger list is read again this often; a change reloads the entry.
+        self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
         self._settings_read_at = float("-inf")
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
@@ -220,6 +235,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def read_settings_soon(self) -> None:
         """Read the settings again at the next poll."""
         self._settings_read_at = float("-inf")
+        self._charger_read_at = float("-inf")
 
     def publish_operating_mode(self, code: int) -> None:
         self.operating_mode = code
@@ -232,6 +248,78 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def publish_peak_shaving(self, schedule: PeakShaving) -> None:
         self.peak_shaving = schedule
         self.async_update_listeners()
+
+    @property
+    def has_dc_charger(self) -> bool:
+        return self.session.dc_serial is not None
+
+    def publish_dc_charge_mode(self, value: DcChargeMode) -> None:
+        self.dc_charge_mode = value
+        self.async_update_listeners()
+
+    def publish_dc_charge_setting(self, value: DcChargeSetting) -> None:
+        self.dc_charge_setting = value
+        self.async_update_listeners()
+
+    def publish_v2x_enabled(self, value: bool) -> None:
+        self.v2x_enabled = value
+        self.async_update_listeners()
+
+    async def _async_read_charger(self) -> None:
+        """Read the DC charger's settings. A failing read clears its value."""
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            now = time.monotonic()
+            self._charger_read_at = now
+            reads = [
+                ("dc_charge_mode", self.session.async_dc_charge_mode),
+                ("dc_charge_setting", self.session.async_dc_charge_setting),
+                ("v2x_enabled", self.session.async_v2x_enabled),
+            ]
+            if self.soc_range is None:
+                reads.append(("soc_range", self.session.async_soc_range))
+            failed = False
+            for name, read in reads:
+                try:
+                    setattr(self, name, await read())
+                except (MySigenConnectionError, MySigenPermissionError) as err:
+                    # mySigen no longer confirms the old value: show it as
+                    # unavailable rather than as current.
+                    _LOGGER.debug("mySigen %s read failed: %s", name, err)
+                    setattr(self, name, None)
+                    failed = True
+            if failed and not self._charger_retrying:
+                # One early retry, a minute later; then the normal interval.
+                self._charger_read_at = now - _SETTINGS_INTERVAL + _CHARGER_RETRY
+            self._charger_retrying = failed and not self._charger_retrying
+
+    async def _async_recheck_chargers(self) -> None:
+        """Read the station's charger list again; reload when it changed.
+
+        Holds the command lock, so a running command finishes against the
+        charger it read.
+        """
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
+            before = self.session.dc_serial
+            try:
+                same_station = await self.session.async_read_station()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen station read failed: %s", err)
+                return
+            if not same_station:
+                # Not checked against the plant: block every change at once,
+                # and let the reload check the new station from the start.
+                self.link_problem = "station_changed"
+                _LOGGER.warning("The mySigen account opens a different station now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            if self.session.dc_serial != before:
+                _LOGGER.info("mySigen lists a different DC charger now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 
     def publish_grid_connection(self, connection: GridConnection) -> None:
         self.grid_connection = connection
@@ -367,6 +455,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 await self._async_read_settings()
             elif self._grid_changing:
                 await self._async_read_grid()
+            if (
+                self.has_dc_charger
+                and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
+            ):
+                await self._async_read_charger()
+            if time.monotonic() >= self._station_reread_at:
+                await self._async_recheck_chargers()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"mySigen refused the stored account ({err})"

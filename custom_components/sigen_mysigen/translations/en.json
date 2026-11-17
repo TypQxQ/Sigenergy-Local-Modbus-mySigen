@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Battery override active"
+      },
+      "dc_charger_v2x": {
+        "name": "DC charger car may supply power"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway model"
+      },
+      "dc_charger_mode": {
+        "name": "DC charger charging mode in use",
+        "state": {
+          "fast_charging": "Charge now at full power",
+          "solar_surplus": "Charge on solar surplus only",
+          "bidirectional": "Charge and let the car supply power (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC charger stops charging at vehicle level"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Peak shaving grid limit"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC charger stop charging at vehicle level"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC charger keep at least this much in the car"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Time of use (TOU)",
           "fully_fed_to_grid": "Send all solar to the grid (fully fed to grid)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "DC charger charging mode",
+        "state": {
+          "fast_charging": "Charge now at full power",
+          "solar_surplus": "Charge on solar surplus only",
+          "bidirectional": "Charge and let the car supply power (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Disconnect from the grid (run on battery and solar)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC charger let the car power the home (V2X)"
       }
     }
   },

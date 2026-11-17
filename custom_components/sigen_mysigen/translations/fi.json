@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Akun ohitus aktiivinen"
+      },
+      "dc_charger_v2x": {
+        "name": "DC-laturi: auto saa syöttää sähköä"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway malli"
+      },
+      "dc_charger_mode": {
+        "name": "DC-laturin käytössä oleva lataustila",
+        "state": {
+          "fast_charging": "Lataa nyt täydellä teholla",
+          "solar_surplus": "Lataa vain aurinkoylijäämällä",
+          "bidirectional": "Lataa ja anna auton syöttää sähköä (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC-laturi lopettaa latauksen auton varaustasolla"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Huipputehon leikkauksen verkkoraja"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC-laturi: lopeta lataus auton varaustasolla"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC-laturi: pidä autossa vähintään tämä"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Aikaperusteinen (TOU)",
           "fully_fed_to_grid": "Syötä kaikki aurinkosähkö verkkoon (täysi syöttö)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "DC-laturin lataustila",
+        "state": {
+          "fast_charging": "Lataa nyt täydellä teholla",
+          "solar_surplus": "Lataa vain aurinkoylijäämällä",
+          "bidirectional": "Lataa ja anna auton syöttää sähköä (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Irrota sähköverkosta (akku- ja aurinkokäyttö)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC-laturi: auto syöttää kotia (V2X)"
       }
     }
   },
