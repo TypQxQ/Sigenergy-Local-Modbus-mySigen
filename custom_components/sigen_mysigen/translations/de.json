@@ -84,7 +84,7 @@
         "name": "Batterie-Übersteuerung aktiv (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC-Lader V2X erlaubt (mySigen)"
+        "name": "Strom vom E-Auto erlaubt (V2X) (mySigen)"
       }
     },
     "sensor": {
@@ -98,7 +98,7 @@
         }
       },
       "battery_override_end": {
-        "name": "Batterie-Übersteuerung endet (mySigen)"
+        "name": "Endzeit der Batterie-Übersteuerung (mySigen)"
       },
       "last_update": {
         "name": "Letzte Aktualisierung (mySigen)"
@@ -122,7 +122,7 @@
         "name": "Gateway Netzstrom Phase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Ergebnis der Batterie-Übersteuerung (mySigen)",
+        "name": "Ergebnis des letzten Übersteuerungsbefehls (mySigen)",
         "state": {
           "confirmed": "Bestätigt",
           "refused": "Abgelehnt",
@@ -132,10 +132,10 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway Netzspannung max. Phase A (mySigen)"
+        "name": "Gateway Netzspannung Phase A, 1-min-Max. (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway Netzspannung min. Phase A (mySigen)"
+        "name": "Gateway Netzspannung Phase A, 1-min-Min. (mySigen)"
       },
       "generator_voltage_a": {
         "name": "Generatorspannung Phase A (mySigen)"
@@ -144,10 +144,10 @@
         "name": "Generatorstrom Phase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway Netzspannung max. Phase B (mySigen)"
+        "name": "Gateway Netzspannung Phase B, 1-min-Max. (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway Netzspannung min. Phase B (mySigen)"
+        "name": "Gateway Netzspannung Phase B, 1-min-Min. (mySigen)"
       },
       "generator_voltage_b": {
         "name": "Generatorspannung Phase B (mySigen)"
@@ -156,10 +156,10 @@
         "name": "Generatorstrom Phase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway Netzspannung max. Phase C (mySigen)"
+        "name": "Gateway Netzspannung Phase C, 1-min-Max. (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway Netzspannung min. Phase C (mySigen)"
+        "name": "Gateway Netzspannung Phase C, 1-min-Min. (mySigen)"
       },
       "generator_voltage_c": {
         "name": "Generatorspannung Phase C (mySigen)"
@@ -186,7 +186,7 @@
         "name": "Gateway Modell (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "DC-Lader Modus (mySigen)",
+        "name": "Aktueller DC-Lademodus (mySigen)",
         "state": {
           "fast_charging": "Jetzt mit voller Leistung laden",
           "solar_surplus": "Nur mit Solarüberschuss laden",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC-Lader Stoppniveau (mySigen)"
+        "name": "Aktuelle DC-Ladegrenze (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Dauer der Batterie-Übersteuerung (mySigen)"
+        "name": "Dauer der nächsten Übersteuerung (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Leistungsgrenze der Übersteuerung (mySigen)"
+        "name": "Leistungsgrenze der nächsten Übersteuerung (mySigen)"
       },
       "peak_shaving_limit": {
         "name": "Netzgrenze der Lastspitzenkappung (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC-Lader Stoppniveau einstellen (mySigen)"
+        "name": "DC-Ladegrenze (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC-Lader V2X-Reserve (mySigen)"
+        "name": "Mindestladung des E-Autos für V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Zu startende Batterie-Übersteuerung (mySigen)",
+        "name": "Modus der nächsten Übersteuerung (mySigen)",
         "state": {
           "hold_battery": "Batterie halten (kein Laden, kein Entladen)",
           "charging": "Batterie laden",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "DC-Lader Modus einstellen (mySigen)",
+        "name": "DC-Lademodus (mySigen)",
         "state": {
           "fast_charging": "Jetzt mit voller Leistung laden",
           "solar_surplus": "Nur mit Solarüberschuss laden",
@@ -252,7 +252,7 @@
     },
     "switch": {
       "battery_export": {
-        "name": "Batterieeinspeisung ins Netz (mySigen)"
+        "name": "Batterieeinspeisung ins Netz erlauben (mySigen)"
       },
       "peak_shaving": {
         "name": "Lastspitzenkappung (mySigen)"
@@ -261,7 +261,7 @@
         "name": "Vom Stromnetz trennen (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC-Lader V2X erlauben (mySigen)"
+        "name": "Strom vom E-Auto erlauben (V2X) (mySigen)"
       }
     }
   },

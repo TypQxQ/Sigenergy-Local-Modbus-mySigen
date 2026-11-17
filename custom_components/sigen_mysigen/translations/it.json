@@ -84,7 +84,7 @@
         "name": "Forzatura batteria attiva (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "Caricatore DC V2X consentito (mySigen)"
+        "name": "Energia dal VE consentita (V2X) (mySigen)"
       }
     },
     "sensor": {
@@ -98,7 +98,7 @@
         }
       },
       "battery_override_end": {
-        "name": "Fine della forzatura batteria (mySigen)"
+        "name": "Ora di fine della forzatura batteria (mySigen)"
       },
       "last_update": {
         "name": "Ultimo aggiornamento (mySigen)"
@@ -122,7 +122,7 @@
         "name": "Gateway corrente di rete fase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Risultato della forzatura batteria (mySigen)",
+        "name": "Risultato dell'ultimo comando di forzatura (mySigen)",
         "state": {
           "confirmed": "Confermato",
           "refused": "Rifiutato",
@@ -132,10 +132,10 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway tensione di rete max fase A (mySigen)"
+        "name": "Gateway tensione di rete fase A, max 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway tensione di rete min fase A (mySigen)"
+        "name": "Gateway tensione di rete fase A, min 1 min (mySigen)"
       },
       "generator_voltage_a": {
         "name": "Tensione del generatore fase A (mySigen)"
@@ -144,10 +144,10 @@
         "name": "Corrente del generatore fase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway tensione di rete max fase B (mySigen)"
+        "name": "Gateway tensione di rete fase B, max 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway tensione di rete min fase B (mySigen)"
+        "name": "Gateway tensione di rete fase B, min 1 min (mySigen)"
       },
       "generator_voltage_b": {
         "name": "Tensione del generatore fase B (mySigen)"
@@ -156,10 +156,10 @@
         "name": "Corrente del generatore fase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway tensione di rete max fase C (mySigen)"
+        "name": "Gateway tensione di rete fase C, max 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway tensione di rete min fase C (mySigen)"
+        "name": "Gateway tensione di rete fase C, min 1 min (mySigen)"
       },
       "generator_voltage_c": {
         "name": "Tensione del generatore fase C (mySigen)"
@@ -186,7 +186,7 @@
         "name": "Gateway modello (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "Caricatore DC modalità (mySigen)",
+        "name": "Modalità di ricarica DC attuale (mySigen)",
         "state": {
           "fast_charging": "Ricarica ora a piena potenza",
           "solar_surplus": "Ricarica solo con l'eccedenza solare",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "Caricatore DC livello di arresto (mySigen)"
+        "name": "Limite di ricarica DC attuale (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Durata della forzatura batteria (mySigen)"
+        "name": "Durata della prossima forzatura (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Limite di potenza della forzatura (mySigen)"
+        "name": "Limite di potenza della prossima forzatura (mySigen)"
       },
       "peak_shaving_limit": {
         "name": "Limite di rete riduzione picchi (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "Caricatore DC imposta livello di arresto (mySigen)"
+        "name": "Limite di ricarica DC (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "Caricatore DC riserva V2X (mySigen)"
+        "name": "Carica minima del VE per V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Forzatura batteria da avviare (mySigen)",
+        "name": "Modalità della prossima forzatura (mySigen)",
         "state": {
           "hold_battery": "Mantieni la batteria (nessuna carica, nessuna scarica)",
           "charging": "Carica la batteria",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "Caricatore DC imposta modalità (mySigen)",
+        "name": "Modalità di ricarica DC (mySigen)",
         "state": {
           "fast_charging": "Ricarica ora a piena potenza",
           "solar_surplus": "Ricarica solo con l'eccedenza solare",
@@ -252,7 +252,7 @@
     },
     "switch": {
       "battery_export": {
-        "name": "Immissione della batteria in rete (mySigen)"
+        "name": "Consenti immissione della batteria in rete (mySigen)"
       },
       "peak_shaving": {
         "name": "Riduzione dei picchi (mySigen)"
@@ -261,7 +261,7 @@
         "name": "Disconnetti dalla rete (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "Caricatore DC consenti V2X (mySigen)"
+        "name": "Consenti energia dal VE (V2X) (mySigen)"
       }
     }
   },

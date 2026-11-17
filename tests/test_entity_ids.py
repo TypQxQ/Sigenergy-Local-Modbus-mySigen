@@ -159,7 +159,7 @@ class TestEntityIds(unittest.TestCase):
         )
         self.assertEqual(
             _entity_id("number", limit),
-            "number.sigen_plant_battery_override_power_limit_mysigen",
+            "number.sigen_plant_next_override_power_limit_mysigen",
         )
 
     def test_a_name_without_the_suffix_still_gets_it_once(self):

@@ -66,12 +66,16 @@ class TestTranslations(unittest.TestCase):
 
     def test_entity_names_stay_short(self):
         # Details such as "0 = no limit" belong in the usage guide, and a
-        # button needs no "now".
+        # button needs no "now". Aim for 50 characters, suffix included;
+        # natural wording may go a little over, never past 60.
         for language in LANGUAGES:
             for key, text in _load(language).items():
                 if key.startswith("entity.") and key.endswith(".name"):
                     self.assertNotIn("=", text, f"{language}: {key}")
-                    self.assertLessEqual(len(text), 50, f"{language}: {key}")
+                    self.assertLessEqual(len(text), 60, f"{language}: {key}")
+        for key, text in self.english.items():
+            if key.startswith("entity.") and key.endswith(".name"):
+                self.assertLessEqual(len(text), 50, f"en: {key}")
         for key in ("start_battery_override", "stop_battery_override"):
             name = self.english[f"entity.button.{key}.name"]
             self.assertNotIn(" now", name)

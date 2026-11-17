@@ -84,7 +84,7 @@
         "name": "Batteriöverstyrning aktiv (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC-laddare V2X tillåten (mySigen)"
+        "name": "El från elbilen tillåten (V2X) (mySigen)"
       }
     },
     "sensor": {
@@ -98,7 +98,7 @@
         }
       },
       "battery_override_end": {
-        "name": "Batteriöverstyrningen slutar (mySigen)"
+        "name": "Batteriöverstyrningens sluttid (mySigen)"
       },
       "last_update": {
         "name": "Senaste uppdatering (mySigen)"
@@ -122,7 +122,7 @@
         "name": "Gateway nätström fas C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Resultat av batteriöverstyrning (mySigen)",
+        "name": "Resultat av senaste överstyrningskommando (mySigen)",
         "state": {
           "confirmed": "Bekräftad",
           "refused": "Nekad",
@@ -132,10 +132,10 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway nätspänning max fas A (mySigen)"
+        "name": "Gateway nätspänning fas A, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway nätspänning min fas A (mySigen)"
+        "name": "Gateway nätspänning fas A, 1-min min (mySigen)"
       },
       "generator_voltage_a": {
         "name": "Generatorspänning fas A (mySigen)"
@@ -144,10 +144,10 @@
         "name": "Generatorström fas A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway nätspänning max fas B (mySigen)"
+        "name": "Gateway nätspänning fas B, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway nätspänning min fas B (mySigen)"
+        "name": "Gateway nätspänning fas B, 1-min min (mySigen)"
       },
       "generator_voltage_b": {
         "name": "Generatorspänning fas B (mySigen)"
@@ -156,10 +156,10 @@
         "name": "Generatorström fas B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway nätspänning max fas C (mySigen)"
+        "name": "Gateway nätspänning fas C, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway nätspänning min fas C (mySigen)"
+        "name": "Gateway nätspänning fas C, 1-min min (mySigen)"
       },
       "generator_voltage_c": {
         "name": "Generatorspänning fas C (mySigen)"
@@ -186,7 +186,7 @@
         "name": "Gateway modell (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "DC-laddare läge (mySigen)",
+        "name": "DC-laddarens aktuella laddläge (mySigen)",
         "state": {
           "fast_charging": "Ladda nu med full effekt",
           "solar_surplus": "Ladda bara med solöverskott",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC-laddare stoppnivå (mySigen)"
+        "name": "DC-laddarens aktuella laddgräns (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Batteriöverstyrningens längd (mySigen)"
+        "name": "Nästa överstyrnings längd (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Effektgräns för batteriöverstyrning (mySigen)"
+        "name": "Nästa överstyrnings effektgräns (mySigen)"
       },
       "peak_shaving_limit": {
         "name": "Nätgräns för effekttoppsbegränsning (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC-laddare ställ in stoppnivå (mySigen)"
+        "name": "DC-laddarens laddgräns (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC-laddare V2X-reserv (mySigen)"
+        "name": "Lägsta elbilsladdning för V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Batteriöverstyrning att starta (mySigen)",
+        "name": "Nästa överstyrnings läge (mySigen)",
         "state": {
           "hold_battery": "Håll batteriet (ingen laddning, ingen urladdning)",
           "charging": "Ladda batteriet",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "DC-laddare ställ in läge (mySigen)",
+        "name": "DC-laddarens laddläge (mySigen)",
         "state": {
           "fast_charging": "Ladda nu med full effekt",
           "solar_surplus": "Ladda bara med solöverskott",
@@ -252,7 +252,7 @@
     },
     "switch": {
       "battery_export": {
-        "name": "Batteriexport till nätet (mySigen)"
+        "name": "Tillåt batteriexport till nätet (mySigen)"
       },
       "peak_shaving": {
         "name": "Effekttoppsbegränsning (mySigen)"
@@ -261,7 +261,7 @@
         "name": "Koppla bort från elnätet (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC-laddare tillåt V2X (mySigen)"
+        "name": "Tillåt el från elbilen (V2X) (mySigen)"
       }
     }
   },

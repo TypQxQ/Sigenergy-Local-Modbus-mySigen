@@ -84,7 +84,7 @@
         "name": "Batterioverstyring aktiv (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC-lader V2X tilladt (mySigen)"
+        "name": "Strøm fra elbilen tilladt (V2X) (mySigen)"
       }
     },
     "sensor": {
@@ -98,7 +98,7 @@
         }
       },
       "battery_override_end": {
-        "name": "Batterioverstyringen slutter (mySigen)"
+        "name": "Batterioverstyringens sluttidspunkt (mySigen)"
       },
       "last_update": {
         "name": "Seneste opdatering (mySigen)"
@@ -122,7 +122,7 @@
         "name": "Gateway netstrøm fase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Resultat af batterioverstyring (mySigen)",
+        "name": "Resultat af seneste overstyringskommando (mySigen)",
         "state": {
           "confirmed": "Bekræftet",
           "refused": "Afvist",
@@ -132,10 +132,10 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway netspænding maks. fase A (mySigen)"
+        "name": "Gateway netspænding fase A, 1-min. maks. (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway netspænding min. fase A (mySigen)"
+        "name": "Gateway netspænding fase A, 1-min. min. (mySigen)"
       },
       "generator_voltage_a": {
         "name": "Generatorspænding fase A (mySigen)"
@@ -144,10 +144,10 @@
         "name": "Generatorstrøm fase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway netspænding maks. fase B (mySigen)"
+        "name": "Gateway netspænding fase B, 1-min. maks. (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway netspænding min. fase B (mySigen)"
+        "name": "Gateway netspænding fase B, 1-min. min. (mySigen)"
       },
       "generator_voltage_b": {
         "name": "Generatorspænding fase B (mySigen)"
@@ -156,10 +156,10 @@
         "name": "Generatorstrøm fase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway netspænding maks. fase C (mySigen)"
+        "name": "Gateway netspænding fase C, 1-min. maks. (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway netspænding min. fase C (mySigen)"
+        "name": "Gateway netspænding fase C, 1-min. min. (mySigen)"
       },
       "generator_voltage_c": {
         "name": "Generatorspænding fase C (mySigen)"
@@ -186,7 +186,7 @@
         "name": "Gateway model (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "DC-lader tilstand (mySigen)",
+        "name": "DC-laderens aktuelle ladetilstand (mySigen)",
         "state": {
           "fast_charging": "Oplad nu med fuld effekt",
           "solar_surplus": "Oplad kun med soloverskud",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC-lader stopniveau (mySigen)"
+        "name": "DC-laderens aktuelle ladegrænse (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Batterioverstyringens varighed (mySigen)"
+        "name": "Næste overstyrings varighed (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Effektgrænse for batterioverstyring (mySigen)"
+        "name": "Næste overstyrings effektgrænse (mySigen)"
       },
       "peak_shaving_limit": {
         "name": "Netgrænse for spidslastbegrænsning (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC-lader indstil stopniveau (mySigen)"
+        "name": "DC-laderens ladegrænse (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC-lader V2X-reserve (mySigen)"
+        "name": "Mindste elbilsopladning for V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Batterioverstyring, der skal startes (mySigen)",
+        "name": "Næste overstyrings tilstand (mySigen)",
         "state": {
           "hold_battery": "Hold batteriet (ingen opladning, ingen afladning)",
           "charging": "Oplad batteriet",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "DC-lader indstil tilstand (mySigen)",
+        "name": "DC-laderens ladetilstand (mySigen)",
         "state": {
           "fast_charging": "Oplad nu med fuld effekt",
           "solar_surplus": "Oplad kun med soloverskud",
@@ -252,7 +252,7 @@
     },
     "switch": {
       "battery_export": {
-        "name": "Batterieksport til nettet (mySigen)"
+        "name": "Tillad batterieksport til nettet (mySigen)"
       },
       "peak_shaving": {
         "name": "Spidslastbegrænsning (mySigen)"
@@ -261,7 +261,7 @@
         "name": "Kobl fra elnettet (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC-lader tillad V2X (mySigen)"
+        "name": "Tillad strøm fra elbilen (V2X) (mySigen)"
       }
     }
   },
