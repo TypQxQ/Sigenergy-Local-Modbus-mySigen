@@ -21,6 +21,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    BatteryExport,
+    PeakShaving,
     CONTROL_MODES,
     MAX_OVERRIDE_MINUTES,
     MAX_POWER_LIMIT_KW,
@@ -54,6 +56,9 @@ _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_START = 30.0
 _BACKOFF_MAX = 900.0
+# Settings that stay until changed are read this often, and only while
+# control is allowed. A change reads them back at once.
+_SETTINGS_INTERVAL = 600.0
 # How long "no Gateway" is trusted before mySigen is asked again. Long
 # enough not to bother the service, short enough that a Gateway that was
 # added, or an answer that was a temporary error, is picked up the same day.
@@ -116,6 +121,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.command_lock = asyncio.Lock()
         # How the last start or cancel ended, for the sensor and diagnostics.
         self.last_command: dict[str, str] | None = None
+        # Settings that stay until changed (step C); None when not read.
+        self.available_modes: frozenset[int] = frozenset()
+        self.operating_mode: int | None = None
+        self.battery_export: BatteryExport | None = None
+        self.peak_shaving: PeakShaving | None = None
+        self.last_setting: dict[str, str] | None = None
+        self._settings_read_at = float("-inf")
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
         self.has_gateway: bool | None = None
@@ -182,6 +194,60 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.hass.config_entries.async_update_entry(
             self.config_entry, options={**self.config_entry.options, key: value}
         )
+
+    def record_setting(self, action: str, result: str) -> None:
+        """Remember how the last setting change ended, for diagnostics."""
+        self.last_setting = {
+            "action": action,
+            "result": result,
+            "at": dt_util.utcnow().isoformat(),
+        }
+
+    def read_settings_soon(self) -> None:
+        """Read the settings again at the next poll."""
+        self._settings_read_at = float("-inf")
+
+    def publish_operating_mode(self, code: int) -> None:
+        self.operating_mode = code
+        self.async_update_listeners()
+
+    def publish_battery_export(self, export: BatteryExport) -> None:
+        self.battery_export = export
+        self.async_update_listeners()
+
+    def publish_peak_shaving(self, schedule: PeakShaving) -> None:
+        self.peak_shaving = schedule
+        self.async_update_listeners()
+
+    async def _async_read_settings(self) -> None:
+        """Read the settings step C shows. One failing read keeps its old value.
+
+        Holds the command lock, so a read cannot overlap a change and then
+        overwrite the value the change confirmed.
+        """
+        async with self.command_lock:
+            # A change that held the lock may have run into a rate limit.
+            # Skip this read; it is tried again at the next poll.
+            if self.rate_limit_wait:
+                return
+            await self._async_read_settings_locked()
+
+    async def _async_read_settings_locked(self) -> None:
+        self._settings_read_at = time.monotonic()
+        if not self.available_modes:
+            try:
+                self.available_modes = await self.session.async_available_modes()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen mode list read failed: %s", err)
+        for name, read in (
+            ("operating_mode", self.session.async_operating_mode),
+            ("battery_export", self.session.async_battery_export),
+            ("peak_shaving", self.session.async_peak_shaving),
+        ):
+            try:
+                setattr(self, name, await read())
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen %s read failed: %s", name, err)
 
     def record_command(self, action: str, result: str) -> None:
         """Remember how a command ended and tell the entities."""
@@ -251,6 +317,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         try:
             status = await self.session.async_override_status()
             gateway = await self._async_gateway()
+            if (
+                self.allow_control
+                and time.monotonic() - self._settings_read_at >= _SETTINGS_INTERVAL
+            ):
+                await self._async_read_settings()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"mySigen refused the stored account ({err})"

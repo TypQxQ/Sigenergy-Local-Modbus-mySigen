@@ -106,4 +106,20 @@ async def async_get_config_entry_diagnostics(
             result["gateway_shape"] = f"rate limited: waiting {wait:.0f} s"
         except MySigenError as err:
             result["gateway_shape"] = f"unavailable: {type(err).__name__}: {err}"
+
+    peak = coordinator.peak_shaving
+    export = coordinator.battery_export
+    result["settings"] = {
+        "available_modes": sorted(coordinator.available_modes),
+        "operating_mode": coordinator.operating_mode,
+        "battery_export": None if export is None else {
+            "owner": export.owner, "in_effect": export.effective,
+            "installer": export.installer,
+        },
+        "peak_shaving": None if peak is None else {
+            "enabled": peak.enabled, "time_slots": len(peak.slots),
+            "single_limit_kw": peak.single_limit,
+        },
+        "last_setting": coordinator.last_setting,
+    }
     return result

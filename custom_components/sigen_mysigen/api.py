@@ -41,6 +41,16 @@ OVERRIDE_MODES: dict[str, str] = {
 CONTROL_MODES: tuple[str, ...] = (
     "hold_battery", "charging", "discharging", "self_consumption",
 )
+# Operating modes that may be chosen from Home Assistant, by the code mySigen
+# uses. Remote EMS (7) belongs to the Modbus integration and custom profiles
+# (9) are left to the app.
+OPERATING_MODES: dict[str, int] = {
+    "sigen_ai": 1,
+    "max_self_consumption": 0,
+    "time_of_use": 2,
+    "fully_fed_to_grid": 5,
+}
+MAX_PEAK_SHAVING_KW = 100.0
 # Modes where a power limit applies.
 POWER_MODES: tuple[str, ...] = ("charging", "discharging")
 MAX_POWER_LIMIT_KW = 100.0
@@ -58,6 +68,13 @@ _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
 _GATEWAY_PATH = "device/gateway/{station_id}"
 _OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
+_MODES_PATH = "device/energy-profile/mode/all/{station_id}"
+_MODE_PATH = "device/energy-profile/mode/current/{station_id}"
+_MODE_WRITE_PATH = "device/energy-profile/mode"
+_EXPORT_PATH = "device/energy-profile/battery/export/limitation/{station_id}"
+_EXPORT_WRITE_PATH = "device/energy-profile/battery/export/limitation"
+_PEAK_PATH = "device/dischargesetting/peak/shaving/{station_id}"
+_PEAK_WRITE_PATH = "device/dischargesetting/peak/shaving"
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
 # Rows of the Gateway answer that become readings. Labels are compared in
@@ -249,6 +266,97 @@ def parse_gateway(data: Any) -> GatewayReadings | None:
     return GatewayReadings(values, texts)
 
 
+def _int_or_none(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_available_modes(data: Any) -> frozenset[int]:
+    rows = data.get("defaultWorkingModes") if isinstance(data, dict) else None
+    if not isinstance(rows, list):
+        return frozenset()
+    return frozenset(
+        code for row in rows
+        if isinstance(row, dict) and (code := _int_or_none(row.get("value"))) is not None
+    )
+
+
+def parse_operating_mode(data: Any) -> int | None:
+    return _int_or_none(data.get("currentMode")) if isinstance(data, dict) else None
+
+
+@dataclass(frozen=True)
+class BatteryExport:
+    """Whether the battery may export to the grid."""
+
+    owner: bool | None
+    effective: bool | None
+    # Sent back unchanged with every change.
+    installer: Any = None
+
+
+def parse_battery_export(data: Any) -> BatteryExport | None:
+    if not isinstance(data, dict) or not isinstance(data.get("ownerSetEnable"), bool):
+        return None
+    effective = data.get("currentEnable")
+    return BatteryExport(
+        owner=data["ownerSetEnable"],
+        effective=effective if isinstance(effective, bool) else None,
+        installer=data.get("installerSetEnable"),
+    )
+
+
+@dataclass(frozen=True)
+class PeakShaving:
+    """The peak shaving schedule as mySigen returns it.
+
+    Changes are made to a copy of the whole answer, so fields the add-on does
+    not know about are written back unchanged.
+    """
+
+    raw: dict[str, Any]
+
+    @property
+    def enabled(self) -> bool | None:
+        mode = _int_or_none(self.raw.get("controlMode"))
+        return None if mode not in (0, 1) else mode == 1
+
+    @property
+    def slots(self) -> list[dict[str, Any]]:
+        rows = self.raw.get("settingList")
+        return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+    @property
+    def single_limit(self) -> float | None:
+        """The limit when the schedule has exactly one time slot."""
+        if len(self.slots) != 1:
+            return None
+        try:
+            return float(self.slots[0].get("peakPower"))
+        except (TypeError, ValueError):
+            return None
+
+    def with_enabled(self, enabled: bool) -> dict[str, Any]:
+        return {**self.raw, "controlMode": 1 if enabled else 0}
+
+    def with_limit(self, limit_kw: float) -> dict[str, Any]:
+        rows = list(self.raw["settingList"])
+        index = next(i for i, row in enumerate(rows) if isinstance(row, dict))
+        rows[index] = {**rows[index], "peakPower": round(float(limit_kw), 1)}
+        return {**self.raw, "settingList": rows}
+
+
+def parse_peak_shaving(data: Any) -> PeakShaving | None:
+    if not isinstance(data, dict):
+        return None
+    schedule = PeakShaving(dict(data))
+    return schedule if schedule.enabled is not None else None
+
+
 def encrypt_password(password: str) -> str:
     """Return the password in the form the mySigen token endpoint expects."""
     # Imported here so the module loads without the package in unit tests.
@@ -270,7 +378,7 @@ def _retry_after(headers: Any) -> float | None:
     return value if value > 0 else None
 
 
-def masked_shape(value: Any, depth: int = 0) -> Any:
+def masked_shape(value: Any, depth: int = 0, keep: frozenset[str] = frozenset()) -> Any:
     """Describe an answer's structure without its values.
 
     Field names are kept. Numbers become their type. A short number with a
@@ -285,11 +393,14 @@ def masked_shape(value: Any, depth: int = 0) -> Any:
             # all but form, so they are kept.
             str(key): f"label:{item}"
             if key in _LABEL_KEYS and isinstance(item, str)
-            else masked_shape(item, depth + 1)
+            # Fields named in `keep` hold codes, not personal data.
+            else f"value:{item!r}"
+            if key in keep and (item is None or isinstance(item, (bool, int, float, str)))
+            else masked_shape(item, depth + 1, keep)
             for key, item in value.items()
         }
     if isinstance(value, list):
-        return [masked_shape(item, depth + 1) for item in value[:40]]
+        return [masked_shape(item, depth + 1, keep) for item in value[:40]]
     if value is None:
         return "null"
     if isinstance(value, bool):
@@ -558,7 +669,9 @@ class MySigenSession:
                 _LOGGER.debug("mySigen serial source unavailable: %s", err)
         return serials
 
-    async def _async_put(self, what: str, path: str, body: dict[str, Any]) -> None:
+    async def _async_put(
+        self, what: str, path: str, body: dict[str, Any], method: str = "PUT"
+    ) -> None:
         """Send one change. It is never repeated, not even after a sign-out."""
         if self._write_session is None or self._write_session.closed:
             raise MySigenRejectedError(f"{what}: not sent, no single-send connection")
@@ -568,7 +681,7 @@ class MySigenSession:
             raise MySigenRejectedError(f"{what}: not sent, {err}") from err
         try:
             async with self._write_session.request(
-                "PUT",
+                method,
                 f"{REGIONS[self._region]}{path}",
                 json=body,
                 allow_redirects=False,
@@ -651,6 +764,60 @@ class MySigenSession:
             "duration": "",
             "powerLimitation": "",
         })
+
+    async def _async_station_get(self, what: str, path: str) -> Any:
+        return await self._async_get(
+            what, path.format(station_id=await self.async_station_id())
+        )
+
+    async def async_available_modes(self) -> frozenset[int]:
+        """The operating mode codes the plant offers."""
+        return parse_available_modes(await self._async_station_get("modes", _MODES_PATH))
+
+    async def async_operating_mode(self) -> int | None:
+        """The operating mode code in use."""
+        return parse_operating_mode(
+            await self._async_station_get("operating mode", _MODE_PATH)
+        )
+
+    async def async_battery_export(self) -> BatteryExport | None:
+        return parse_battery_export(
+            await self._async_station_get("battery export", _EXPORT_PATH)
+        )
+
+    async def async_peak_shaving(self) -> PeakShaving | None:
+        return parse_peak_shaving(
+            await self._async_station_get("peak shaving", _PEAK_PATH)
+        )
+
+    async def async_set_operating_mode(self, code: int) -> None:
+        """Choose the operating mode. Sent once."""
+        if code not in OPERATING_MODES.values():
+            raise ValueError(f"Operating mode {code!r} is not available for control")
+        # The two reference clients name this field differently; both are sent.
+        await self._async_put("set operating mode", _MODE_WRITE_PATH, {
+            "stationId": await self._async_station_number(),
+            "operationMode": code,
+            "workingMode": code,
+            "profileId": -1,
+        })
+
+    async def async_set_battery_export(self, current: BatteryExport, enabled: bool) -> None:
+        """Allow or block battery export, keeping the installer's setting. Sent once."""
+        await self._async_put("set battery export", _EXPORT_WRITE_PATH, {
+            "stationId": await self._async_station_number(),
+            "installerSetEnable": current.installer,
+            "ownerSetEnable": enabled,
+        })
+
+    async def async_set_peak_shaving(self, schedule: dict[str, Any]) -> None:
+        """Write the whole peak shaving schedule back. Sent once."""
+        await self._async_put(
+            "set peak shaving",
+            _PEAK_WRITE_PATH,
+            {**schedule, "stationId": await self._async_station_number()},
+            method="POST",
+        )
 
     async def async_gateway(self) -> Any:
         """Read the Gateway's own readings as mySigen returns them."""

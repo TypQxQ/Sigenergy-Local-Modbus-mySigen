@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Effektgräns för batteriöverstyrning (0 = ingen gräns)"
+      },
+      "peak_shaving_limit": {
+        "name": "Nätgräns för effekttoppsbegränsning"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Ladda ur batteriet",
           "self_consumption": "Använd min egen solel först (egenförbrukning)"
         }
+      },
+      "operating_mode": {
+        "name": "Driftläge",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Använd min egen el först (maximal egenförbrukning)",
+          "time_of_use": "Tidsstyrt (TOU)",
+          "fully_fed_to_grid": "Skicka all solel till nätet (full inmatning)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Stoppa batteriöverstyrning nu"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Tillåt batteriet att exportera till nätet"
+      },
+      "peak_shaving": {
+        "name": "Effekttoppsbegränsning"
       }
     }
   },

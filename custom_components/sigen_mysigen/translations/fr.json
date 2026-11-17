@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Limite de puissance du forçage de la batterie (0 = aucune limite)"
+      },
+      "peak_shaving_limit": {
+        "name": "Limite réseau de l'écrêtage des pointes"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Décharger la batterie",
           "self_consumption": "Utiliser d'abord ma propre énergie solaire (autoconsommation)"
         }
+      },
+      "operating_mode": {
+        "name": "Mode de fonctionnement",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Utiliser d'abord ma propre énergie (autoconsommation maximale)",
+          "time_of_use": "Selon les heures (TOU)",
+          "fully_fed_to_grid": "Injecter toute l'énergie solaire dans le réseau (injection totale)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Arrêter le forçage de la batterie maintenant"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Autoriser la batterie à injecter dans le réseau"
+      },
+      "peak_shaving": {
+        "name": "Écrêtage des pointes"
       }
     }
   },

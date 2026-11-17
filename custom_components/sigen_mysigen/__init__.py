@@ -52,7 +52,7 @@ _LOGGER = logging.getLogger(__name__)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
 # Only set up while the user has switched control on.
-CONTROL_PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SELECT]
+CONTROL_PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SELECT, Platform.SWITCH]
 
 NO_PERMISSION = "no_permission"
 _ISSUES = ("plant_missing", STATION_MISMATCH, NO_PERMISSION)

@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Límite de potencia del forzado de batería (0 = sin límite)"
+      },
+      "peak_shaving_limit": {
+        "name": "Límite de red del recorte de picos"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Descargar la batería",
           "self_consumption": "Usar primero mi propia energía solar (autoconsumo)"
         }
+      },
+      "operating_mode": {
+        "name": "Modo de funcionamiento",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Usar primero mi propia energía (autoconsumo máximo)",
+          "time_of_use": "Por franjas horarias (TOU)",
+          "fully_fed_to_grid": "Verter toda la energía solar a la red (vertido total)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Detener el forzado de batería ahora"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Permitir que la batería exporte a la red"
+      },
+      "peak_shaving": {
+        "name": "Recorte de picos"
       }
     }
   },

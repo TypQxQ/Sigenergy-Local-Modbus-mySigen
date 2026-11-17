@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Vermogenslimiet van batterij-override (0 = geen limiet)"
+      },
+      "peak_shaving_limit": {
+        "name": "Netlimiet voor piekbegrenzing"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Batterij ontladen",
           "self_consumption": "Eerst mijn eigen zonnestroom gebruiken (eigen verbruik)"
         }
+      },
+      "operating_mode": {
+        "name": "Bedrijfsmodus",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Eerst mijn eigen stroom gebruiken (maximaal eigen verbruik)",
+          "time_of_use": "Tijdafhankelijk tarief (TOU)",
+          "fully_fed_to_grid": "Alle zonnestroom aan het net leveren (volledige teruglevering)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Batterij-override nu stoppen"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Batterij mag aan het net leveren"
+      },
+      "peak_shaving": {
+        "name": "Piekbegrenzing"
       }
     }
   },

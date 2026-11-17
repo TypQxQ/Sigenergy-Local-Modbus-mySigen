@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Akun ohituksen tehoraja (0 = ei rajaa)"
+      },
+      "peak_shaving_limit": {
+        "name": "Huipputehon leikkauksen verkkoraja"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Pura akku",
           "self_consumption": "Käytä ensin omaa aurinkosähköä (omakäyttö)"
         }
+      },
+      "operating_mode": {
+        "name": "Toimintatila",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Käytä ensin omaa sähköä (maksimaalinen omakäyttö)",
+          "time_of_use": "Aikaperusteinen (TOU)",
+          "fully_fed_to_grid": "Syötä kaikki aurinkosähkö verkkoon (täysi syöttö)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Pysäytä akun ohitus nyt"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Salli akun syöttää verkkoon"
+      },
+      "peak_shaving": {
+        "name": "Huipputehon leikkaus"
       }
     }
   },

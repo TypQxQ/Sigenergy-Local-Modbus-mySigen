@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Battery override power limit (0 = no limit)"
+      },
+      "peak_shaving_limit": {
+        "name": "Peak shaving grid limit"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Discharge battery",
           "self_consumption": "Use my own solar first (self-consumption)"
         }
+      },
+      "operating_mode": {
+        "name": "Operating mode",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Use my own power first (maximum self-consumption)",
+          "time_of_use": "Time of use (TOU)",
+          "fully_fed_to_grid": "Send all solar to the grid (fully fed to grid)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Stop battery override now"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Allow battery to export to the grid"
+      },
+      "peak_shaving": {
+        "name": "Peak shaving"
       }
     }
   },

@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Effektgrænse for batterioverstyring (0 = ingen grænse)"
+      },
+      "peak_shaving_limit": {
+        "name": "Netgrænse for spidslastbegrænsning"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Aflad batteriet",
           "self_consumption": "Brug min egen solstrøm først (egetforbrug)"
         }
+      },
+      "operating_mode": {
+        "name": "Driftstilstand",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Brug min egen strøm først (maksimalt egetforbrug)",
+          "time_of_use": "Tidsstyret (TOU)",
+          "fully_fed_to_grid": "Send al solstrøm til nettet (fuld levering)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Stop batterioverstyring nu"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Tillad batteriet at eksportere til nettet"
+      },
+      "peak_shaving": {
+        "name": "Spidslastbegrænsning"
       }
     }
   },

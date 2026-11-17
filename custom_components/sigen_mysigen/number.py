@@ -7,8 +7,15 @@ from homeassistant.const import EntityCategory, UnitOfPower, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import MAX_OVERRIDE_MINUTES, MAX_POWER_LIMIT_KW, MIN_OVERRIDE_MINUTES
+from .api import (
+    MAX_OVERRIDE_MINUTES,
+    MAX_PEAK_SHAVING_KW,
+    MAX_POWER_LIMIT_KW,
+    MIN_OVERRIDE_MINUTES,
+)
+from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER
+from .control import async_set_peak_shaving
 from .entity import MySigenEntity
 
 
@@ -22,6 +29,7 @@ async def async_setup_entry(
     async_add_entities([
         OverrideDuration(coordinator, "battery_override_duration"),
         OverridePowerLimit(coordinator, "battery_override_power_limit"),
+        PeakShavingLimit(coordinator, "peak_shaving_limit"),
     ])
 
 
@@ -79,3 +87,34 @@ class OverridePowerLimit(MySigenEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         self.coordinator.set_option(CONF_OVERRIDE_POWER, round(float(value), 1))
         self.async_write_ha_state()
+
+
+class PeakShavingLimit(MySigenEntity, NumberEntity):
+    """The grid power the plant tries to stay under while peak shaving is on.
+
+    Only available when the schedule has a single time slot; a schedule with
+    several slots is changed in the mySigen app.
+    """
+
+    _attr_entity_registry_enabled_default = False
+    _attr_native_min_value = 0.1
+    _attr_native_max_value = MAX_PEAK_SHAVING_KW
+    _attr_native_step = 0.1
+    _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
+    _attr_mode = NumberMode.BOX
+
+    @property
+    def available(self) -> bool:
+        peak = self.coordinator.peak_shaving
+        return super().available and peak is not None and peak.single_limit is not None
+
+    @property
+    def native_value(self) -> float | None:
+        peak = self.coordinator.peak_shaving
+        return peak.single_limit if peak is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        await async_run_setting(
+            self.coordinator,
+            async_set_peak_shaving(self.coordinator, limit_kw=round(float(value), 1)),
+        )

@@ -7,8 +7,11 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import CONTROL_MODES
-from .const import CONF_OVERRIDE_MODE
+from .api import CONTROL_MODES, OPERATING_MODES
+from .commands import async_run_setting
+from .const import CONF_OVERRIDE_MODE, CONF_PLANT_ENTRY_ID
+from .control import async_set_operating_mode
+from .link import remote_ems_state
 from .entity import MySigenEntity
 
 
@@ -18,9 +21,11 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Add the dropdown. Only set up while control is allowed."""
-    async_add_entities(
-        [OverrideToStart(entry.runtime_data, "battery_override_to_start")]
-    )
+    coordinator = entry.runtime_data
+    async_add_entities([
+        OverrideToStart(coordinator, "battery_override_to_start"),
+        OperatingMode(coordinator, "operating_mode"),
+    ])
 
 
 class OverrideToStart(MySigenEntity, SelectEntity):
@@ -44,3 +49,43 @@ class OverrideToStart(MySigenEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         self.coordinator.set_option(CONF_OVERRIDE_MODE, option)
         self.async_write_ha_state()
+
+
+class OperatingMode(MySigenEntity, SelectEntity):
+    """How the plant runs day to day. It stays until changed back.
+
+    Shows no option while the plant runs in a mode not offered here, such as
+    Remote EMS or a custom profile.
+    """
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def options(self) -> list[str]:
+        offered = self.coordinator.available_modes
+        return [key for key, code in OPERATING_MODES.items() if code in offered]
+
+    @property
+    def available(self) -> bool:
+        # Unavailable until the plant has listed the modes it offers.
+        return (
+            super().available
+            and self.coordinator.operating_mode is not None
+            and any(code in self.coordinator.available_modes for code in OPERATING_MODES.values())
+        )
+
+    @property
+    def current_option(self) -> str | None:
+        code = self.coordinator.operating_mode
+        return next((key for key, value in OPERATING_MODES.items() if value == code), None)
+
+    async def async_select_option(self, option: str) -> None:
+        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
+        await async_run_setting(
+            self.coordinator,
+            async_set_operating_mode(
+                self.coordinator,
+                mode=option,
+                remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
+            ),
+        )

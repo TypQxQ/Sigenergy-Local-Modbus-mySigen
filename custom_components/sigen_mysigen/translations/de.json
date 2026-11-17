@@ -187,6 +187,9 @@
       },
       "battery_override_power_limit": {
         "name": "Leistungsgrenze der Batterie-Übersteuerung (0 = keine Grenze)"
+      },
+      "peak_shaving_limit": {
+        "name": "Netzgrenze der Lastspitzenkappung"
       }
     },
     "select": {
@@ -198,6 +201,15 @@
           "discharging": "Batterie entladen",
           "self_consumption": "Zuerst meinen eigenen Solarstrom nutzen (Eigenverbrauch)"
         }
+      },
+      "operating_mode": {
+        "name": "Betriebsmodus",
+        "state": {
+          "sigen_ai": "Sigen AI",
+          "max_self_consumption": "Zuerst meinen eigenen Strom nutzen (maximaler Eigenverbrauch)",
+          "time_of_use": "Zeitabhängiger Tarif (TOU)",
+          "fully_fed_to_grid": "Gesamten Solarstrom ins Netz einspeisen (Volleinspeisung)"
+        }
       }
     },
     "button": {
@@ -206,6 +218,14 @@
       },
       "stop_battery_override": {
         "name": "Batterie-Übersteuerung jetzt stoppen"
+      }
+    },
+    "switch": {
+      "battery_export": {
+        "name": "Batterie darf ins Netz einspeisen"
+      },
+      "peak_shaving": {
+        "name": "Lastspitzenkappung"
       }
     }
   },
