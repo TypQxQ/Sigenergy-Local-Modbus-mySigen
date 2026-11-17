@@ -48,13 +48,13 @@ An override makes the battery do **one thing for a set time**, then hands back t
 
 ### On a dashboard
 
-| | Control | What it does |
-| :-: | --- | --- |
-| 🎯 | Battery override to start | What the battery should do. Sends nothing. |
-| ⏱️ | Battery override duration | 30 to 120 minutes. Sends nothing. |
-| ⚡ | Battery override power limit | Cap in kW for charging or discharging; 0 = no limit. Disabled by default. Sends nothing. |
-| ▶️ | Start battery override now | Starts the chosen override. |
-| ⏹️ | Stop battery override now | Ends the running override, even one started in the app. |
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🎯 | Battery override to start | Dropdown | What the battery should do. Sends nothing. |
+| ⏱️ | Battery override duration | Number, min | 30 to 120 minutes. Sends nothing. |
+| ⚡ | Battery override power limit | Number, kW | Cap for charging or discharging; 0 = no limit. Disabled by default. Sends nothing. |
+| ▶️ | Start battery override now | Button | Starts the chosen override. |
+| ⏹️ | Stop battery override now | Button | Ends the running override, even one started in the app. |
 
 | Option | Automation key | What happens |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ data:
   power_limit: 3.5    # optional, kW
 ```
 
-Stop it with `sigen_mysigen.cancel_battery_override`. The keys are the same in every language, and a failed action raises an error your automation can catch.
+Stop it with the action `sigen_mysigen.cancel_battery_override`. The keys are the same in every language, and a failed action raises an error your automation can catch.
 
 ### What you'll see
 
@@ -94,18 +94,18 @@ A start is refused, with nothing sent, while another override runs or while Remo
 
 Unlike overrides, these **stay until you change them back**. Need **Allow battery control**; disabled until you enable them.
 
-| | Control | What it does |
-| :-: | --- | --- |
-| 🧠 | Operating mode | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. Refused while Remote EMS is on. |
-| ↗️ | Allow battery to export to the grid | Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
-| 📉 | Peak shaving | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
-| 🎚️ | Peak shaving grid limit | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🧠 | Operating mode | Dropdown | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. Refused while Remote EMS is on. |
+| ↗️ | Allow battery to export to the grid | Switch | Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
+| 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
+| 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
 
 <sub>Read every ten minutes, so a change made in the app can take that long to appear here.</sub>
 
 ## 🔌 Disconnecting from the grid
 
-**Disconnect from the grid (run on battery and solar)** takes the home off the grid; switching it off connects it again. It needs a Sigenergy Gateway and its own extra setting, **Allow disconnecting from the grid**, under **Reconfigure**.
+**Disconnect from the grid (run on battery and solar)** is a switch that takes the home off the grid; switching it off connects it again. It needs a Sigenergy Gateway and its own extra setting, **Allow disconnecting from the grid**, under **Reconfigure**.
 
 > [!WARNING]
 > **Off the grid, the battery drains.** When it's empty, the home loses power until you reconnect.
@@ -122,12 +122,12 @@ During a grid outage the plant reconnects by itself, so reconnecting is refused 
 
 When mySigen lists a DC charger, its sensors appear by themselves. With **Allow battery control** on, you also get these, disabled until you enable them:
 
-| | Control | What it does |
-| :-: | --- | --- |
-| 🔀 | Charging mode | Charge now at full power, charge on solar surplus only, or charge and let the car supply power (V2X) |
-| 🔝 | Stop charging at vehicle level | Charging stops at this level, % |
-| 🔒 | Keep at least this much in the car | The car stops supplying power at this level, % |
-| 🏠 | Let the car power the home (V2X) | Allow or block the car supplying power, no Remote EMS needed |
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🔀 | Charging mode | Dropdown | Charge now at full power, charge on solar surplus only, or charge and let the car supply power (V2X) |
+| 🔝 | Stop charging at vehicle level | Number, % | Charging stops at this level |
+| 🔒 | Keep at least this much in the car | Number, % | The car stops supplying power at this level |
+| 🏠 | Let the car power the home (V2X) | Switch | Allow or block the car supplying power, no Remote EMS needed |
 
 Start and stop charging and the power limits stay in Sigenergy ESS. Changes are refused while Remote EMS is on.
 
