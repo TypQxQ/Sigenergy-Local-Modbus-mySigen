@@ -17,7 +17,7 @@ New here? Start with the [README](../README.md).
 
 Everything appears on your existing **Sigen Plant** device. mySigen is read every 15 to 60 seconds (set under **Reconfigure**); for anything fast, keep using the Modbus entities.
 
-Every name ends with **(mySigen)**, in every language, so you can tell these apart from the Modbus entities. A new entity's ID ends with `_mysigen`, for example `sensor.sigen_plant_battery_override_mode_mysigen`; the rest of the ID follows your Home Assistant entity ID settings, so yours may differ. Entities you already have keep their IDs. The tables below leave the suffix out.
+Every name ends with **(mySigen)**, in every language, so you can tell these apart from the Modbus entities. With default Home Assistant naming settings, a new entity ID typically ends in `_mysigen`, for example `sensor.sigen_plant_battery_override_mode_mysigen`. Your entity ID settings can change the rest, and Home Assistant adds `_2` when an ID is already taken. Entities you already have keep their IDs. The tables below leave the suffix out.
 
 <sub>✅ on from the start · ⬜ disabled until you enable it</sub>
 

@@ -211,7 +211,7 @@
         "name": "DC-laderens ladegrænse (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "Mindste elbilsopladning for V2X (mySigen)"
+        "name": "Bilens laveste ladeniveau for V2X (mySigen)"
       }
     },
     "select": {
