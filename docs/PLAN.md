@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-17, at version 0.1.0b9. Steps A, B and C are built and tested, except smart loads. Step D is merged; its grid switch has not been tested on real hardware yet. Step E's DC charger rows are built from the reference clients and wait for a tester with a DC charger.
+Last updated: 2026-11-17, at version 0.1.0b9. Steps A, B and C are built and tested, except smart loads. Step D is merged; its grid switch has not been tested on real hardware yet. Step E's DC charger rows are built from the reference clients and wait for a tester with a DC charger. Step F is settled: an override cannot choose its source.
 
 ## How to read the tables
 
@@ -28,7 +28,7 @@ Last updated: 2026-11-17, at version 0.1.0b9. Steps A, B and C are built and tes
 
 Each mode or setting in steps B to F is tested on real hardware before it is switched on for users.
 
-The steps are groups, not a fixed order. Step F is largely done already through step B.
+The steps are groups, not a fixed order. Step F was largely done through step B; what remained is settled, except V2G, which step E covers.
 
 ## Sensors
 
@@ -175,10 +175,10 @@ Switching on Remote EMS takes the plant out of Sigen AI mode, and it stays that 
 | Remote EMS control mode: **Standby** | The battery neither charges nor discharges. | Battery override: Hold battery | B | Done |
 | Remote EMS control mode: **Maximum Self Consumption** | Solar and battery are used before the grid. | Battery override: Use my own solar first | B | Done |
 | Remote EMS control mode: **Command Charging (Grid First)** | The battery charges, taking grid power first. | Battery override: Charge battery | B | Done |
-| Remote EMS control mode: **Command Charging (PV First)** | The battery charges, taking solar power first. | Battery override: Charge battery, with a choice of **solar first** or **grid first** | F | Later |
+| Remote EMS control mode: **Command Charging (PV First)** | The battery charges, taking solar power first. | None: an override cannot choose its source | – | Not planned |
 | Remote EMS control mode: **Command Discharging (ESS First)** | The plant sends power out, taking it from the battery first. | Battery override: Discharge battery | B | Done |
-| Remote EMS control mode: **Command Discharging (PV First)** | The plant sends power out, taking it from solar first. | Battery override: Discharge battery, with a choice of **battery first** or **solar first** | F | Later |
-| Remote EMS control mode: **V2G** | The car supplies power through the DC charger. | Let the car power the home | E | Later |
+| Remote EMS control mode: **Command Discharging (PV First)** | The plant sends power out, taking it from solar first. | None: an override cannot choose its source | – | Not planned |
+| Remote EMS control mode: **V2G** | The car supplies power through the DC charger. | DC charger let the car power the home (V2X), and the charging mode **Charge and let the car supply power (V2X)** | E | Testing |
 | Active power fixed adjustment | Asks for an exact power in kW. | Battery override power limit. It caps the power; it does not set an exact value. | B | Done |
 | Active power percentage adjustment | Asks for power as a share of the rating. | Battery override power limit, in kW | B | Done |
 | Reactive power, Q/S and power factor adjustments | Shape the reactive power the inverter delivers. | None known | – | Not planned |
@@ -188,10 +188,12 @@ New in step F:
 
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Charge the battery from | Dropdown | **Solar first, then grid** or **Grid first**. Used by a Charge battery override. | F | Later | Disabled | New read |
-| Discharge from | Dropdown | **Battery first** or **Solar first**. Used by a Discharge battery override. | F | Later | Disabled | New read |
+| Charge the battery from | Dropdown | **Solar first, then grid** or **Grid first**. Used by a Charge battery override. | F | Not planned | – | – |
+| Discharge from | Dropdown | **Battery first** or **Solar first**. Used by a Discharge battery override. | F | Not planned | – | – |
 
-Whether mySigen lets an override choose its source is not known. If it does not, these two rows become Not planned, and the Remote EMS route in Modbus remains the way to do it.
+An override cannot choose its source. The request the mySigen app sends has only the station, mode, duration and power limit, and sigenergy2mqtt's mySigen adapter refuses a source priority as unsupported. Both rows are therefore Not planned; the Remote EMS control modes in Modbus remain the way to choose a source.
+
+That completes step F. Its one open row, V2G, is built in step E and waits for the same hardware test.
 
 ## Languages
 
@@ -224,5 +226,4 @@ These exist in mySigen too but are not added, because the Modbus integration alr
 - Whether a system without a Gateway answers the Gateway read with an empty answer or an error. Either way it is asked again once an hour, not on every poll.
 - Whether the DC charger answers have the shapes the reference clients use, and whether mode codes 0, 1 and 2 mean what solidfox's integration observed (step E).
 - What mySigen offers for AC chargers.
-- Whether an override can choose between solar and grid, or battery and solar, as its source (step F).
 - Whether Sigenergy permits a published integration to use this interface.
