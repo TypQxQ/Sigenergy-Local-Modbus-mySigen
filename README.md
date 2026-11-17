@@ -17,7 +17,7 @@ Sigen AI stays in charge. Modbus can stay read-only.
 
 An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) that talks to mySigen the way the app does, and adds what Modbus can't do. Everything appears on the plant device you already have.
 
-| | | |
+| | Feature | What you get |
 | :-: | --- | --- |
 | 🔋 | **Battery overrides** | Hold, charge or discharge for up to two hours. They end by themselves, even if Home Assistant is down. |
 | ⚙️ | **Plant settings** | Operating mode, battery export and peak shaving. |
