@@ -226,6 +226,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         overwrite the value the change confirmed.
         """
         async with self.command_lock:
+            # A change that held the lock may have run into a rate limit.
+            # Skip this read; it is tried again at the next poll.
+            if self.rate_limit_wait:
+                return
             await self._async_read_settings_locked()
 
     async def _async_read_settings_locked(self) -> None:

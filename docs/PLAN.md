@@ -4,14 +4,14 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-16, at version 0.1.0b7. Steps A and B are built and tested; step C is built and waiting for hardware tests, except smart loads.
+Last updated: 2026-11-17, at version 0.1.0b7. Steps A, B and C are built and tested, except smart loads.
 
 ## How to read the tables
 
 | Column | Meaning |
 | --- | --- |
 | **Step** | When it is built. See [Steps](#steps). |
-| **Status** | **Done**: released or merged. **Testing**: built, waiting for a test on real hardware. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. **Not planned**: no way through mySigen is known. |
+| **Status** | **Done**: released or merged. **Testing**: built, waiting for a test on real hardware. **Planned**: agreed, not built. **Later**: wanted, but needs data or a decision first. **Removed**: existed earlier and has been taken out. **Not planned**: will not be built, because no way through mySigen is known or it was decided against. |
 | **Default** | **Enabled**: appears as soon as the add-on is set up. **Disabled**: created but switched off until the user enables it. **If present**: only created when the equipment exists. Generator sensors are **Disabled** instead, because mySigen reports generator values on every Gateway, also without a generator. |
 | **Data** | **Have**: already read. **Free**: already inside an answer the add-on fetches on every poll, so it costs no extra request. **New read**: needs a request the add-on does not make yet. **Local**: stored in Home Assistant, nothing is sent. |
 
@@ -22,7 +22,7 @@ Last updated: 2026-11-16, at version 0.1.0b7. Steps A and B are built and tested
 | **A** | Free Gateway sensors, dashboard controls for the battery override, removal of two duplicates, clearer names, all eleven languages | No | Only through the override that already exists |
 | **B** | More override modes: charge, discharge, self-consumption | No | Yes, timed and self-ending |
 | **C** | Settings that stay until changed back: operating mode, battery export, peak shaving, smart loads | Yes | Yes, permanently |
-| **D** | Going off-grid, tariff windows | Yes | Yes, highest risk |
+| **D** | Going off-grid | Yes | Yes, highest risk |
 | **E** | AC and DC charger sensors and controls that Modbus does not have, or that Modbus only offers with Remote EMS on | Yes | Yes, charging and vehicle discharging |
 | **F** | What Modbus can only do with Remote EMS on, offered through mySigen so it also works in Sigen AI mode | Mostly no | Yes, timed and self-ending |
 
@@ -106,10 +106,10 @@ Unlike an override, these do not end by themselves.
 
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Operating mode | Dropdown | Chooses how the plant runs day to day: **Sigen AI**, **Use my own power first (maximum self-consumption)**, **Time of use (TOU)** or **Send all solar to the grid (fully fed to grid)**, as far as the plant offers them. Shows no option while Remote EMS or a custom profile is in use. Refused while Remote EMS is on. Modbus shows the mode but cannot choose it. | C | Testing | Disabled | New read |
-| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, since an installer setting can override it. | C | Testing | Disabled | New read |
-| Peak shaving | Switch | On: the battery helps keep grid power under the limit below. Refused when the schedule has no time slot. | C | Testing | Disabled | New read |
-| Peak shaving grid limit | Number, kW | The grid power the plant tries to stay under while peak shaving is on. Only available when the schedule has a single time slot; a schedule with several slots is changed in the mySigen app. | C | Testing | Disabled | New read |
+| Operating mode | Dropdown | Chooses how the plant runs day to day: **Sigen AI**, **Use my own power first (maximum self-consumption)**, **Time of use (TOU)** or **Send all solar to the grid (fully fed to grid)**, as far as the plant offers them. Shows no option while Remote EMS or a custom profile is in use. Refused while Remote EMS is on. Modbus shows the mode but cannot choose it. | C | Done | Disabled | New read |
+| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, since an installer setting can override it. | C | Done | Disabled | New read |
+| Peak shaving | Switch | On: the battery helps keep grid power under the limit below. Refused when the schedule has no time slot. | C | Done | Disabled | New read |
+| Peak shaving grid limit | Number, kW | The grid power the plant tries to stay under while peak shaving is on. Only available when the schedule has a single time slot; a schedule with several slots is changed in the mySigen app. | C | Done | Disabled | New read |
 | Smart load: *name from mySigen* | Switch, one per configured load | Turns that smart load on or off. Modbus shows its power and energy but cannot switch it. Waits for a system with smart loads to build against; the dev plant has none. | C | Later | If present, disabled | New read |
 
 ### Highest risk
@@ -117,7 +117,7 @@ Unlike an override, these do not end by themselves.
 | Control | Type | What it does | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
 | Disconnect from the grid (run on battery and solar) | Switch | On: the home is separated from the grid and runs as an island. Off: reconnects. Needs its own setting in addition to Allow battery control. | D | Later | Disabled | New read |
-| Set price windows | Action | Replaces the list of buy and sell price windows used by the plant. | D | Later | Disabled | New read |
+| Set price windows | Action | Replaces the list of buy and sell price windows used by the plant. Taken out of step D. | – | Not planned | – | New read |
 
 ## Step E: EV chargers
 
