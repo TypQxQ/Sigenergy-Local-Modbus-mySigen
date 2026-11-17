@@ -81,15 +81,15 @@
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Wymuszenie baterii aktywne"
+        "name": "Wymuszenie baterii aktywne (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "Ładowarka DC: auto może oddawać energię"
+        "name": "Energia z auta dozwolona (V2X) (mySigen)"
       }
     },
     "sensor": {
       "battery_override_mode": {
-        "name": "Tryb wymuszenia baterii",
+        "name": "Tryb wymuszenia baterii (mySigen)",
         "state": {
           "charging": "Ładowanie",
           "discharging": "Rozładowanie",
@@ -98,31 +98,31 @@
         }
       },
       "battery_override_end": {
-        "name": "Koniec wymuszenia baterii"
+        "name": "Czas zakończenia wymuszenia baterii (mySigen)"
       },
       "last_update": {
-        "name": "mySigen ostatnia aktualizacja"
+        "name": "Ostatnia aktualizacja (mySigen)"
       },
       "gateway_grid_voltage_a": {
-        "name": "Gateway napięcie sieci faza A"
+        "name": "Gateway napięcie sieci faza A (mySigen)"
       },
       "gateway_grid_current_a": {
-        "name": "Gateway prąd sieci faza A"
+        "name": "Gateway prąd sieci faza A (mySigen)"
       },
       "gateway_grid_voltage_b": {
-        "name": "Gateway napięcie sieci faza B"
+        "name": "Gateway napięcie sieci faza B (mySigen)"
       },
       "gateway_grid_current_b": {
-        "name": "Gateway prąd sieci faza B"
+        "name": "Gateway prąd sieci faza B (mySigen)"
       },
       "gateway_grid_voltage_c": {
-        "name": "Gateway napięcie sieci faza C"
+        "name": "Gateway napięcie sieci faza C (mySigen)"
       },
       "gateway_grid_current_c": {
-        "name": "Gateway prąd sieci faza C"
+        "name": "Gateway prąd sieci faza C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Ostatni wynik wymuszenia baterii",
+        "name": "Wynik ostatniego polecenia wymuszenia (mySigen)",
         "state": {
           "confirmed": "Potwierdzono",
           "refused": "Odrzucono",
@@ -132,61 +132,61 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway najwyższe napięcie sieci w ostatniej minucie faza A"
+        "name": "Gateway napięcie sieci faza A, maks. 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway najniższe napięcie sieci w ostatniej minucie faza A"
+        "name": "Gateway napięcie sieci faza A, min. 1 min (mySigen)"
       },
       "generator_voltage_a": {
-        "name": "Napięcie generatora faza A"
+        "name": "Napięcie generatora faza A (mySigen)"
       },
       "generator_current_a": {
-        "name": "Prąd generatora faza A"
+        "name": "Prąd generatora faza A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway najwyższe napięcie sieci w ostatniej minucie faza B"
+        "name": "Gateway napięcie sieci faza B, maks. 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway najniższe napięcie sieci w ostatniej minucie faza B"
+        "name": "Gateway napięcie sieci faza B, min. 1 min (mySigen)"
       },
       "generator_voltage_b": {
-        "name": "Napięcie generatora faza B"
+        "name": "Napięcie generatora faza B (mySigen)"
       },
       "generator_current_b": {
-        "name": "Prąd generatora faza B"
+        "name": "Prąd generatora faza B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway najwyższe napięcie sieci w ostatniej minucie faza C"
+        "name": "Gateway napięcie sieci faza C, maks. 1 min (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway najniższe napięcie sieci w ostatniej minucie faza C"
+        "name": "Gateway napięcie sieci faza C, min. 1 min (mySigen)"
       },
       "generator_voltage_c": {
-        "name": "Napięcie generatora faza C"
+        "name": "Napięcie generatora faza C (mySigen)"
       },
       "generator_current_c": {
-        "name": "Prąd generatora faza C"
+        "name": "Prąd generatora faza C (mySigen)"
       },
       "generator_power": {
-        "name": "Moc generatora"
+        "name": "Moc generatora (mySigen)"
       },
       "generator_frequency": {
-        "name": "Częstotliwość generatora"
+        "name": "Częstotliwość generatora (mySigen)"
       },
       "generator_contactor": {
-        "name": "Stycznik generatora"
+        "name": "Stycznik generatora (mySigen)"
       },
       "gateway_grid_phase_sequence": {
-        "name": "Gateway kolejność faz po stronie sieci"
+        "name": "Gateway kolejność faz po stronie sieci (mySigen)"
       },
       "gateway_firmware": {
-        "name": "Gateway wersja oprogramowania"
+        "name": "Gateway oprogramowanie (mySigen)"
       },
       "gateway_model": {
-        "name": "Gateway model"
+        "name": "Gateway model (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "Używany tryb ładowania ładowarki DC",
+        "name": "Bieżący tryb ładowania DC (mySigen)",
         "state": {
           "fast_charging": "Ładuj teraz pełną mocą",
           "solar_surplus": "Ładuj tylko nadwyżką słoneczną",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "Ładowarka DC kończy ładowanie przy poziomie pojazdu"
+        "name": "Bieżący limit ładowania DC (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Czas trwania wymuszenia baterii"
+        "name": "Czas trwania następnego wymuszenia (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Limit mocy wymuszenia baterii (0 = bez limitu)"
+        "name": "Limit mocy następnego wymuszenia (mySigen)"
       },
       "peak_shaving_limit": {
-        "name": "Limit sieci dla ograniczania szczytów mocy"
+        "name": "Limit sieci ograniczania szczytów (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "Ładowarka DC: zakończ ładowanie przy poziomie pojazdu"
+        "name": "Limit ładowania DC (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "Ładowarka DC: zostaw w aucie co najmniej tyle"
+        "name": "Minimalne naładowanie auta dla V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Wymuszenie baterii do uruchomienia",
+        "name": "Tryb następnego wymuszenia (mySigen)",
         "state": {
           "hold_battery": "Wstrzymaj baterię (bez ładowania i rozładowania)",
           "charging": "Ładuj baterię",
@@ -225,7 +225,7 @@
         }
       },
       "operating_mode": {
-        "name": "Tryb pracy",
+        "name": "Tryb pracy (mySigen)",
         "state": {
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Najpierw używaj własnej energii (maksymalna autokonsumpcja)",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "Tryb ładowania ładowarki DC",
+        "name": "Tryb ładowania DC (mySigen)",
         "state": {
           "fast_charging": "Ładuj teraz pełną mocą",
           "solar_surplus": "Ładuj tylko nadwyżką słoneczną",
@@ -244,24 +244,24 @@
     },
     "button": {
       "start_battery_override": {
-        "name": "Uruchom wymuszenie baterii teraz"
+        "name": "Uruchom wymuszenie baterii (mySigen)"
       },
       "stop_battery_override": {
-        "name": "Zatrzymaj wymuszenie baterii teraz"
+        "name": "Zatrzymaj wymuszenie baterii (mySigen)"
       }
     },
     "switch": {
       "battery_export": {
-        "name": "Pozwól baterii oddawać energię do sieci"
+        "name": "Zezwól na oddawanie energii z baterii do sieci (mySigen)"
       },
       "peak_shaving": {
-        "name": "Ograniczanie szczytów mocy"
+        "name": "Ograniczanie szczytów mocy (mySigen)"
       },
       "grid_disconnect": {
-        "name": "Odłącz od sieci (praca na baterii i energii słonecznej)"
+        "name": "Odłącz od sieci (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "Ładowarka DC: auto zasila dom (V2X)"
+        "name": "Zezwól na energię z auta (V2X) (mySigen)"
       }
     }
   },

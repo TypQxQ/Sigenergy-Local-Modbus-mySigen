@@ -81,15 +81,15 @@
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Batterij-override actief"
+        "name": "Batterij-override actief (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC-lader: auto mag stroom leveren"
+        "name": "Stroom uit EV toegestaan (V2X) (mySigen)"
       }
     },
     "sensor": {
       "battery_override_mode": {
-        "name": "Modus van batterij-override",
+        "name": "Modus van batterij-override (mySigen)",
         "state": {
           "charging": "Laden",
           "discharging": "Ontladen",
@@ -98,31 +98,31 @@
         }
       },
       "battery_override_end": {
-        "name": "Batterij-override eindigt"
+        "name": "Eindtijd van batterij-override (mySigen)"
       },
       "last_update": {
-        "name": "mySigen laatste update"
+        "name": "Laatste update (mySigen)"
       },
       "gateway_grid_voltage_a": {
-        "name": "Gateway netspanning fase A"
+        "name": "Gateway netspanning fase A (mySigen)"
       },
       "gateway_grid_current_a": {
-        "name": "Gateway netstroom fase A"
+        "name": "Gateway netstroom fase A (mySigen)"
       },
       "gateway_grid_voltage_b": {
-        "name": "Gateway netspanning fase B"
+        "name": "Gateway netspanning fase B (mySigen)"
       },
       "gateway_grid_current_b": {
-        "name": "Gateway netstroom fase B"
+        "name": "Gateway netstroom fase B (mySigen)"
       },
       "gateway_grid_voltage_c": {
-        "name": "Gateway netspanning fase C"
+        "name": "Gateway netspanning fase C (mySigen)"
       },
       "gateway_grid_current_c": {
-        "name": "Gateway netstroom fase C"
+        "name": "Gateway netstroom fase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Laatste resultaat van batterij-override",
+        "name": "Resultaat van laatste override-opdracht (mySigen)",
         "state": {
           "confirmed": "Bevestigd",
           "refused": "Geweigerd",
@@ -132,61 +132,61 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway hoogste netspanning afgelopen minuut fase A"
+        "name": "Gateway netspanning fase A, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway laagste netspanning afgelopen minuut fase A"
+        "name": "Gateway netspanning fase A, 1-min min (mySigen)"
       },
       "generator_voltage_a": {
-        "name": "Generatorspanning fase A"
+        "name": "Generatorspanning fase A (mySigen)"
       },
       "generator_current_a": {
-        "name": "Generatorstroom fase A"
+        "name": "Generatorstroom fase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway hoogste netspanning afgelopen minuut fase B"
+        "name": "Gateway netspanning fase B, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway laagste netspanning afgelopen minuut fase B"
+        "name": "Gateway netspanning fase B, 1-min min (mySigen)"
       },
       "generator_voltage_b": {
-        "name": "Generatorspanning fase B"
+        "name": "Generatorspanning fase B (mySigen)"
       },
       "generator_current_b": {
-        "name": "Generatorstroom fase B"
+        "name": "Generatorstroom fase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway hoogste netspanning afgelopen minuut fase C"
+        "name": "Gateway netspanning fase C, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway laagste netspanning afgelopen minuut fase C"
+        "name": "Gateway netspanning fase C, 1-min min (mySigen)"
       },
       "generator_voltage_c": {
-        "name": "Generatorspanning fase C"
+        "name": "Generatorspanning fase C (mySigen)"
       },
       "generator_current_c": {
-        "name": "Generatorstroom fase C"
+        "name": "Generatorstroom fase C (mySigen)"
       },
       "generator_power": {
-        "name": "Generatorvermogen"
+        "name": "Generatorvermogen (mySigen)"
       },
       "generator_frequency": {
-        "name": "Generatorfrequentie"
+        "name": "Generatorfrequentie (mySigen)"
       },
       "generator_contactor": {
-        "name": "Generatorcontactor"
+        "name": "Generatorcontactor (mySigen)"
       },
       "gateway_grid_phase_sequence": {
-        "name": "Gateway fasevolgorde netzijde"
+        "name": "Gateway fasevolgorde netzijde (mySigen)"
       },
       "gateway_firmware": {
-        "name": "Gateway firmwareversie"
+        "name": "Gateway firmware (mySigen)"
       },
       "gateway_model": {
-        "name": "Gateway model"
+        "name": "Gateway model (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "Gebruikte laadmodus van de DC-lader",
+        "name": "Huidige DC-laadmodus (mySigen)",
         "state": {
           "fast_charging": "Nu laden op vol vermogen",
           "solar_surplus": "Alleen laden met zonne-overschot",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC-lader stopt met laden bij voertuigniveau"
+        "name": "Huidige DC-laadlimiet (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Duur van batterij-override"
+        "name": "Duur van volgende override (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Vermogenslimiet van batterij-override (0 = geen limiet)"
+        "name": "Vermogenslimiet van volgende override (mySigen)"
       },
       "peak_shaving_limit": {
-        "name": "Netlimiet voor piekbegrenzing"
+        "name": "Netlimiet voor piekbegrenzing (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC-lader: stop met laden bij voertuigniveau"
+        "name": "DC-laadlimiet (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC-lader: houd minstens zoveel in de auto"
+        "name": "Minimale EV-lading voor V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Te starten batterij-override",
+        "name": "Modus van volgende override (mySigen)",
         "state": {
           "hold_battery": "Batterij vasthouden (niet laden, niet ontladen)",
           "charging": "Batterij laden",
@@ -225,7 +225,7 @@
         }
       },
       "operating_mode": {
-        "name": "Bedrijfsmodus",
+        "name": "Bedrijfsmodus (mySigen)",
         "state": {
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Eerst mijn eigen stroom gebruiken (maximaal eigen verbruik)",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "Laadmodus van de DC-lader",
+        "name": "DC-laadmodus (mySigen)",
         "state": {
           "fast_charging": "Nu laden op vol vermogen",
           "solar_surplus": "Alleen laden met zonne-overschot",
@@ -244,24 +244,24 @@
     },
     "button": {
       "start_battery_override": {
-        "name": "Batterij-override nu starten"
+        "name": "Batterij-override starten (mySigen)"
       },
       "stop_battery_override": {
-        "name": "Batterij-override nu stoppen"
+        "name": "Batterij-override stoppen (mySigen)"
       }
     },
     "switch": {
       "battery_export": {
-        "name": "Batterij mag aan het net leveren"
+        "name": "Batterijlevering aan het net toestaan (mySigen)"
       },
       "peak_shaving": {
-        "name": "Piekbegrenzing"
+        "name": "Piekbegrenzing (mySigen)"
       },
       "grid_disconnect": {
-        "name": "Loskoppelen van het net (draaien op batterij en zon)"
+        "name": "Loskoppelen van het net (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC-lader: laat de auto het huis voeden (V2X)"
+        "name": "Stroom uit EV toestaan (V2X) (mySigen)"
       }
     }
   },

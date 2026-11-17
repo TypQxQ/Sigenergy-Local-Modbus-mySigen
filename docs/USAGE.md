@@ -17,6 +17,8 @@ New here? Start with the [README](../README.md).
 
 Everything appears on your existing **Sigen Plant** device. mySigen is read every 15 to 60 seconds (set under **Reconfigure**); for anything fast, keep using the Modbus entities.
 
+Every name ends with **(mySigen)**, in every language, so you can tell these apart from the Modbus entities. With default Home Assistant naming settings, a new entity ID typically ends in `_mysigen`, for example `sensor.sigen_plant_battery_override_mode_mysigen`. Your entity ID settings can change the rest, and Home Assistant adds `_2` when an ID is already taken. Entities you already have keep their IDs. The tables below leave the suffix out.
+
 <sub>✅ on from the start · ⬜ disabled until you enable it</sub>
 
 | | Entity | What it shows |
@@ -24,20 +26,20 @@ Everything appears on your existing **Sigen Plant** device. mySigen is read ever
 | | **Battery override** | |
 | ✅ | Battery override active | On while an override runs, whoever started it |
 | ✅ | Battery override mode | Charging, discharging, hold battery or self-consumption |
-| ✅ | Battery override ends | When the running override stops by itself |
-| ✅ | Last battery override result | How the last start or stop from Home Assistant ended |
-| ✅ | mySigen last update | When mySigen last answered |
+| ✅ | Battery override end time | When the running override stops by itself |
+| ✅ | Last override command result | How the last start or stop from Home Assistant ended |
+| ✅ | Last update | When mySigen last answered |
 | | **Gateway** | <sub>only with a Sigenergy Gateway</sub> |
-| ✅ | Grid current phase A, B, C | Load on each main fuse |
-| ✅ | Grid voltage phase A, B, C | Whether the grid is back during a power cut |
-| ✅ | Firmware version, model | What the Gateway reports about itself |
-| ⬜ | Highest / lowest voltage in the past minute | Short peaks and dips between two readings |
-| ⬜ | Grid phase sequence | Whether the phases are wired in the expected order |
+| ✅ | Gateway grid current phase A, B, C | Load on each main fuse |
+| ✅ | Gateway grid voltage phase A, B, C | Whether the grid is back during a power cut |
+| ✅ | Gateway firmware, model | What the Gateway reports about itself |
+| ⬜ | Gateway grid voltage phase A, B, C, 1-min max / min | Highest and lowest voltage in the past minute: short peaks and dips between two readings |
+| ⬜ | Gateway grid phase sequence | Whether the phases are wired in the expected order |
 | ⬜ | Generator voltage, current, power, frequency, contactor | A generator on the Gateway; shown on every Gateway, so off by default |
 | | **DC charger** | <sub>only when mySigen lists one</sub> |
-| ✅ | Charging mode in use | How the charger decides when to charge |
-| ✅ | Stops charging at vehicle level | The charge level where charging stops |
-| ✅ | Car may supply power | Whether the car may power the home |
+| ✅ | Current DC charging mode | The charging mode in use: how the charger decides when to charge |
+| ✅ | Current DC charge limit | The car's charge level where charging stops |
+| ✅ | Power from EV allowed (V2X) | Whether the car may power the home |
 
 > [!NOTE]
 > Grid frequency, grid connection state, power, energy and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
@@ -50,15 +52,15 @@ An override makes the battery do **one thing for a set time**, then hands back t
 
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
-| 🎯 | Battery override to start | Dropdown | What the battery should do; [options below](#what-the-battery-can-do). Sends nothing. |
-| ⏱️ | Battery override duration | Number, min | 30 to 120 minutes. Sends nothing. |
-| ⚡ | Battery override power limit | Number, kW | Cap for charging or discharging; 0 = no limit. Disabled by default. Sends nothing. |
-| ▶️ | Start battery override now | Button | Starts the chosen override. |
-| ⏹️ | Stop battery override now | Button | Ends the running override, even one started in the app. |
+| 🎯 | Next override mode | Dropdown | What the battery should do; [options below](#what-the-battery-can-do). Sends nothing. |
+| ⏱️ | Next override duration | Number, min | 30 to 120 minutes. Sends nothing. |
+| ⚡ | Next override power limit | Number, kW | Cap for charging or discharging; **0 = no limit**. Not used for hold battery or self-consumption. Disabled by default. Sends nothing. |
+| ▶️ | Start battery override | Button | Starts the chosen override right away. |
+| ⏹️ | Stop battery override | Button | Ends the running override right away, even one started in the app. |
 
 #### What the battery can do
 
-The options of the **Battery override to start** dropdown. Automations use the key as `mode`.
+The options of the **Next override mode** dropdown. Automations use the key as `mode`.
 
 | Option | Key | What happens |
 | --- | --- | --- |
@@ -81,7 +83,7 @@ Stop it with the action `sigen_mysigen.cancel_battery_override`. The keys are th
 
 ### What you'll see
 
-A start is refused, with nothing sent, while another override runs or while Remote EMS is on (or can't be read). **Last battery override result** then shows:
+A start is refused, with nothing sent, while another override runs or while Remote EMS is on (or can't be read). **Last override command result** then shows:
 
 | | Result | Meaning |
 | :-: | --- | --- |
@@ -101,7 +103,7 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
 | 🧠 | Operating mode | Dropdown | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. Refused while Remote EMS is on. |
-| ↗️ | Allow battery to export to the grid | Switch | Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
+| ↗️ | Allow battery export to grid | Switch | On: the battery may export to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
 | 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
 | 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
 
@@ -109,7 +111,7 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 
 ## 🔌 Disconnecting from the grid
 
-**Disconnect from the grid (run on battery and solar)** is a switch that takes the home off the grid; switching it off connects it again. To get it, you need a Sigenergy Gateway, and under **Reconfigure** both **Allow battery control** and **Allow disconnecting from the grid**. The switch then starts disabled: enable it in the entity settings.
+**Disconnect from grid** is a switch that takes the home off the grid, so it runs on battery and solar alone; switching it off connects it again. To get it, you need a Sigenergy Gateway, and under **Reconfigure** both **Allow battery control** and **Allow disconnecting from the grid**. The switch then starts disabled: enable it in the entity settings.
 
 > [!WARNING]
 > **Off the grid, the battery drains.** When it's empty, the home loses power until you reconnect.
@@ -128,10 +130,10 @@ When mySigen lists a DC charger, its sensors appear by themselves. With **Allow 
 
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
-| 🔀 | Charging mode | Dropdown | Charge now at full power, charge on solar surplus only, or charge and let the car supply power (V2X) |
-| 🔝 | Stop charging at vehicle level | Number, % | Charging stops at this level |
-| 🔒 | Keep at least this much in the car | Number, % | The car stops supplying power at this level |
-| 🏠 | Let the car power the home (V2X) | Switch | Allow or block the car supplying power, no Remote EMS needed |
+| 🔀 | DC charging mode | Dropdown | Charge now at full power, charge on solar surplus only, or charge and let the car supply power (V2X) |
+| 🔝 | DC charge limit | Number, % | Charging stops when the car reaches this charge level |
+| 🔒 | Minimum EV charge for V2X | Number, % | The car stops supplying power at this level, so at least this much stays in the car |
+| 🏠 | Allow power from EV (V2X) | Switch | Allow or block the car powering the home, no Remote EMS needed |
 
 Start and stop charging and the power limits stay in Sigenergy ESS. Changes are refused while Remote EMS is on.
 

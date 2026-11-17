@@ -83,11 +83,6 @@ class OverridePowerLimit(MySigenEntity, NumberEntity):
     _attr_mode = NumberMode.BOX
 
     @property
-    def suggested_object_id(self) -> str | None:
-        # The name explains "0 = no limit"; keep that out of the entity ID.
-        return "battery override power limit"
-
-    @property
     def available(self) -> bool:
         return True
 

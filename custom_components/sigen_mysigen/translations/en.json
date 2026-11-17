@@ -81,15 +81,15 @@
   "entity": {
     "binary_sensor": {
       "battery_override": {
-        "name": "Battery override active"
+        "name": "Battery override active (mySigen)"
       },
       "dc_charger_v2x": {
-        "name": "DC charger car may supply power"
+        "name": "Power from EV allowed (V2X) (mySigen)"
       }
     },
     "sensor": {
       "battery_override_mode": {
-        "name": "Battery override mode",
+        "name": "Battery override mode (mySigen)",
         "state": {
           "charging": "Charging",
           "discharging": "Discharging",
@@ -98,31 +98,31 @@
         }
       },
       "battery_override_end": {
-        "name": "Battery override ends"
+        "name": "Battery override end time (mySigen)"
       },
       "last_update": {
-        "name": "mySigen last update"
+        "name": "Last update (mySigen)"
       },
       "gateway_grid_voltage_a": {
-        "name": "Gateway grid voltage phase A"
+        "name": "Gateway grid voltage phase A (mySigen)"
       },
       "gateway_grid_current_a": {
-        "name": "Gateway grid current phase A"
+        "name": "Gateway grid current phase A (mySigen)"
       },
       "gateway_grid_voltage_b": {
-        "name": "Gateway grid voltage phase B"
+        "name": "Gateway grid voltage phase B (mySigen)"
       },
       "gateway_grid_current_b": {
-        "name": "Gateway grid current phase B"
+        "name": "Gateway grid current phase B (mySigen)"
       },
       "gateway_grid_voltage_c": {
-        "name": "Gateway grid voltage phase C"
+        "name": "Gateway grid voltage phase C (mySigen)"
       },
       "gateway_grid_current_c": {
-        "name": "Gateway grid current phase C"
+        "name": "Gateway grid current phase C (mySigen)"
       },
       "battery_override_command": {
-        "name": "Last battery override result",
+        "name": "Last override command result (mySigen)",
         "state": {
           "confirmed": "Confirmed",
           "refused": "Refused",
@@ -132,61 +132,61 @@
         }
       },
       "gateway_grid_voltage_max_a": {
-        "name": "Gateway grid highest voltage in the past minute phase A"
+        "name": "Gateway grid voltage phase A, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_a": {
-        "name": "Gateway grid lowest voltage in the past minute phase A"
+        "name": "Gateway grid voltage phase A, 1-min min (mySigen)"
       },
       "generator_voltage_a": {
-        "name": "Generator voltage phase A"
+        "name": "Generator voltage phase A (mySigen)"
       },
       "generator_current_a": {
-        "name": "Generator current phase A"
+        "name": "Generator current phase A (mySigen)"
       },
       "gateway_grid_voltage_max_b": {
-        "name": "Gateway grid highest voltage in the past minute phase B"
+        "name": "Gateway grid voltage phase B, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_b": {
-        "name": "Gateway grid lowest voltage in the past minute phase B"
+        "name": "Gateway grid voltage phase B, 1-min min (mySigen)"
       },
       "generator_voltage_b": {
-        "name": "Generator voltage phase B"
+        "name": "Generator voltage phase B (mySigen)"
       },
       "generator_current_b": {
-        "name": "Generator current phase B"
+        "name": "Generator current phase B (mySigen)"
       },
       "gateway_grid_voltage_max_c": {
-        "name": "Gateway grid highest voltage in the past minute phase C"
+        "name": "Gateway grid voltage phase C, 1-min max (mySigen)"
       },
       "gateway_grid_voltage_min_c": {
-        "name": "Gateway grid lowest voltage in the past minute phase C"
+        "name": "Gateway grid voltage phase C, 1-min min (mySigen)"
       },
       "generator_voltage_c": {
-        "name": "Generator voltage phase C"
+        "name": "Generator voltage phase C (mySigen)"
       },
       "generator_current_c": {
-        "name": "Generator current phase C"
+        "name": "Generator current phase C (mySigen)"
       },
       "generator_power": {
-        "name": "Generator power"
+        "name": "Generator power (mySigen)"
       },
       "generator_frequency": {
-        "name": "Generator frequency"
+        "name": "Generator frequency (mySigen)"
       },
       "generator_contactor": {
-        "name": "Generator contactor"
+        "name": "Generator contactor (mySigen)"
       },
       "gateway_grid_phase_sequence": {
-        "name": "Gateway grid phase sequence"
+        "name": "Gateway grid phase sequence (mySigen)"
       },
       "gateway_firmware": {
-        "name": "Gateway firmware version"
+        "name": "Gateway firmware (mySigen)"
       },
       "gateway_model": {
-        "name": "Gateway model"
+        "name": "Gateway model (mySigen)"
       },
       "dc_charger_mode": {
-        "name": "DC charger charging mode in use",
+        "name": "Current DC charging mode (mySigen)",
         "state": {
           "fast_charging": "Charge now at full power",
           "solar_surplus": "Charge on solar surplus only",
@@ -194,29 +194,29 @@
         }
       },
       "dc_charger_stop_level": {
-        "name": "DC charger stops charging at vehicle level"
+        "name": "Current DC charge limit (mySigen)"
       }
     },
     "number": {
       "battery_override_duration": {
-        "name": "Battery override duration"
+        "name": "Next override duration (mySigen)"
       },
       "battery_override_power_limit": {
-        "name": "Battery override power limit (0 = no limit)"
+        "name": "Next override power limit (mySigen)"
       },
       "peak_shaving_limit": {
-        "name": "Peak shaving grid limit"
+        "name": "Peak shaving grid limit (mySigen)"
       },
       "dc_charger_stop_charging_at": {
-        "name": "DC charger stop charging at vehicle level"
+        "name": "DC charge limit (mySigen)"
       },
       "dc_charger_discharge_floor": {
-        "name": "DC charger keep at least this much in the car"
+        "name": "Minimum EV charge for V2X (mySigen)"
       }
     },
     "select": {
       "battery_override_to_start": {
-        "name": "Battery override to start",
+        "name": "Next override mode (mySigen)",
         "state": {
           "hold_battery": "Hold battery (no charging, no discharging)",
           "charging": "Charge battery",
@@ -225,7 +225,7 @@
         }
       },
       "operating_mode": {
-        "name": "Operating mode",
+        "name": "Operating mode (mySigen)",
         "state": {
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Use my own power first (maximum self-consumption)",
@@ -234,7 +234,7 @@
         }
       },
       "dc_charger_charging_mode": {
-        "name": "DC charger charging mode",
+        "name": "DC charging mode (mySigen)",
         "state": {
           "fast_charging": "Charge now at full power",
           "solar_surplus": "Charge on solar surplus only",
@@ -244,24 +244,24 @@
     },
     "button": {
       "start_battery_override": {
-        "name": "Start battery override now"
+        "name": "Start battery override (mySigen)"
       },
       "stop_battery_override": {
-        "name": "Stop battery override now"
+        "name": "Stop battery override (mySigen)"
       }
     },
     "switch": {
       "battery_export": {
-        "name": "Allow battery to export to the grid"
+        "name": "Allow battery export to grid (mySigen)"
       },
       "peak_shaving": {
-        "name": "Peak shaving"
+        "name": "Peak shaving (mySigen)"
       },
       "grid_disconnect": {
-        "name": "Disconnect from the grid (run on battery and solar)"
+        "name": "Disconnect from grid (mySigen)"
       },
       "dc_charger_allow_v2x": {
-        "name": "DC charger let the car power the home (V2X)"
+        "name": "Allow power from EV (V2X) (mySigen)"
       }
     }
   },
