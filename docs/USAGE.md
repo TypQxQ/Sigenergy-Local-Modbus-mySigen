@@ -50,13 +50,17 @@ An override makes the battery do **one thing for a set time**, then hands back t
 
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
-| 🎯 | Battery override to start | Dropdown | What the battery should do. Sends nothing. |
+| 🎯 | Battery override to start | Dropdown | What the battery should do; [options below](#what-the-battery-can-do). Sends nothing. |
 | ⏱️ | Battery override duration | Number, min | 30 to 120 minutes. Sends nothing. |
 | ⚡ | Battery override power limit | Number, kW | Cap for charging or discharging; 0 = no limit. Disabled by default. Sends nothing. |
 | ▶️ | Start battery override now | Button | Starts the chosen override. |
 | ⏹️ | Stop battery override now | Button | Ends the running override, even one started in the app. |
 
-| Option | Automation key | What happens |
+#### What the battery can do
+
+The options of the **Battery override to start** dropdown. Automations use the key as `mode`.
+
+| Option | Key | What happens |
 | --- | --- | --- |
 | 🛑 Hold battery | `hold_battery` | The battery keeps its charge; the home runs on solar and grid |
 | ⬆️ Charge battery | `charging` | The battery charges, from the grid if solar isn't enough |
