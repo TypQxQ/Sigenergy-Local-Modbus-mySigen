@@ -29,12 +29,14 @@
           "username": "E-Mail",
           "password": "Passwort",
           "scan_interval": "Abfrageintervall",
-          "allow_control": "Batteriesteuerung erlauben"
+          "allow_control": "Batteriesteuerung erlauben",
+          "allow_grid_disconnect": "Trennen vom Stromnetz erlauben"
         },
         "data_description": {
           "password": "Leer lassen, um das aktuelle Passwort zu behalten.",
           "scan_interval": "Zwischen 15 und 60 Sekunden. Kürzere Intervalle senden mehr Anfragen an mySigen.",
-          "allow_control": "Erlaubt Home Assistant, eine zeitlich begrenzte Batterie-Übersteuerung über mySigen zu starten und abzubrechen. Standardmäßig aus. Das Konto benötigt die Berechtigung View and Edit."
+          "allow_control": "Erlaubt Home Assistant, eine zeitlich begrenzte Batterie-Übersteuerung über mySigen zu starten und abzubrechen. Standardmäßig aus. Das Konto benötigt die Berechtigung View and Edit.",
+          "allow_grid_disconnect": "Fügt einen Schalter hinzu, der die Anlage vom Stromnetz trennt, sodass das Haus nur mit Batterie und Solarstrom läuft, und sie wieder verbindet. Erfordert Batteriesteuerung erlauben und ein Sigenergy Gateway. Standardmäßig aus."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Lastspitzenkappung"
+      },
+      "grid_disconnect": {
+        "name": "Vom Stromnetz trennen (Betrieb mit Batterie und Solar)"
       }
     }
   },

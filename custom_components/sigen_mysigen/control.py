@@ -20,6 +20,10 @@ from typing import Any
 
 from .api import (
     CONTROL_MODES,
+    GRID_GOING_OFF,
+    GRID_OFF,
+    GRID_ON,
+    GRID_RETURNING,
     MAX_PEAK_SHAVING_KW,
     OPERATING_MODES,
     MAX_OVERRIDE_MINUTES,
@@ -46,6 +50,10 @@ RESULTS = (
 
 REMOTE_EMS_ON = "on"
 REMOTE_EMS_OFF = "off"
+
+# The Modbus integration's grid connection states.
+PLANT_ON_GRID = "on_grid"
+PLANT_OFF_GRID_MANUAL = "off_grid_manual"
 
 _READBACK_DELAY = 3.0
 
@@ -421,6 +429,62 @@ async def async_set_peak_shaving(
         send=lambda current: coordinator.session.async_set_peak_shaving(schedule(current)),
         expected=expected,
         publish=coordinator.publish_peak_shaving,
+        sleep=sleep,
+        before=before,
+    )
+
+
+async def async_set_off_grid(
+    coordinator: Any,
+    *,
+    off_grid: bool,
+    plant_grid: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Disconnect the plant from the grid, or reconnect it.
+
+    Sent only when mySigen offers the switch, its fresh read shows the plant
+    settled in the other state, and the Modbus integration agrees. Reconnecting
+    is only done after a manual disconnect, never during a grid outage.
+    """
+    if not coordinator.allow_grid_disconnect:
+        raise CommandRefused(
+            "Disconnecting from the grid is switched off for this mySigen "
+            "connection. Switch it on under Reconfigure."
+        )
+    wanted = (GRID_GOING_OFF, GRID_OFF) if off_grid else (GRID_ON, GRID_RETURNING)
+
+    def before(current: Any) -> None:
+        if not current.offered:
+            raise CommandRefused(
+                "mySigen does not offer the grid switch for this plant right now. "
+                "Nothing was sent."
+            )
+        if off_grid and current.state != GRID_ON:
+            raise CommandRefused(
+                f"The plant is not settled on the grid ({current.state}). Nothing was sent."
+            )
+        if not off_grid and not current.manual_off_grid:
+            raise CommandRefused(
+                "The plant is not off the grid by a manual disconnect. It may be a "
+                "grid outage, which reconnects by itself. Nothing was sent."
+            )
+        # Read last, with nothing awaited before the send.
+        plant = plant_grid()
+        needed = PLANT_ON_GRID if off_grid else PLANT_OFF_GRID_MANUAL
+        if plant != needed:
+            raise CommandRefused(
+                f"The Modbus integration shows the grid connection as {plant!r}, "
+                f"not {needed!r}. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "disconnect_grid" if off_grid else "reconnect_grid",
+        read=coordinator.session.async_grid_connection,
+        send=lambda _current: coordinator.session.async_set_off_grid(off_grid),
+        expected=lambda current: current.state in wanted,
+        publish=coordinator.publish_grid_connection,
         sleep=sleep,
         before=before,
     )

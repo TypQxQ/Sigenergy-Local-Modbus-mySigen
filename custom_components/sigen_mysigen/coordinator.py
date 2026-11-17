@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     BatteryExport,
+    GridConnection,
     PeakShaving,
     CONTROL_MODES,
     MAX_OVERRIDE_MINUTES,
@@ -39,6 +40,7 @@ from .api import (
 )
 from .const import (
     CONF_ALLOW_CONTROL,
+    CONF_ALLOW_GRID_DISCONNECT,
     CONF_OVERRIDE_MINUTES,
     CONF_OVERRIDE_MODE,
     CONF_OVERRIDE_POWER,
@@ -127,6 +129,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.battery_export: BatteryExport | None = None
         self.peak_shaving: PeakShaving | None = None
         self.last_setting: dict[str, str] | None = None
+        # Grid connection (step D); only read while disconnecting is allowed.
+        self.grid_connection: GridConnection | None = None
+        # True from a state between on and off until a settled answer arrives,
+        # also through answers that could not be read.
+        self._grid_following = False
         self._settings_read_at = float("-inf")
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
@@ -162,6 +169,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def allow_control(self) -> bool:
         """True only when the user switched control on for this connection."""
         return self.config_entry.options.get(CONF_ALLOW_CONTROL) is True
+
+    @property
+    def allow_grid_disconnect(self) -> bool:
+        """True only when control and grid disconnecting are both switched on."""
+        return self.allow_control and (
+            self.config_entry.options.get(CONF_ALLOW_GRID_DISCONNECT) is True
+        )
 
     @property
     def override_minutes(self) -> int:
@@ -219,6 +233,33 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.peak_shaving = schedule
         self.async_update_listeners()
 
+    def publish_grid_connection(self, connection: GridConnection) -> None:
+        self.grid_connection = connection
+        self._grid_following = not connection.settled
+        self.async_update_listeners()
+
+    @property
+    def _grid_changing(self) -> bool:
+        """True while the plant is on its way off or back onto the grid."""
+        return self.allow_grid_disconnect and self._grid_following
+
+    async def _async_read_grid(self) -> None:
+        """Read only the grid connection, while it is changing."""
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            await self._async_read_grid_locked()
+
+    async def _async_read_grid_locked(self) -> None:
+        try:
+            connection = await self.session.async_grid_connection()
+        except (MySigenConnectionError, MySigenPermissionError) as err:
+            _LOGGER.debug("mySigen grid connection read failed: %s", err)
+            return
+        self.grid_connection = connection
+        if connection is not None:
+            self._grid_following = not connection.settled
+
     async def _async_read_settings(self) -> None:
         """Read the settings step C shows. One failing read keeps its old value.
 
@@ -248,6 +289,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 setattr(self, name, await read())
             except (MySigenConnectionError, MySigenPermissionError) as err:
                 _LOGGER.debug("mySigen %s read failed: %s", name, err)
+        if self.allow_grid_disconnect:
+            await self._async_read_grid_locked()
 
     def record_command(self, action: str, result: str) -> None:
         """Remember how a command ended and tell the entities."""
@@ -322,6 +365,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 and time.monotonic() - self._settings_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_settings()
+            elif self._grid_changing:
+                await self._async_read_grid()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"mySigen refused the stored account ({err})"

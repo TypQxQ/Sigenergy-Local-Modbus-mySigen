@@ -75,6 +75,8 @@ _EXPORT_PATH = "device/energy-profile/battery/export/limitation/{station_id}"
 _EXPORT_WRITE_PATH = "device/energy-profile/battery/export/limitation"
 _PEAK_PATH = "device/dischargesetting/peak/shaving/{station_id}"
 _PEAK_WRITE_PATH = "device/dischargesetting/peak/shaving"
+_GRID_STATUS_PATH = "device/gateway/gateway-status"
+_GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
 # Rows of the Gateway answer that become readings. Labels are compared in
@@ -355,6 +357,64 @@ def parse_peak_shaving(data: Any) -> PeakShaving | None:
         return None
     schedule = PeakShaving(dict(data))
     return schedule if schedule.enabled is not None else None
+
+
+GRID_ON = "on_grid"
+GRID_GOING_OFF = "going_off_grid"
+GRID_OFF = "off_grid"
+GRID_RETURNING = "returning_to_grid"
+GRID_STATES = (GRID_ON, GRID_GOING_OFF, GRID_OFF, GRID_RETURNING)
+
+
+@dataclass(frozen=True)
+class GridConnection:
+    """The Gateway's grid connection as mySigen reports it.
+
+    onOffGridStatus: 0 on the grid, 1 returning to the grid, 2 off the grid.
+    manualOffGridStatus: 1 while a manual disconnect is under way, 2 after a
+    manual request has completed (it stays 2 after reconnecting).
+    """
+
+    status: int
+    manual: int
+    # mySigen only offers the switch in its app while this is true.
+    offered: bool
+
+    @property
+    def state(self) -> str:
+        if self.status == 0:
+            return GRID_GOING_OFF if self.manual == 1 else GRID_ON
+        return GRID_RETURNING if self.status == 1 else GRID_OFF
+
+    @property
+    def off_grid(self) -> bool:
+        """True when off the grid or on the way there."""
+        return self.state in (GRID_GOING_OFF, GRID_OFF)
+
+    @property
+    def settled(self) -> bool:
+        return self.state in (GRID_ON, GRID_OFF)
+
+    @property
+    def manual_off_grid(self) -> bool:
+        """Off the grid because someone asked for it, not because of an outage."""
+        return self.status == 2 and self.manual == 2
+
+
+def parse_grid_connection(data: Any) -> GridConnection | None:
+    if not isinstance(data, dict):
+        return None
+    status = _int_or_none(data.get("onOffGridStatus"))
+    manual = _int_or_none(data.get("manualOffGridStatus"))
+    # Without the manual field, settled on the grid and on the way off look
+    # the same, so such an answer is no answer.
+    if status not in (0, 1, 2) or manual not in (0, 1, 2):
+        return None
+    return GridConnection(
+        status=status,
+        manual=manual,
+        offered=data.get("showButton") is True,
+    )
 
 
 def encrypt_password(password: str) -> str:
@@ -816,6 +876,23 @@ class MySigenSession:
             "set peak shaving",
             _PEAK_WRITE_PATH,
             {**schedule, "stationId": await self._async_station_number()},
+            method="POST",
+        )
+
+    async def async_grid_connection(self) -> GridConnection | None:
+        """Whether the Gateway holds the plant on or off the grid."""
+        return parse_grid_connection(await self._async_get(
+            "grid connection", _GRID_STATUS_PATH,
+            {"stationId": await self.async_station_id()},
+        ))
+
+    async def async_set_off_grid(self, off_grid: bool) -> None:
+        """Disconnect from the grid, or reconnect. Sent once."""
+        await self._async_put(
+            "disconnect from the grid" if off_grid else "reconnect to the grid",
+            _GRID_WRITE_PATH,
+            {"onGridState": 1 if off_grid else 0,
+             "stationId": await self._async_station_number()},
             method="POST",
         )
 

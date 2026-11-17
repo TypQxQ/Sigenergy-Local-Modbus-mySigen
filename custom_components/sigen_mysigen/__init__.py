@@ -211,12 +211,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator.platforms = list(PLATFORMS)
     if coordinator.allow_control:
         coordinator.platforms += CONTROL_PLATFORMS
-    else:
-        # Control was switched off: its entities must not linger unavailable.
-        registry = er.async_get(hass)
-        for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
-            if entity.domain in CONTROL_PLATFORMS:
-                registry.async_remove(entity.entity_id)
+    # Control or grid disconnecting was switched off: those entities must
+    # not linger unavailable.
+    registry = er.async_get(hass)
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        if (entity.domain in CONTROL_PLATFORMS and not coordinator.allow_control) or (
+            entity.unique_id == f"{entry.entry_id}_grid_disconnect"
+            and not coordinator.allow_grid_disconnect
+        ):
+            registry.async_remove(entity.entity_id)
 
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)

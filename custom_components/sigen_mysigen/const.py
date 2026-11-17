@@ -23,6 +23,9 @@ MAX_SCAN_INTERVAL = 60
 # Whether Home Assistant may start and cancel the battery override.
 # Stored in the entry options; off unless the user switches it on.
 CONF_ALLOW_CONTROL = "allow_control"
+# Whether Home Assistant may also disconnect the plant from the grid. Needs
+# allow_control as well; off unless the user switches it on.
+CONF_ALLOW_GRID_DISCONNECT = "allow_grid_disconnect"
 
 # What the Start battery override button uses. Stored in the entry options;
 # changing them sends nothing to the plant.

@@ -29,12 +29,14 @@
           "username": "Sähköposti",
           "password": "Salasana",
           "scan_interval": "Lukuväli",
-          "allow_control": "Salli akun ohjaus"
+          "allow_control": "Salli akun ohjaus",
+          "allow_grid_disconnect": "Salli irtikytkentä sähköverkosta"
         },
         "data_description": {
           "password": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan.",
           "scan_interval": "15–60 sekuntia. Lyhyemmät välit lähettävät enemmän pyyntöjä mySigeniin.",
-          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa ajastetun akun ohituksen mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit."
+          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa ajastetun akun ohituksen mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit.",
+          "allow_grid_disconnect": "Lisää kytkimen, joka irrottaa laitteiston sähköverkosta, jolloin koti toimii pelkällä akulla ja aurinkosähköllä, ja kytkee sen takaisin. Vaatii asetuksen Salli akun ohjaus ja Sigenergy Gatewayn. Oletuksena pois päältä."
         }
       }
     },
@@ -226,6 +228,9 @@
       },
       "peak_shaving": {
         "name": "Huipputehon leikkaus"
+      },
+      "grid_disconnect": {
+        "name": "Irrota sähköverkosta (akku- ja aurinkokäyttö)"
       }
     }
   },

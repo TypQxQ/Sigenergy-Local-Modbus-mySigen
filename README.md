@@ -135,6 +135,20 @@ Unlike an override, these do not end by themselves. They only exist while **Allo
 
 These are read every ten minutes, so a change made in the mySigen app can take that long to show. Each change is sent once and confirmed by reading it back.
 
+### Disconnecting from the grid
+
+**Disconnect from the grid (run on battery and solar)** is a switch that takes the plant off the grid, so the home runs on battery and solar alone, and connects it again when switched off. It needs a Sigenergy Gateway and its own setting: switch on **Allow disconnecting from the grid** under **Reconfigure**, in addition to **Allow battery control**. The switch then starts disabled; enable it in the entity settings.
+
+Before sending, the add-on checks that:
+
+- mySigen offers the switch for the plant right now, as it does in the app;
+- the plant is settled on the grid (to disconnect), or off the grid after a manual disconnect (to reconnect);
+- the Sigenergy ESS **Grid connection status** sensor shows the same.
+
+During a grid outage the plant reconnects by itself, so reconnecting is refused then. The `grid_connection` attribute shows `on_grid`, `going_off_grid`, `off_grid` or `returning_to_grid`.
+
+Running off the grid drains the battery. When it is empty, the home loses power until you reconnect.
+
 ## Limitations
 
 - **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.

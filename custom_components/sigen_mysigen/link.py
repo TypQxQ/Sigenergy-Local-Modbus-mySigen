@@ -75,3 +75,33 @@ def remote_ems_state(hass: HomeAssistant, plant_entry_id: str) -> str | None:
     except (AttributeError, KeyError, TypeError):
         return None
     return {0: "off", 1: "on"}.get(value)
+
+
+_PLANT_GRID_STATES = {0: "on_grid", 1: "off_grid_auto", 2: "off_grid_manual"}
+
+
+def plant_grid_state(hass: HomeAssistant, plant_entry_id: str) -> str | None:
+    """Return the plant's grid connection as the Modbus integration reads it.
+
+    "on_grid", "off_grid_auto" (an outage) or "off_grid_manual"; None when
+    there is no current reading.
+    """
+    for entity in er.async_entries_for_config_entry(er.async_get(hass), plant_entry_id):
+        if (
+            entity.platform == MODBUS_DOMAIN
+            and entity.domain == "sensor"
+            and entity.unique_id.endswith("_plant_on_off_grid_status")
+        ):
+            state = hass.states.get(entity.entity_id)
+            if state and state.state in _PLANT_GRID_STATES.values():
+                return state.state
+            break
+    # The sensor may be disabled in Home Assistant; its register is still read.
+    try:
+        coordinator = hass.data[MODBUS_DOMAIN][plant_entry_id]["coordinator"]
+        if not coordinator.last_update_success:
+            return None
+        value = coordinator.data["plant"]["plant_on_off_grid_status"]
+    except (AttributeError, KeyError, TypeError):
+        return None
+    return _PLANT_GRID_STATES.get(value)
