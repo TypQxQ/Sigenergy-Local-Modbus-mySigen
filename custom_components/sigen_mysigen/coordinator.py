@@ -131,6 +131,9 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.last_setting: dict[str, str] | None = None
         # Grid connection (step D); only read while disconnecting is allowed.
         self.grid_connection: GridConnection | None = None
+        # True from a state between on and off until a settled answer arrives,
+        # also through answers that could not be read.
+        self._grid_following = False
         self._settings_read_at = float("-inf")
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
@@ -232,16 +235,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     def publish_grid_connection(self, connection: GridConnection) -> None:
         self.grid_connection = connection
+        self._grid_following = not connection.settled
         self.async_update_listeners()
 
     @property
     def _grid_changing(self) -> bool:
         """True while the plant is on its way off or back onto the grid."""
-        return (
-            self.allow_grid_disconnect
-            and self.grid_connection is not None
-            and not self.grid_connection.settled
-        )
+        return self.allow_grid_disconnect and self._grid_following
 
     async def _async_read_grid(self) -> None:
         """Read only the grid connection, while it is changing."""
@@ -252,9 +252,13 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     async def _async_read_grid_locked(self) -> None:
         try:
-            self.grid_connection = await self.session.async_grid_connection()
+            connection = await self.session.async_grid_connection()
         except (MySigenConnectionError, MySigenPermissionError) as err:
             _LOGGER.debug("mySigen grid connection read failed: %s", err)
+            return
+        self.grid_connection = connection
+        if connection is not None:
+            self._grid_following = not connection.settled
 
     async def _async_read_settings(self) -> None:
         """Read the settings step C shows. One failing read keeps its old value.

@@ -376,7 +376,7 @@ class GridConnection:
     """
 
     status: int
-    manual: int | None
+    manual: int
     # mySigen only offers the switch in its app while this is true.
     offered: bool
 
@@ -405,11 +405,14 @@ def parse_grid_connection(data: Any) -> GridConnection | None:
     if not isinstance(data, dict):
         return None
     status = _int_or_none(data.get("onOffGridStatus"))
-    if status not in (0, 1, 2):
+    manual = _int_or_none(data.get("manualOffGridStatus"))
+    # Without the manual field, settled on the grid and on the way off look
+    # the same, so such an answer is no answer.
+    if status not in (0, 1, 2) or manual not in (0, 1, 2):
         return None
     return GridConnection(
         status=status,
-        manual=_int_or_none(data.get("manualOffGridStatus")),
+        manual=manual,
         offered=data.get("showButton") is True,
     )
 

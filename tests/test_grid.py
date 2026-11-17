@@ -33,7 +33,10 @@ class TestParsing(unittest.TestCase):
         self.assertTrue(grid(OFF_MANUAL).manual_off_grid)
         self.assertFalse(grid(OFF_OUTAGE).manual_off_grid)
         self.assertFalse(grid({**ON, "showButton": "true"}).offered)
-        for bad in (None, {}, {"onOffGridStatus": 3}, {"onOffGridStatus": True}):
+        for bad in (None, {}, {"onOffGridStatus": 3}, {"onOffGridStatus": True},
+                    # Without the manual field, going off would look settled.
+                    {"onOffGridStatus": 0, "showButton": True},
+                    {**ON, "manualOffGridStatus": None}):
             self.assertIsNone(grid(bad))
 
 
