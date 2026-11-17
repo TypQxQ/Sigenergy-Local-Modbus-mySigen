@@ -792,16 +792,20 @@ class MySigenSession:
     async def async_station_id(self) -> str:
         """Return the account's station id, read once and then kept."""
         if self._station_id is None:
-            data = await self._async_get("station", _STATION_PATH)
-            station_id = data.get("stationId") if isinstance(data, dict) else None
-            if station_id in (None, ""):
-                raise MySigenConnectionError("The account has no station")
-            self._station_id = str(station_id)
-            serials = data.get("dcSnList")
-            self.dc_serials = tuple(
-                str(sn) for sn in serials if sn not in (None, "")
-            ) if isinstance(serials, list) else ()
+            await self.async_read_station()
         return self._station_id
+
+    async def async_read_station(self) -> None:
+        """Read the station: its id and the DC chargers listed for it."""
+        data = await self._async_get("station", _STATION_PATH)
+        station_id = data.get("stationId") if isinstance(data, dict) else None
+        if station_id in (None, ""):
+            raise MySigenConnectionError("The account has no station")
+        self._station_id = str(station_id)
+        serials = data.get("dcSnList")
+        self.dc_serials = tuple(
+            str(sn) for sn in serials if sn not in (None, "")
+        ) if isinstance(serials, list) else ()
 
     @property
     def dc_serial(self) -> str | None:

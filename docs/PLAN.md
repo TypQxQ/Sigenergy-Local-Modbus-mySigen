@@ -136,7 +136,7 @@ None of those Modbus charger controls needs Remote EMS. The one charger function
 
 No reference reads or changes an AC charger in a way that could be checked, so the AC rows wait for a tester with one.
 
-The charger is read every ten minutes while mySigen lists one, whether or not control is allowed. A change reads it back at once. Changes follow the same rules as the battery override and are refused while Remote EMS is on, because Remote EMS also steers the charger.
+The charger is read every ten minutes while mySigen lists one, whether or not control is allowed. A failed read shows that value as unavailable and is tried once more a minute later. The station's charger list is read again once an hour, and the connection reloads when it changes. A change reads it back at once. Changes follow the same rules as the battery override and are refused while Remote EMS is on, because Remote EMS also steers the charger.
 
 ### Charger sensors
 
