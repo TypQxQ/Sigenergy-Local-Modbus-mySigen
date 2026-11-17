@@ -1,160 +1,179 @@
-# Using Sigenergy ESS – mySigen cloud
+<div align="center">
 
-The full reference. Installation and setup are in the [README](../README.md).
+<img src="https://raw.githubusercontent.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/main/custom_components/sigen_mysigen/brand/icon.png" alt="" width="96" />
 
-- [Entities](#entities)
-- [Battery override](#battery-override)
-- [Settings that stay until changed back](#settings-that-stay-until-changed-back)
-- [Disconnecting from the grid](#disconnecting-from-the-grid)
-- [DC charger](#dc-charger)
-- [How changes are checked](#how-changes-are-checked)
-- [Limitations](#limitations)
-- [Troubleshooting](#troubleshooting)
+# The full guide
 
-## Entities
+**Every entity and control, and how each change is checked.**<br>
+New here? Start with the [README](../README.md).
 
-All entities appear on the existing plant device. Cloud values are read every 15 to 60 seconds (set under **Reconfigure**); keep using the Modbus entities for anything fast.
+📊 [Entities](#-entities) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
 
-| Entity | What it shows | Default |
+</div>
+
+---
+
+## 📊 Entities
+
+Everything appears on your existing **Sigen Plant** device. mySigen is read every 15 to 60 seconds (set under **Reconfigure**); for anything fast, keep using the Modbus entities.
+
+<sub>✅ on from the start · ⬜ disabled until you enable it</sub>
+
+| | Entity | What it shows |
+| :-: | --- | --- |
+| | **Battery override** | |
+| ✅ | Battery override active | On while an override runs, whoever started it |
+| ✅ | Battery override mode | Charging, discharging, hold battery or self-consumption |
+| ✅ | Battery override ends | When the running override stops by itself |
+| ✅ | Last battery override result | How the last start or stop from Home Assistant ended |
+| ✅ | mySigen last update | When mySigen last answered |
+| | **Gateway** | <sub>only with a Sigenergy Gateway</sub> |
+| ✅ | Grid current phase A, B, C | Load on each main fuse |
+| ✅ | Grid voltage phase A, B, C | Whether the grid is back during a power cut |
+| ✅ | Firmware version, model | What the Gateway reports about itself |
+| ⬜ | Highest / lowest voltage in the past minute | Short peaks and dips between two readings |
+| ⬜ | Grid phase sequence | Whether the phases are wired in the expected order |
+| ⬜ | Generator voltage, current, power, frequency, contactor | A generator on the Gateway; shown on every Gateway, so off by default |
+| | **DC charger** | <sub>only when mySigen lists one</sub> |
+| ✅ | Charging mode in use | How the charger decides when to charge |
+| ✅ | Stops charging at vehicle level | The charge level where charging stops |
+| ✅ | Car may supply power | Whether the car may power the home |
+
+> [!NOTE]
+> Grid frequency, grid connection state, power, energy and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
+
+## 🔋 Battery overrides
+
+An override makes the battery do **one thing for a set time**, then hands back to Sigen AI by itself, even if Home Assistant is down. Needs **Allow battery control**.
+
+### On a dashboard
+
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🎯 | Battery override to start | Dropdown | What the battery should do; [options below](#what-the-battery-can-do). Sends nothing. |
+| ⏱️ | Battery override duration | Number, min | 30 to 120 minutes. Sends nothing. |
+| ⚡ | Battery override power limit | Number, kW | Cap for charging or discharging; 0 = no limit. Disabled by default. Sends nothing. |
+| ▶️ | Start battery override now | Button | Starts the chosen override. |
+| ⏹️ | Stop battery override now | Button | Ends the running override, even one started in the app. |
+
+#### What the battery can do
+
+The options of the **Battery override to start** dropdown. Automations use the key as `mode`.
+
+| Option | Key | What happens |
 | --- | --- | --- |
-| Battery override active | On while a timed battery override is running, whoever started it. | Enabled |
-| Battery override mode | Which override is running: charging, discharging, hold battery or self-consumption. | Enabled |
-| Battery override ends | When the running override ends by itself. | Enabled |
-| Last battery override result | How the last start or stop sent from Home Assistant ended. | Enabled |
-| mySigen last update | When mySigen last answered. Stays readable during an outage. | Enabled |
-| Gateway grid current phase A, B, C | Amperes each phase draws from or sends to the grid. Use it to watch the load on each main fuse. | Enabled |
-| Gateway grid voltage phase A, B, C | Grid voltage at the connection point. During a power cut it shows whether the grid is back. | Enabled |
-| Gateway firmware version, Gateway model | What the Gateway reports about itself. | Enabled |
-| Gateway grid highest / lowest voltage in the past minute, phase A, B, C | Short peaks and dips between two readings. | Disabled |
-| Gateway grid phase sequence | Whether the phases are connected in the expected order. | Disabled |
-| Generator voltage and current per phase, power, frequency, contactor | Readings of a generator connected to the Gateway. mySigen reports these on every Gateway, also without a generator. | Disabled |
-| DC charger charging mode in use | How the DC charger decides when to charge. | Enabled |
-| DC charger stops charging at vehicle level | The charge level at which charging stops. | Enabled |
-| DC charger car may supply power | Whether the car may supply power to the home. | Enabled |
+| 🛑 Hold battery | `hold_battery` | The battery keeps its charge; the home runs on solar and grid |
+| ⬆️ Charge battery | `charging` | The battery charges, from the grid if solar isn't enough |
+| ⬇️ Discharge battery | `discharging` | The battery supplies the home and can export |
+| ☀️ Use my own solar first | `self_consumption` | Solar and battery are used before the grid |
 
-The Gateway entities are only created when mySigen returns Gateway readings; a system without a Gateway is asked again once an hour. The DC charger entities are only created when mySigen lists a DC charger.
-
-Grid frequency, the grid connection state, power and energy readings, and the charger's own readings are not included, because Sigenergy ESS already has them.
-
-## Battery override
-
-A battery override makes the battery do one thing for a set time. When the time is up the plant returns to its normal strategy by itself, also when Home Assistant is stopped. Sigen AI stays the operating mode throughout. These controls exist while **Allow battery control** is on.
-
-### From a dashboard
-
-| Control | Type | What it does |
-| --- | --- | --- |
-| Battery override to start | Dropdown | What the battery should do. See the options below. Changing it sends nothing. |
-| Battery override duration | Number, 30 to 120 minutes | How long the override should last. Changing it sends nothing. |
-| Battery override power limit (0 = no limit) | Number, kW | The most power a charge or discharge override may use. Disabled by default. Changing it sends nothing. |
-| Start battery override now | Button | Starts the chosen override for the chosen duration. |
-| Stop battery override now | Button | Ends the running override, including one started in the mySigen app. |
-
-| Option | Key in automations | What happens |
-| --- | --- | --- |
-| Hold battery (no charging, no discharging) | `hold_battery` | The battery keeps its charge. The home runs on solar and grid. |
-| Charge battery | `charging` | The battery charges, from the grid if solar is not enough. |
-| Discharge battery | `discharging` | The battery supplies the home and can export to the grid. |
-| Use my own solar first (self-consumption) | `self_consumption` | Solar and battery are used before the grid. |
-
-Charging from the grid and discharging to the grid can cost or earn money depending on your tariff. An override cannot choose whether it takes solar or grid power first; the Remote EMS modes in Sigenergy ESS remain the way to do that.
-
-### From an automation
-
-| Action | What it does |
-| --- | --- |
-| `sigen_mysigen.start_battery_override` | Starts a timed override. `mode` is one of the keys above, `duration` is 30 to 120 minutes, and the optional `power_limit` (kW) caps charging or discharging. |
-| `sigen_mysigen.cancel_battery_override` | Ends the running override. |
+### In an automation
 
 ```yaml
 action: sigen_mysigen.start_battery_override
 data:
-  mode: charging
-  duration: 60
-  power_limit: 3.5
+  mode: charging      # a key from the table above
+  duration: 60        # 30 to 120 minutes
+  power_limit: 3.5    # optional, kW
 ```
 
-The keys are the same in every language; only the text shown to the user is translated. A failed action raises an error, so an automation can react to it.
+Stop it with the action `sigen_mysigen.cancel_battery_override`. The keys are the same in every language, and a failed action raises an error your automation can catch.
 
-A start is refused, and nothing is sent, while another override is running (stop it first) or while Remote EMS is on or its state cannot be read. **Last battery override result** shows how each command ended:
+### What you'll see
 
-| State | Meaning |
+A start is refused, with nothing sent, while another override runs or while Remote EMS is on (or can't be read). **Last battery override result** then shows:
+
+| | Result | Meaning |
+| :-: | --- | --- |
+| ✅ | Confirmed | The plant shows the requested state |
+| ⛔ | Refused | Nothing was changed |
+| ❓ | Outcome unknown | The answer was lost; the request was **not** sent again |
+| ⚠️ | Not confirmed | mySigen accepted it, but the plant doesn't show it |
+| ➖ | Nothing to cancel | No override was running |
+
+> [!TIP]
+> Charging from or discharging to the grid can cost or earn money, depending on your tariff. An override can't choose solar or grid first; use the Remote EMS modes in Sigenergy ESS for that. And you can always stop an override in the mySigen app.
+
+## ⚙️ Settings that stay
+
+Unlike overrides, these **stay until you change them back**. Need **Allow battery control**; disabled until you enable them.
+
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🧠 | Operating mode | Dropdown | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. Refused while Remote EMS is on. |
+| ↗️ | Allow battery to export to the grid | Switch | Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
+| 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
+| 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
+
+<sub>Read every ten minutes, so a change made in the app can take that long to appear here.</sub>
+
+## 🔌 Disconnecting from the grid
+
+**Disconnect from the grid (run on battery and solar)** is a switch that takes the home off the grid; switching it off connects it again. To get it, you need a Sigenergy Gateway, and under **Reconfigure** both **Allow battery control** and **Allow disconnecting from the grid**. The switch then starts disabled: enable it in the entity settings.
+
+> [!WARNING]
+> **Off the grid, the battery drains.** When it's empty, the home loses power until you reconnect.
+
+Before anything is sent, all of these must agree:
+
+- ☑️ mySigen offers the switch right now, as it does in the app.
+- ☑️ The plant is settled on the grid (to disconnect), or off the grid after a manual disconnect (to reconnect).
+- ☑️ The Sigenergy ESS **Grid connection status** sensor says the same.
+
+During a grid outage the plant reconnects by itself, so reconnecting is refused then. The `grid_connection` attribute shows `on_grid`, `going_off_grid`, `off_grid` or `returning_to_grid`.
+
+## 🚗 DC charger
+
+When mySigen lists a DC charger, its sensors appear by themselves. With **Allow battery control** on, you also get these, disabled until you enable them:
+
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🔀 | Charging mode | Dropdown | Charge now at full power, charge on solar surplus only, or charge and let the car supply power (V2X) |
+| 🔝 | Stop charging at vehicle level | Number, % | Charging stops at this level |
+| 🔒 | Keep at least this much in the car | Number, % | The car stops supplying power at this level |
+| 🏠 | Let the car power the home (V2X) | Switch | Allow or block the car supplying power, no Remote EMS needed |
+
+Start and stop charging and the power limits stay in Sigenergy ESS. Changes are refused while Remote EMS is on.
+
+> [!NOTE]
+> **Not yet tried on a real charger.** These were built from other mySigen clients. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+
+## 🛡️ How changes are checked
+
+Every change, from every control, follows the same four rules:
+
+| | Rule | Meaning |
+| :-: | --- | --- |
+| 1️⃣ | **Allowed** | Control is switched on, and the mySigen system was matched to your plant. |
+| 2️⃣ | **Fresh** | The current value is read first. Already set? Nothing is sent. |
+| 3️⃣ | **Once** | Sent exactly once, never repeated, not even after a lost answer. |
+| 4️⃣ | **Confirmed** | Read back; it only counts when the plant shows it. |
+
+When mySigen asks for fewer requests, the add-on pauses and refuses changes until the pause is over.
+
+## ⚠️ Limitations
+
+- **Unofficial interface.** Sigenergy hasn't approved it, and a mySigen update could stop sign-in.
+- **Tested on one system:** a European account, one inverter, a Gateway, no charger.
+- **One system per account.** If the account starts opening a different system, the connection reloads and checks it against your plant again.
+- **Nine of eleven languages** still need a native speaker's review.
+- **Your password is stored** in Home Assistant so it can sign in again.
+
+## 🩺 Troubleshooting
+
+| Symptom | What to do |
 | --- | --- |
-| Confirmed | The plant shows the requested state. |
-| Refused | Nothing was changed. |
-| Outcome unknown | The answer was lost. Check the override entities; the request was not sent again. |
-| Not confirmed | mySigen accepted the request but the plant does not show it. |
-| Nothing to cancel | No override was running. |
+| Entities unavailable, Modbus fine | mySigen is unreachable or limiting requests. Wait; Modbus is unaffected. |
+| Repair: *belongs to a different system* | The inverter, sharing or account changed. Reconfigure with an account that has access. |
+| Repair: *not allowed to read* | Share the system with the account with **View and Edit** in the mySigen app. |
+| A change was refused | The message says why. Nothing was sent. |
 
-If Home Assistant is unavailable, an override can always be stopped in the mySigen app.
+Reporting a problem? Download the diagnostics from the connection's menu first; they contain no password, email, token, station ID or serial numbers. To remove the add-on, delete the connection; your Modbus plant is untouched.
 
-## Settings that stay until changed back
+---
 
-Unlike an override, these do not end by themselves. They exist while **Allow battery control** is on and start disabled.
+<div align="center">
 
-| Control | Type | What it does |
-| --- | --- | --- |
-| Operating mode | Dropdown | How the plant runs day to day: Sigen AI, Use my own power first (maximum self-consumption), Time of use (TOU) or Send all solar to the grid (fully fed to grid), as far as the plant offers them. Refused while Remote EMS is on. Shows no option while the plant runs in Remote EMS or a custom profile. |
-| Allow battery to export to the grid | Switch | On: the battery may send energy to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies right now, since an installer setting can override it. |
-| Peak shaving | Switch | On: the battery helps keep grid power under the peak shaving limit. Refused when the schedule has no time slot. |
-| Peak shaving grid limit | Number, kW | The limit, when the schedule has a single time slot. A schedule with several slots is changed in the mySigen app. |
+🏠 [README](../README.md) · 🗺️ [Roadmap](PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
 
-These are read every ten minutes, so a change made in the mySigen app can take that long to show. Peak shaving changes write the whole schedule back with only that one value changed.
-
-## Disconnecting from the grid
-
-**Disconnect from the grid (run on battery and solar)** is a switch that takes the plant off the grid, so the home runs on battery and solar alone, and connects it again when switched off. It needs a Sigenergy Gateway and its own setting: **Allow disconnecting from the grid** under **Reconfigure**, in addition to **Allow battery control**. The switch then starts disabled.
-
-Before sending, the add-on checks that:
-
-- mySigen offers the switch for the plant right now, as it does in the app;
-- the plant is settled on the grid (to disconnect), or off the grid after a manual disconnect (to reconnect);
-- the Sigenergy ESS **Grid connection status** sensor shows the same.
-
-During a grid outage the plant reconnects by itself, so reconnecting is refused then. A change is never delayed: during a mySigen rate-limit pause it is refused instead. The `grid_connection` attribute shows `on_grid`, `going_off_grid`, `off_grid` or `returning_to_grid`.
-
-**Running off the grid drains the battery.** When it is empty, the home loses power until you reconnect.
-
-## DC charger
-
-When mySigen lists a DC charger for the station, its sensors appear (see [Entities](#entities)). While **Allow battery control** is on, these controls are added, disabled to start with:
-
-| Control | Type | What it does |
-| --- | --- | --- |
-| DC charger charging mode | Dropdown | Charge now at full power, Charge on solar surplus only, or Charge and let the car supply power (V2X). |
-| DC charger stop charging at vehicle level | Number, % | Charging stops when the car reaches this level. |
-| DC charger keep at least this much in the car | Number, % | The car stops supplying power at this level. |
-| DC charger let the car power the home (V2X) | Switch | Allows or blocks the car supplying power, without Remote EMS. |
-
-Sigenergy ESS keeps start and stop charging and the power limits. Changes here are refused while Remote EMS is on. The charger is read every ten minutes, and the list of chargers once an hour; only the first charger mySigen lists is used.
-
-These controls are built from other mySigen clients and have not been checked against a real charger yet. Please [report](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) how they behave.
-
-## How changes are checked
-
-Every change follows the same rules:
-
-1. **Allowed:** control is switched on for the connection, and the mySigen system was matched to the plant when the connection started.
-2. **Fresh:** the current value is read first. Nothing is sent when it already is what you asked for.
-3. **Once:** the request is sent exactly once and never repeated, not even after a lost answer.
-4. **Confirmed:** the value is read back, and the change only succeeds when the plant shows it. Otherwise the error says whether nothing changed, the outcome is unknown, or mySigen accepted it without showing it.
-
-When mySigen asks for fewer requests, the add-on pauses, and changes are refused until the pause is over.
-
-## Limitations
-
-- **Unofficial interface.** Sigenergy has not confirmed that integrations may use it. Sign-in has reportedly stopped working for new setups in some regions after a mySigen update. If that happens here, the add-on stops working and there is no supported workaround.
-- **Tested on one system:** a European account, one inverter, one Gateway, no charger. Other regions, models and firmware are untested.
-- **One system per account.** The add-on uses the system the account opens by default. If that changes, the connection reloads and checks the new system against the plant again.
-- **Eleven languages, nine of them unreviewed.** Danish, German, English, Spanish, Finnish, French, Italian, Norwegian, Dutch, Polish and Swedish. Only English and Swedish have been checked by a speaker.
-- **The password is stored** in Home Assistant so the add-on can sign in again.
-
-## Troubleshooting
-
-- **Entities are unavailable while the Modbus entities work:** mySigen is unreachable or limiting requests. The Modbus integration is not affected.
-- **A repair says the account belongs to a different system:** the inverter was replaced, sharing was removed, or the account changed. Reconfigure with an account that has access.
-- **A repair says the account may not read:** check in the mySigen app that the system is shared with the account with **View and Edit**.
-- **A change was refused:** the error message says why; nothing was sent.
-- Download diagnostics from the connection's menu before reporting a problem.
-
-To remove the add-on, delete the connection under **Settings → Devices & services**. The Modbus plant is untouched.
+</div>
