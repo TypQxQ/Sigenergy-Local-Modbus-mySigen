@@ -109,7 +109,7 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 
 ## 🔌 Disconnecting from the grid
 
-**Disconnect from the grid (run on battery and solar)** is a switch that takes the home off the grid; switching it off connects it again. It needs a Sigenergy Gateway and its own extra setting, **Allow disconnecting from the grid**, under **Reconfigure**.
+**Disconnect from the grid (run on battery and solar)** is a switch that takes the home off the grid; switching it off connects it again. To get it, you need a Sigenergy Gateway, and under **Reconfigure** both **Allow battery control** and **Allow disconnecting from the grid**. The switch then starts disabled: enable it in the entity settings.
 
 > [!WARNING]
 > **Off the grid, the battery drains.** When it's empty, the home loses power until you reconnect.

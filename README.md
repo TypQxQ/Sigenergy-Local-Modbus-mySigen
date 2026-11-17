@@ -28,6 +28,8 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 > [!TIP]
 > **Beta, and ready for real testing.** [Tell us how it runs on your system →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
 
+<a name="install"></a>
+
 ## 🚀 Install
 
 <a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=TypQxQ&repository=Sigenergy-Local-Modbus-mySigen&category=integration"><img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open in Marketplace" /></a>
