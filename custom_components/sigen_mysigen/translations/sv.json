@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Batteriöverstyrning aktiv"
+      },
+      "dc_charger_v2x": {
+        "name": "DC-laddaren: bilen får leverera el"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway modell"
+      },
+      "dc_charger_mode": {
+        "name": "Laddläge som används för DC-laddaren",
+        "state": {
+          "fast_charging": "Ladda nu med full effekt",
+          "solar_surplus": "Ladda bara med solöverskott",
+          "bidirectional": "Ladda och låt bilen leverera el (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC-laddaren slutar ladda vid fordonsnivå"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Nätgräns för effekttoppsbegränsning"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC-laddaren: sluta ladda vid fordonsnivå"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC-laddaren: behåll minst så här mycket i bilen"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Tidsstyrt (TOU)",
           "fully_fed_to_grid": "Skicka all solel till nätet (full inmatning)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Laddläge för DC-laddaren",
+        "state": {
+          "fast_charging": "Ladda nu med full effekt",
+          "solar_surplus": "Ladda bara med solöverskott",
+          "bidirectional": "Ladda och låt bilen leverera el (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Koppla bort från elnätet (drift på batteri och sol)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC-laddaren: låt bilen driva hemmet (V2X)"
       }
     }
   },

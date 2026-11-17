@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Forçage de la batterie actif"
+      },
+      "dc_charger_v2x": {
+        "name": "Chargeur DC : la voiture peut fournir de l'énergie"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway modèle"
+      },
+      "dc_charger_mode": {
+        "name": "Mode de charge utilisé par le chargeur DC",
+        "state": {
+          "fast_charging": "Charger maintenant à pleine puissance",
+          "solar_surplus": "Charger uniquement avec le surplus solaire",
+          "bidirectional": "Charger et laisser la voiture fournir de l'énergie (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "Le chargeur DC arrête la charge au niveau du véhicule"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Limite réseau de l'écrêtage des pointes"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "Chargeur DC : arrêter la charge au niveau du véhicule"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "Chargeur DC : garder au moins ce niveau dans la voiture"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Selon les heures (TOU)",
           "fully_fed_to_grid": "Injecter toute l'énergie solaire dans le réseau (injection totale)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Mode de charge du chargeur DC",
+        "state": {
+          "fast_charging": "Charger maintenant à pleine puissance",
+          "solar_surplus": "Charger uniquement avec le surplus solaire",
+          "bidirectional": "Charger et laisser la voiture fournir de l'énergie (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Se déconnecter du réseau (batterie et solaire)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "Chargeur DC : la voiture alimente la maison (V2X)"
       }
     }
   },

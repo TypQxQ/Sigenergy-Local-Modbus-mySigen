@@ -4,7 +4,7 @@ This add-on supplements [Sigenergy Local Modbus](https://github.com/TypQxQ/Sigen
 
 This file is updated in the same pull request as each implementation, so the **Status** column always shows where things stand.
 
-Last updated: 2026-11-17, at version 0.1.0b8. Steps A, B and C are built and tested, except smart loads. Step D is merged; its grid switch has not been tested on real hardware yet.
+Last updated: 2026-11-17, at version 0.1.0b9. Steps A, B and C are built and tested, except smart loads. Step D is merged; its grid switch has not been tested on real hardware yet. Step E's DC charger rows are built from the reference clients and wait for a tester with a DC charger.
 
 ## How to read the tables
 
@@ -132,32 +132,39 @@ The Modbus integration already covers the basics, and those stay there:
 
 None of those Modbus charger controls needs Remote EMS. The one charger function that does is letting the car supply power (V2G), which Modbus only offers as a Remote EMS control mode.
 
-**Everything below is a candidate.** No charger answer from mySigen has been read yet. As with the Gateway, the first piece of work is to read the real answer with its values masked, then keep the rows that exist and drop the rest. The development plant has a DC charger and no AC charger, so AC charger rows need a second tester.
+**Built from the reference clients, not from a real answer.** The development plant has no charger in mySigen: its station lists no charger serial and reports `hasEv: false`, and the Modbus DC charger entities are unavailable. The DC charger rows below follow the paths and field names in solidfox's `sigenergy-cloud` client and Home Assistant integration, and the mode codes that integration observed (0, 1, 2). They need a tester with a DC charger. Nothing is created unless mySigen lists a DC charger for the station; only the first listed charger is used.
+
+No reference reads or changes an AC charger in a way that could be checked, so the AC rows wait for a tester with one.
+
+The charger is read every ten minutes while mySigen lists one, whether or not control is allowed. A change reads it back at once. Changes follow the same rules as the battery override and are refused while Remote EMS is on, because Remote EMS also steers the charger.
 
 ### Charger sensors
 
 | Sensor | What it tells you | Charger | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- |
-| Charging mode in use | How the charger decides when to charge: straight away, on solar surplus only, or on a schedule. | AC, DC | E | Later | Enabled | New read |
-| Next scheduled charging start | When the next scheduled charging session begins. | AC, DC | E | Later | Enabled | New read |
+| DC charger charging mode in use | How the charger decides when to charge: **Charge now at full power**, **Charge on solar surplus only**, or **Charge and let the car supply power (V2X)**. | DC | E | Testing | Enabled | New read |
+| DC charger stops charging at vehicle level | The charge level at which charging stops. | DC | E | Testing | Enabled | New read |
+| DC charger car may supply power | Whether the car may supply power to the home. | DC | E | Testing | Enabled | New read |
+| Charging mode in use | As above, for the AC charger. | AC | E | Later | Enabled | New read |
+| Next scheduled charging start | When the next scheduled charging session begins. A schedule read is known by path only. | AC, DC | E | Later | Enabled | New read |
 | Energy this session | How much energy has gone into the car in this session. Modbus has it for the DC charger only. | AC | E | Later | Enabled | New read |
 | Session duration | How long the current session has lasted. Modbus has it for the DC charger only. | AC | E | Later | Enabled | New read |
 | Charging current and voltage per phase | What each phase delivers to the car. Modbus has charging power only. | AC | E | Later | Disabled | New read |
-| Vehicle charge level to stop at | The charge level at which charging stops. | DC | E | Later | Enabled | New read |
-| Vehicle discharging allowed | Whether the car may supply power to the home or grid. | DC | E | Later | Enabled | New read |
-| Charger firmware version | The charger's software version. | AC, DC | E | Later | Enabled | New read |
+| Charger firmware version | The charger's software version. No read is known. | AC, DC | E | Later | Enabled | New read |
 
 ### Charger controls
 
-These follow the same rules as the battery override: only created while control is allowed, sent once, checked afterwards.
+These are only created while control is allowed, are sent once and checked afterwards.
 
 | Control | Type | What it does | Charger | In Modbus | Step | Status | Default | Data |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Charging mode | Dropdown | Chooses when the charger charges: **Charge now**, **Charge on solar surplus only**, or **Charge on schedule**. | AC, DC | No | E | Later | Disabled | New read |
+| DC charger charging mode | Dropdown | Chooses when the charger charges: **Charge now at full power**, **Charge on solar surplus only**, or **Charge and let the car supply power (V2X)**. The settings that go with the mode are written back as they were read. A scheduled mode is not known as a code. | DC | No | E | Testing | Disabled | New read |
+| DC charger stop charging at vehicle level | Number, % | Charging stops when the car reaches this level. The allowed charging power is written back unchanged. The range is the one mySigen reports, 5 to 100 % on the development plant. | DC | No | E | Testing | Disabled | New read |
+| DC charger keep at least this much in the car | Number, % | The car stops supplying power at this charge level. | DC | No | E | Testing | Disabled | New read |
+| DC charger let the car power the home (V2X) | Switch | Allows or blocks the car supplying power to the home. Works without switching the plant to Remote EMS. | DC | Only with Remote EMS (V2G mode) | E | Testing | Disabled | New read |
+| Timed V2X session | Action | Starts or stops a session in which the car supplies power for a set time. The session read that would confirm it has no known shape. | DC | Only with Remote EMS (V2G mode) | E | Later | Disabled | New read |
 | Set charging schedule | Action | Sets the times at which scheduled charging runs. | AC, DC | No | E | Later | Disabled | New read |
-| Stop charging at vehicle charge level | Number, % | Charging stops when the car reaches this level. | DC | No | E | Later | Disabled | New read |
-| Let the car power the home | Switch or timed start | The car supplies the home, and the grid if allowed. Works without switching the plant to Remote EMS. | DC | Only with Remote EMS (V2G mode) | E | Later | Disabled | New read |
-| Keep at least this much in the car | Number, % | The car stops supplying power at this charge level. | DC | No | E | Later | Disabled | New read |
+| Charging mode | Dropdown | As above, for the AC charger. | AC | No | E | Later | Disabled | New read |
 
 ## Step F: what Modbus only does with Remote EMS on
 
@@ -215,6 +222,7 @@ These exist in mySigen too but are not added, because the Modbus integration alr
 
 - Which durations mySigen accepts outside 30 to 120 minutes.
 - Whether a system without a Gateway answers the Gateway read with an empty answer or an error. Either way it is asked again once an hour, not on every poll.
-- What mySigen offers for AC and DC chargers. Every row in step E is a candidate until a real answer has been read.
+- Whether the DC charger answers have the shapes the reference clients use, and whether mode codes 0, 1 and 2 mean what solidfox's integration observed (step E).
+- What mySigen offers for AC chargers.
 - Whether an override can choose between solar and grid, or battery and solar, as its source (step F).
 - Whether Sigenergy permits a published integration to use this interface.

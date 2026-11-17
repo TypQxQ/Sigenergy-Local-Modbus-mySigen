@@ -128,4 +128,17 @@ async def async_get_config_entry_diagnostics(
         "grid_disconnect_allowed": coordinator.allow_grid_disconnect,
         "last_setting": coordinator.last_setting,
     }
+    dc_mode = coordinator.dc_charge_mode
+    dc_setting = coordinator.dc_charge_setting
+    # A count only; the charger serial numbers stay out.
+    result["dc_charger"] = {
+        "listed": len(coordinator.session.dc_serials),
+        "mode": None if dc_mode is None else dc_mode.mode,
+        "mode_fields": None if dc_mode is None else sorted(dc_mode.raw),
+        "discharge_floor": None if dc_mode is None else dc_mode.discharge_floor,
+        "stop_level": None if dc_setting is None else dc_setting.stop_level,
+        "allowed_power_kw": None if dc_setting is None else dc_setting.allowed_power,
+        "v2x_enabled": coordinator.v2x_enabled,
+        "level_range": coordinator.soc_range,
+    }
     return result

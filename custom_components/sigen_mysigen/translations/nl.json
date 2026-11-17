@@ -82,6 +82,9 @@
     "binary_sensor": {
       "battery_override": {
         "name": "Batterij-override actief"
+      },
+      "dc_charger_v2x": {
+        "name": "DC-lader: auto mag stroom leveren"
       }
     },
     "sensor": {
@@ -181,6 +184,17 @@
       },
       "gateway_model": {
         "name": "Gateway model"
+      },
+      "dc_charger_mode": {
+        "name": "Gebruikte laadmodus van de DC-lader",
+        "state": {
+          "fast_charging": "Nu laden op vol vermogen",
+          "solar_surplus": "Alleen laden met zonne-overschot",
+          "bidirectional": "Laden en de auto stroom laten leveren (V2X)"
+        }
+      },
+      "dc_charger_stop_level": {
+        "name": "DC-lader stopt met laden bij voertuigniveau"
       }
     },
     "number": {
@@ -192,6 +206,12 @@
       },
       "peak_shaving_limit": {
         "name": "Netlimiet voor piekbegrenzing"
+      },
+      "dc_charger_stop_charging_at": {
+        "name": "DC-lader: stop met laden bij voertuigniveau"
+      },
+      "dc_charger_discharge_floor": {
+        "name": "DC-lader: houd minstens zoveel in de auto"
       }
     },
     "select": {
@@ -212,6 +232,14 @@
           "time_of_use": "Tijdafhankelijk tarief (TOU)",
           "fully_fed_to_grid": "Alle zonnestroom aan het net leveren (volledige teruglevering)"
         }
+      },
+      "dc_charger_charging_mode": {
+        "name": "Laadmodus van de DC-lader",
+        "state": {
+          "fast_charging": "Nu laden op vol vermogen",
+          "solar_surplus": "Alleen laden met zonne-overschot",
+          "bidirectional": "Laden en de auto stroom laten leveren (V2X)"
+        }
       }
     },
     "button": {
@@ -231,6 +259,9 @@
       },
       "grid_disconnect": {
         "name": "Loskoppelen van het net (draaien op batterij en zon)"
+      },
+      "dc_charger_allow_v2x": {
+        "name": "DC-lader: laat de auto het huis voeden (V2X)"
       }
     }
   },

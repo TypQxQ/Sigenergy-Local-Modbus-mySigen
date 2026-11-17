@@ -20,6 +20,7 @@ from typing import Any
 
 from .api import (
     CONTROL_MODES,
+    DC_CHARGE_MODES,
     GRID_GOING_OFF,
     GRID_OFF,
     GRID_ON,
@@ -487,4 +488,124 @@ async def async_set_off_grid(
         publish=coordinator.publish_grid_connection,
         sleep=sleep,
         before=before,
+    )
+
+
+def _refuse_with_remote_ems(remote_ems: Callable[[], str | None]) -> Callable[[Any], None]:
+    """A `before` check: Remote EMS also steers the charger, so leave it alone."""
+
+    def before(_current: Any) -> None:
+        state = remote_ems()
+        if state == REMOTE_EMS_ON:
+            raise CommandRefused(
+                "Remote EMS is active on the plant. The charger was left unchanged."
+            )
+        if state != REMOTE_EMS_OFF:
+            raise CommandRefused("Could not confirm that Remote EMS is off. Nothing was sent.")
+
+    return before
+
+
+def _check_charger(coordinator: Any) -> None:
+    if not coordinator.has_dc_charger:
+        raise CommandRefused("mySigen lists no DC charger for this plant.")
+
+
+def _check_level(coordinator: Any, level: int) -> None:
+    if coordinator.soc_range is None:
+        raise CommandRefused(
+            "mySigen has not reported the allowed charge levels yet. Nothing was sent."
+        )
+    low, high = coordinator.soc_range
+    if not low <= level <= high:
+        raise CommandRefused(f"The vehicle charge level must be {low} to {high} %.")
+
+
+async def async_set_dc_charge_mode(
+    coordinator: Any,
+    *,
+    mode: str,
+    remote_ems: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Choose how the DC charger charges. It stays until changed back."""
+    _check_charger(coordinator)
+    if mode not in DC_CHARGE_MODES:
+        raise CommandRefused(f"Charging mode {mode!r} is not available.")
+    return await _change_setting(
+        coordinator,
+        "dc_charge_mode",
+        read=coordinator.session.async_dc_charge_mode,
+        send=lambda current: coordinator.session.async_set_dc_charge_mode(current.body(mode=mode)),
+        expected=lambda current: current.mode == mode,
+        publish=coordinator.publish_dc_charge_mode,
+        sleep=sleep,
+        before=_refuse_with_remote_ems(remote_ems),
+    )
+
+
+async def async_set_dc_discharge_floor(
+    coordinator: Any,
+    *,
+    level: int,
+    remote_ems: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Set the charge level the car keeps when it supplies power."""
+    _check_charger(coordinator)
+    _check_level(coordinator, level)
+    return await _change_setting(
+        coordinator,
+        "dc_discharge_floor",
+        read=coordinator.session.async_dc_charge_mode,
+        send=lambda current: coordinator.session.async_set_dc_charge_mode(
+            current.body(discharge_floor=level)
+        ),
+        expected=lambda current: current.discharge_floor == level,
+        publish=coordinator.publish_dc_charge_mode,
+        sleep=sleep,
+        before=_refuse_with_remote_ems(remote_ems),
+    )
+
+
+async def async_set_dc_stop_level(
+    coordinator: Any,
+    *,
+    level: int,
+    remote_ems: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Set the vehicle charge level at which charging stops."""
+    _check_charger(coordinator)
+    _check_level(coordinator, level)
+    return await _change_setting(
+        coordinator,
+        "dc_stop_level",
+        read=coordinator.session.async_dc_charge_setting,
+        send=lambda current: coordinator.session.async_set_dc_stop_level(current, level),
+        expected=lambda current: current.stop_level == level,
+        publish=coordinator.publish_dc_charge_setting,
+        sleep=sleep,
+        before=_refuse_with_remote_ems(remote_ems),
+    )
+
+
+async def async_set_v2x_enabled(
+    coordinator: Any,
+    *,
+    enabled: bool,
+    remote_ems: Callable[[], str | None],
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Allow or block the car supplying power to the home."""
+    _check_charger(coordinator)
+    return await _change_setting(
+        coordinator,
+        "v2x_enabled",
+        read=coordinator.session.async_v2x_enabled,
+        send=lambda _current: coordinator.session.async_set_v2x_enabled(enabled),
+        expected=lambda current: current is enabled,
+        publish=coordinator.publish_v2x_enabled,
+        sleep=sleep,
+        before=_refuse_with_remote_ems(remote_ems),
     )

@@ -22,6 +22,8 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     BatteryExport,
+    DcChargeMode,
+    DcChargeSetting,
     GridConnection,
     PeakShaving,
     CONTROL_MODES,
@@ -134,6 +136,12 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # True from a state between on and off until a settled answer arrives,
         # also through answers that could not be read.
         self._grid_following = False
+        # DC charger (step E); read whenever mySigen lists a charger.
+        self.dc_charge_mode: DcChargeMode | None = None
+        self.dc_charge_setting: DcChargeSetting | None = None
+        self.v2x_enabled: bool | None = None
+        self.soc_range: tuple[int, int] | None = None
+        self._charger_read_at = float("-inf")
         self._settings_read_at = float("-inf")
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
@@ -220,6 +228,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def read_settings_soon(self) -> None:
         """Read the settings again at the next poll."""
         self._settings_read_at = float("-inf")
+        self._charger_read_at = float("-inf")
 
     def publish_operating_mode(self, code: int) -> None:
         self.operating_mode = code
@@ -232,6 +241,41 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def publish_peak_shaving(self, schedule: PeakShaving) -> None:
         self.peak_shaving = schedule
         self.async_update_listeners()
+
+    @property
+    def has_dc_charger(self) -> bool:
+        return self.session.dc_serial is not None
+
+    def publish_dc_charge_mode(self, value: DcChargeMode) -> None:
+        self.dc_charge_mode = value
+        self.async_update_listeners()
+
+    def publish_dc_charge_setting(self, value: DcChargeSetting) -> None:
+        self.dc_charge_setting = value
+        self.async_update_listeners()
+
+    def publish_v2x_enabled(self, value: bool) -> None:
+        self.v2x_enabled = value
+        self.async_update_listeners()
+
+    async def _async_read_charger(self) -> None:
+        """Read the DC charger's settings. One failing read keeps its old value."""
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            self._charger_read_at = time.monotonic()
+            reads = [
+                ("dc_charge_mode", self.session.async_dc_charge_mode),
+                ("dc_charge_setting", self.session.async_dc_charge_setting),
+                ("v2x_enabled", self.session.async_v2x_enabled),
+            ]
+            if self.soc_range is None:
+                reads.append(("soc_range", self.session.async_soc_range))
+            for name, read in reads:
+                try:
+                    setattr(self, name, await read())
+                except (MySigenConnectionError, MySigenPermissionError) as err:
+                    _LOGGER.debug("mySigen %s read failed: %s", name, err)
 
     def publish_grid_connection(self, connection: GridConnection) -> None:
         self.grid_connection = connection
@@ -367,6 +411,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 await self._async_read_settings()
             elif self._grid_changing:
                 await self._async_read_grid()
+            if (
+                self.has_dc_charger
+                and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
+            ):
+                await self._async_read_charger()
         except MySigenAuthError as err:
             raise ConfigEntryAuthFailed(
                 f"mySigen refused the stored account ({err})"

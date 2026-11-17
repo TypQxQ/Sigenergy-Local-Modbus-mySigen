@@ -7,10 +7,10 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import CONTROL_MODES, OPERATING_MODES
+from .api import CONTROL_MODES, DC_CHARGE_MODES, OPERATING_MODES
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MODE, CONF_PLANT_ENTRY_ID
-from .control import async_set_operating_mode
+from .control import async_set_dc_charge_mode, async_set_operating_mode
 from .link import remote_ems_state
 from .entity import MySigenEntity
 
@@ -22,10 +22,13 @@ async def async_setup_entry(
 ) -> None:
     """Add the dropdown. Only set up while control is allowed."""
     coordinator = entry.runtime_data
-    async_add_entities([
+    entities: list[SelectEntity] = [
         OverrideToStart(coordinator, "battery_override_to_start"),
         OperatingMode(coordinator, "operating_mode"),
-    ])
+    ]
+    if coordinator.has_dc_charger:
+        entities.append(DcChargingMode(coordinator, "dc_charger_charging_mode"))
+    async_add_entities(entities)
 
 
 class OverrideToStart(MySigenEntity, SelectEntity):
@@ -84,6 +87,34 @@ class OperatingMode(MySigenEntity, SelectEntity):
         await async_run_setting(
             self.coordinator,
             async_set_operating_mode(
+                self.coordinator,
+                mode=option,
+                remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
+            ),
+        )
+
+
+class DcChargingMode(MySigenEntity, SelectEntity):
+    """Chooses how the DC charger charges. It stays until changed back."""
+
+    _attr_entity_registry_enabled_default = False
+    _attr_options = list(DC_CHARGE_MODES)
+
+    @property
+    def available(self) -> bool:
+        mode = self.coordinator.dc_charge_mode
+        return super().available and mode is not None and mode.mode is not None
+
+    @property
+    def current_option(self) -> str | None:
+        mode = self.coordinator.dc_charge_mode
+        return mode.mode if mode is not None else None
+
+    async def async_select_option(self, option: str) -> None:
+        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
+        await async_run_setting(
+            self.coordinator,
+            async_set_dc_charge_mode(
                 self.coordinator,
                 mode=option,
                 remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
