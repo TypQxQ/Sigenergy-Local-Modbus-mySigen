@@ -295,17 +295,31 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             self._charger_retrying = failed and not self._charger_retrying
 
     async def _async_recheck_chargers(self) -> None:
-        """Read the station's charger list again; reload when it changed."""
-        self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
-        before = self.session.dc_serial
-        try:
-            await self.session.async_read_station()
-        except (MySigenConnectionError, MySigenPermissionError) as err:
-            _LOGGER.debug("mySigen station read failed: %s", err)
-            return
-        if self.session.dc_serial != before:
-            _LOGGER.info("mySigen lists a different DC charger now; reloading")
-            self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+        """Read the station's charger list again; reload when it changed.
+
+        Holds the command lock, so a running command finishes against the
+        charger it read.
+        """
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
+            before = self.session.dc_serial
+            try:
+                same_station = await self.session.async_read_station()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen station read failed: %s", err)
+                return
+            if not same_station:
+                # Not checked against the plant: block every change at once,
+                # and let the reload check the new station from the start.
+                self.link_problem = "station_changed"
+                _LOGGER.warning("The mySigen account opens a different station now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            if self.session.dc_serial != before:
+                _LOGGER.info("mySigen lists a different DC charger now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 
     def publish_grid_connection(self, connection: GridConnection) -> None:
         self.grid_connection = connection

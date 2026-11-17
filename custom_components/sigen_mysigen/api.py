@@ -795,17 +795,26 @@ class MySigenSession:
             await self.async_read_station()
         return self._station_id
 
-    async def async_read_station(self) -> None:
-        """Read the station: its id and the DC chargers listed for it."""
+    async def async_read_station(self) -> bool:
+        """Read the station: its id and the DC chargers listed for it.
+
+        Returns False, and changes nothing, when the account now opens a
+        different station than the one this session started with. Only a
+        new session, whose station is checked against the plant again, may
+        use it.
+        """
         data = await self._async_get("station", _STATION_PATH)
         station_id = data.get("stationId") if isinstance(data, dict) else None
         if station_id in (None, ""):
             raise MySigenConnectionError("The account has no station")
+        if self._station_id is not None and str(station_id) != self._station_id:
+            return False
         self._station_id = str(station_id)
         serials = data.get("dcSnList")
         self.dc_serials = tuple(
             str(sn) for sn in serials if sn not in (None, "")
         ) if isinstance(serials, list) else ()
+        return True
 
     @property
     def dc_serial(self) -> str | None:

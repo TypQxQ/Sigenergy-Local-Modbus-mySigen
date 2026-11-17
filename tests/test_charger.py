@@ -66,6 +66,18 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
             ("POST", "open-close", {"stationId": 42, "snCode": "DC-1", "dischargeEnable": 0}),
         ])
 
+    async def test_a_different_station_is_never_adopted(self):
+        other = _Response(200, {"code": 0, "data": {"stationId": "43", "dcSnList": ["DC-9"]}})
+        same = _Response(200, {"code": 0, "data": {"stationId": "42", "dcSnList": []}})
+        http = _Http([CHARGER_STATION, other, same])
+        client = api.MySigenSession(http, "eu", "u@example.invalid", "p", write_session=http)
+        await client.async_station_id()
+        self.assertFalse(await client.async_read_station())
+        self.assertEqual((await client.async_station_id(), client.dc_serial), ("42", "DC-1"))
+        # The same station may change its charger list.
+        self.assertTrue(await client.async_read_station())
+        self.assertIsNone(client.dc_serial)
+
     async def test_station_without_charger_sends_nothing(self):
         http = _Http([_Response(200, {"code": 0, "data": {"stationId": "42", "dcSnList": []}})])
         client = api.MySigenSession(http, "eu", "u@example.invalid", "p", write_session=http)
