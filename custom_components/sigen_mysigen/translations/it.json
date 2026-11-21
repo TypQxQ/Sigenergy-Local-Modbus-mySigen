@@ -44,13 +44,15 @@
           "password": "Password",
           "scan_interval": "Intervallo di lettura",
           "allow_control": "Consenti il controllo della batteria",
-          "allow_grid_disconnect": "Consenti la disconnessione dalla rete"
+          "allow_grid_disconnect": "Consenti la disconnessione dalla rete",
+          "entity_name_language": "Lingua dei nomi delle entità"
         },
         "data_description": {
           "password": "Lascia vuoto per mantenere la password attuale.",
           "scan_interval": "Tra 15 e 60 secondi. Intervalli più brevi inviano più richieste a mySigen.",
           "allow_control": "Consente a Home Assistant di avviare e interrompere forzature della batteria tramite mySigen e di modificare le impostazioni dell'impianto e del caricatore DC. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit.",
-          "allow_grid_disconnect": "Aggiunge un interruttore che disconnette l'impianto dalla rete, così la casa funziona solo con batteria e solare, e lo ricollega. Richiede Consenti il controllo della batteria e un Sigenergy Gateway. Disattivato per impostazione predefinita."
+          "allow_grid_disconnect": "Aggiunge un interruttore che disconnette l'impianto dalla rete, così la casa funziona solo con batteria e solare, e lo ricollega. Richiede Consenti il controllo della batteria e un Sigenergy Gateway. Disattivato per impostazione predefinita.",
+          "entity_name_language": "Come Sigenergy ESS segue la lingua scelta lì per l’impianto. Automatico usa la lingua del server Home Assistant. Nomi personalizzati, ID delle entità e cronologia vengono conservati. Il cambio di lingua ricarica l’integrazione."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Carica la batteria",
         "discharging": "Scarica la batteria",
         "self_consumption": "Usa prima la mia energia solare (autoconsumo)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Come Sigenergy ESS",
+        "auto": "Automatico (lingua del server Home Assistant)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },

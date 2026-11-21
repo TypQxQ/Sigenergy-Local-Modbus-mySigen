@@ -44,13 +44,15 @@
           "password": "Lösenord",
           "scan_interval": "Avläsningsintervall",
           "allow_control": "Tillåt batteristyrning",
-          "allow_grid_disconnect": "Tillåt frånkoppling från elnätet"
+          "allow_grid_disconnect": "Tillåt frånkoppling från elnätet",
+          "entity_name_language": "Språk för entitetsnamn"
         },
         "data_description": {
           "password": "Lämna tomt för att behålla nuvarande lösenord.",
           "scan_interval": "Mellan 15 och 60 sekunder. Kortare intervall skickar fler anrop till mySigen.",
           "allow_control": "Låter Home Assistant starta och stoppa batteriöverstyrningar och ändra inställningar för anläggningen och DC-laddaren via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit.",
-          "allow_grid_disconnect": "Lägger till en brytare som kopplar bort anläggningen från elnätet, så att hemmet drivs enbart av batteri och solel, och kopplar in den igen. Kräver Tillåt batteristyrning och en Sigenergy Gateway. Avstängt som standard."
+          "allow_grid_disconnect": "Lägger till en brytare som kopplar bort anläggningen från elnätet, så att hemmet drivs enbart av batteri och solel, och kopplar in den igen. Kräver Tillåt batteristyrning och en Sigenergy Gateway. Avstängt som standard.",
+          "entity_name_language": "Samma som Sigenergy ESS följer språket som valts för anläggningen där. Automatiskt använder Home Assistants serverspråk. Egna namn, entitets-ID:n och historik bevaras. När språket ändras läses integrationen in på nytt."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Ladda batteriet",
         "discharging": "Ladda ur batteriet",
         "self_consumption": "Använd min egen solel först (egenförbrukning)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Samma som Sigenergy ESS",
+        "auto": "Automatiskt (Home Assistants serverspråk)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },

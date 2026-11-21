@@ -266,8 +266,11 @@ class TestReconfigureSettings(unittest.TestCase):
             [
                 "username", "password", const.CONF_SCAN_INTERVAL,
                 const.CONF_ALLOW_CONTROL, const.CONF_ALLOW_GRID_DISCONNECT,
+                const.CONF_ENTITY_NAME_LANGUAGE,
             ],
         )
+        # Following Sigenergy ESS is the default, also for older entries.
+        self.assertEqual(flow.suggested[const.CONF_ENTITY_NAME_LANGUAGE], "plant")
         self.assertEqual(flow.suggested[const.CONF_SCAN_INTERVAL], 20)
         self.assertIs(flow.suggested[const.CONF_ALLOW_CONTROL], True)
         self.assertIs(flow.suggested[const.CONF_ALLOW_GRID_DISCONNECT], False)
@@ -280,6 +283,7 @@ class TestReconfigureSettings(unittest.TestCase):
             const.CONF_SCAN_INTERVAL: 60.0,
             const.CONF_ALLOW_CONTROL: True,
             const.CONF_ALLOW_GRID_DISCONNECT: True,
+            const.CONF_ENTITY_NAME_LANGUAGE: "sv",
         }))
         self.assertEqual(result["reason"], "reconfigure_successful")
         self.assertEqual(
@@ -289,10 +293,39 @@ class TestReconfigureSettings(unittest.TestCase):
                 const.CONF_SCAN_INTERVAL: 60,
                 const.CONF_ALLOW_CONTROL: True,
                 const.CONF_ALLOW_GRID_DISCONNECT: True,
+                const.CONF_ENTITY_NAME_LANGUAGE: "sv",
             },
         )
         # Same account and password: no new sign-in.
         self.assertEqual(flow.logins, [])
+
+
+class TestNameLanguage(unittest.TestCase):
+    def test_choice_and_plant(self):
+        name = const.name_language
+        # Following the plant: its language, or the server's when it has none.
+        self.assertEqual(name("plant", "de"), "de")
+        self.assertIsNone(name("plant", "auto"))
+        self.assertIsNone(name("plant", None))
+        # Automatic is the server language, whatever the plant uses.
+        self.assertIsNone(name("auto", "de"))
+        # A fixed language wins over the plant's.
+        self.assertEqual(name("sv", "de"), "sv")
+        # An older entry without the option, or an unknown value, follows the plant.
+        self.assertEqual(name(None, "fi"), "fi")
+        self.assertEqual(name("xx", "fi"), "fi")
+
+    def test_an_unknown_choice_is_stored_as_following_the_plant(self):
+        flow = _flow()
+        flow.reconfigure_entry = types.SimpleNamespace(data=dict(ACCOUNT), options={})
+        result = _run(flow.async_step_reconfigure({
+            "username": ACCOUNT["username"],
+            const.CONF_SCAN_INTERVAL: 30,
+            const.CONF_ALLOW_CONTROL: False,
+            const.CONF_ALLOW_GRID_DISCONNECT: False,
+            const.CONF_ENTITY_NAME_LANGUAGE: "xx",
+        }))
+        self.assertEqual(result["options"][const.CONF_ENTITY_NAME_LANGUAGE], "plant")
 
 
 if __name__ == "__main__":

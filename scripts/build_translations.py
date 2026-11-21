@@ -1399,6 +1399,41 @@ for _language, _extra in _STEP_H.items():
     LANGUAGES[_language].update(_extra)
 
 
+KEYS.update({
+    "config.step.reconfigure.data.entity_name_language": "lang_label",
+    "config.step.reconfigure.data_description.entity_name_language": "lang_desc",
+    "selector.entity_name_language.options.plant": "lang_plant",
+    "selector.entity_name_language.options.auto": "lang_auto",
+    "selector.entity_name_language.options.da": "lang_da",
+    "selector.entity_name_language.options.de": "lang_de",
+    "selector.entity_name_language.options.en": "lang_en",
+    "selector.entity_name_language.options.es": "lang_es",
+    "selector.entity_name_language.options.fi": "lang_fi",
+    "selector.entity_name_language.options.fr": "lang_fr",
+    "selector.entity_name_language.options.it": "lang_it",
+    "selector.entity_name_language.options.nb": "lang_nb",
+    "selector.entity_name_language.options.nl": "lang_nl",
+    "selector.entity_name_language.options.pl": "lang_pl",
+    "selector.entity_name_language.options.sv": "lang_sv",
+})
+# Step I: the name language choice. Label, Automatic and the language
+# names are worded as in Sigenergy ESS, so both read the same.
+_STEP_I: dict[str, dict[str, str]] = {
+    "sv": {"lang_label": "Språk för entitetsnamn", "lang_desc": "Samma som Sigenergy ESS följer språket som valts för anläggningen där. Automatiskt använder Home Assistants serverspråk. Egna namn, entitets-ID:n och historik bevaras. När språket ändras läses integrationen in på nytt.", "lang_plant": "Samma som Sigenergy ESS", "lang_auto": "Automatiskt (Home Assistants serverspråk)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "da": {"lang_label": "Sprog for entitetsnavne", "lang_desc": "Samme som Sigenergy ESS følger det sprog, der er valgt for anlægget der. Automatisk bruger Home Assistants serversprog. Egne navne, entitets-ID’er og historik bevares. Ændring af sproget genindlæser integrationen.", "lang_plant": "Samme som Sigenergy ESS", "lang_auto": "Automatisk (Home Assistants serversprog)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "nb": {"lang_label": "Språk for entitetsnavn", "lang_desc": "Samme som Sigenergy ESS følger språket som er valgt for anlegget der. Automatisk bruker Home Assistants serverspråk. Egne navn, entitets-ID-er og historikk bevares. Endring av språket laster integrasjonen på nytt.", "lang_plant": "Samme som Sigenergy ESS", "lang_auto": "Automatisk (Home Assistants serverspråk)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "de": {"lang_label": "Sprache der Entitätsnamen", "lang_desc": "Wie Sigenergy ESS folgt der dort für die Anlage gewählten Sprache. Automatisch verwendet die Home-Assistant-Serversprache. Eigene Namen, Entitäts-IDs und Verlauf bleiben erhalten. Bei einer Sprachänderung wird die Integration neu geladen.", "lang_plant": "Wie Sigenergy ESS", "lang_auto": "Automatisch (Home-Assistant-Serversprache)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "nl": {"lang_label": "Taal voor entiteitsnamen", "lang_desc": "Zelfde als Sigenergy ESS volgt de taal die daar voor de installatie is gekozen. Automatisch gebruikt de servertaal van Home Assistant. Eigen namen, entiteits-ID’s en geschiedenis blijven behouden. Bij een taalwijziging wordt de integratie opnieuw geladen.", "lang_plant": "Zelfde als Sigenergy ESS", "lang_auto": "Automatisch (servertaal van Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "fr": {"lang_label": "Langue des noms d’entités", "lang_desc": "Comme Sigenergy ESS suit la langue choisie pour l’installation dans Sigenergy ESS. Automatique utilise la langue du serveur Home Assistant. Les noms personnalisés, identifiants d’entités et historiques sont conservés. Un changement de langue recharge l’intégration.", "lang_plant": "Comme Sigenergy ESS", "lang_auto": "Automatique (langue du serveur Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "es": {"lang_label": "Idioma de los nombres de entidades", "lang_desc": "Igual que Sigenergy ESS sigue el idioma elegido allí para la instalación. Automático usa el idioma del servidor de Home Assistant. Se conservan los nombres personalizados, los ID de entidades y el historial. Cambiar el idioma recarga la integración.", "lang_plant": "Igual que Sigenergy ESS", "lang_auto": "Automático (idioma del servidor de Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "it": {"lang_label": "Lingua dei nomi delle entità", "lang_desc": "Come Sigenergy ESS segue la lingua scelta lì per l’impianto. Automatico usa la lingua del server Home Assistant. Nomi personalizzati, ID delle entità e cronologia vengono conservati. Il cambio di lingua ricarica l’integrazione.", "lang_plant": "Come Sigenergy ESS", "lang_auto": "Automatico (lingua del server Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "fi": {"lang_label": "Entiteettien nimien kieli", "lang_desc": "Sama kuin Sigenergy ESS noudattaa siellä laitteistolle valittua kieltä. Automaattinen käyttää Home Assistantin palvelimen kieltä. Omat nimet, entiteettitunnukset ja historia säilyvät. Kielen vaihtaminen lataa integraation uudelleen.", "lang_plant": "Sama kuin Sigenergy ESS", "lang_auto": "Automaattinen (Home Assistantin palvelimen kieli)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "pl": {"lang_label": "Język nazw encji", "lang_desc": "Opcja Tak jak Sigenergy ESS używa języka wybranego tam dla instalacji. Opcja automatyczna używa języka serwera Home Assistant. Własne nazwy, identyfikatory encji i historia zostają zachowane. Zmiana języka przeładowuje integrację.", "lang_plant": "Tak jak Sigenergy ESS", "lang_auto": "Automatycznie (język serwera Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+}
+for _language, _extra in _STEP_I.items():
+    LANGUAGES[_language].update(_extra)
+
+
 def _flatten(node, prefix=""):
     if isinstance(node, dict):
         for key, value in node.items():

@@ -40,11 +40,14 @@ from .api import (
     normalize_serial,
 )
 from .const import (
+    CONF_ENTITY_NAME_LANGUAGE,
     CONF_PLANT_ENTRY_ID,
+    ENTITY_NAME_LANGUAGE_PLANT,
     DOMAIN,
     ENTITY_NAME_LANGUAGES,
     MODBUS_CONF_ENTITY_NAME_LANGUAGE,
     MODBUS_DOMAIN,
+    name_language,
 )
 from .commands import async_run_command
 from .coordinator import MySigenCoordinator
@@ -206,16 +209,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Retrying cannot help; the account needs more access.
             _raise_link_issue(hass, entry, NO_PERMISSION)
         raise
-    # Show entity names in the language chosen for the Modbus plant, so the
-    # entities of both integrations read the same on the shared device.
-    language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
-    coordinator.entity_name_language = language
+    # Entity names follow the language chosen under Reconfigure. By default
+    # that is the Modbus plant's choice, so the entities of both
+    # integrations read the same on the shared device.
+    choice = entry.options.get(CONF_ENTITY_NAME_LANGUAGE, ENTITY_NAME_LANGUAGE_PLANT)
+    plant_language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
+    language = name_language(choice, plant_language)
+    coordinator.entity_name_language = plant_language
 
     async def plant_changed(hass: HomeAssistant, plant: ConfigEntry) -> None:
         """Reload when the plant's name language changes, so names match again."""
         if (
-            plant.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
-            != coordinator.entity_name_language
+            name_language(choice, plant.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE))
+            != language
         ):
             hass.config_entries.async_schedule_reload(entry.entry_id)
 

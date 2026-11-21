@@ -44,13 +44,15 @@
           "password": "Password",
           "scan_interval": "Polling interval",
           "allow_control": "Allow battery control",
-          "allow_grid_disconnect": "Allow disconnecting from the grid"
+          "allow_grid_disconnect": "Allow disconnecting from the grid",
+          "entity_name_language": "Entity name language"
         },
         "data_description": {
           "password": "Leave empty to keep the current password.",
           "scan_interval": "Between 15 and 60 seconds. Shorter intervals send more requests to mySigen.",
           "allow_control": "Lets Home Assistant start and stop battery overrides and change plant and DC charger settings through mySigen. Off by default. The account needs View and Edit access.",
-          "allow_grid_disconnect": "Adds a switch that takes the plant off the grid, so the home runs on battery and solar alone, and connects it again. Needs Allow battery control and a Sigenergy Gateway. Off by default."
+          "allow_grid_disconnect": "Adds a switch that takes the plant off the grid, so the home runs on battery and solar alone, and connects it again. Needs Allow battery control and a Sigenergy Gateway. Off by default.",
+          "entity_name_language": "Same as Sigenergy ESS follows the language chosen for the plant there. Automatic uses the Home Assistant server language. Custom names, entity IDs and history are preserved. Changing the language reloads the integration."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Charge battery",
         "discharging": "Discharge battery",
         "self_consumption": "Use my own solar first (self-consumption)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Same as Sigenergy ESS",
+        "auto": "Automatic (Home Assistant server language)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },
