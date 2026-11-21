@@ -210,6 +210,9 @@
       "dc_charger_stop_level": {
         "name": "Bieżący limit ładowania DC (mySigen)"
       },
+      "battery_module_soc": {
+        "name": "Stan naładowania (mySigen)"
+      },
       "battery_module_discharged": {
         "name": "Całkowita energia rozładowana (mySigen)"
       },
@@ -218,6 +221,15 @@
       },
       "battery_module_cell_voltage": {
         "name": "Średnie napięcie ogniw (mySigen)"
+      },
+      "battery_module_power": {
+        "name": "Moc (mySigen)"
+      },
+      "battery_module_pack_voltage": {
+        "name": "Napięcie pakietu (mySigen)"
+      },
+      "battery_module_heating": {
+        "name": "Stan ogrzewania (mySigen)"
       },
       "battery_module_capacity": {
         "name": "Pojemność znamionowa (mySigen)"

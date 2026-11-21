@@ -1,4 +1,4 @@
-"""Battery modules: the device tree, the two reads and when they are made.
+"""Battery modules: the device tree, the three reads and when they are made.
 
 Answer shapes are as the development plant answered (labels and units);
 the values are sigenergy2mqtt's.
@@ -59,6 +59,12 @@ STATIC = {"paramInfoVOList": [
     _row("Device Model", "SigenStor BAT 8.0"),
     _row("Rated Battery Capacity", "8.06", "kWh"),
 ]}
+LIVE = {"realTimeInfo": [
+    _row("Battery SOC", "74.5", "%"),
+    _row("Charging & Discharging Power", "-0.655", "kW"),
+    _row("Battery Pack Voltage", "29.8", "V"),
+    _row("Heating status", "Off"),
+], "dataCurrTimeStamp": ""}
 PACK = {"paramInfoVOList": [
     _row("Total Discharge Amount", "2.96", "MWh"),
     _row("Average Cell Voltage", "3.338", "V"),
@@ -91,6 +97,12 @@ class TestReadings(unittest.TestCase):
             api.parse_module_values(STATIC, "paramInfoVOList", api.MODULE_STATIC_FIELDS),
             {"model": "SigenStor BAT 8.0", "firmware": "V100R001C00SPC108",
              "rated_capacity": 8.06},
+        )
+
+    def test_readings(self):
+        self.assertEqual(
+            api.parse_module_values(LIVE, "realTimeInfo", api.MODULE_LIVE_FIELDS),
+            {"soc": 74.5, "power": -0.655, "pack_voltage": 29.8, "heating": "Off"},
         )
 
     def test_pack(self):
@@ -130,13 +142,14 @@ class _Http:
     closed = False
 
     def __init__(self, replies):
-        self.replies, self.requests = list(replies), []
+        self.replies, self.requests, self.headers = list(replies), [], []
 
     def post(self, url, **kwargs):
         return _Response(200, {"access_token": "a", "refresh_token": "r", "expires_in": 3600})
 
     def request(self, method, url, **kwargs):
         self.requests.append((method, url.split("/", 3)[-1], kwargs.get("params")))
+        self.headers.append(kwargs.get("headers") or {})
         return self.replies.pop(0)
 
 
@@ -151,19 +164,30 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(patcher.stop)
 
     async def test_paths_and_queries(self):
-        http = _Http([_ok({"stationId": "42"}), _ok(TREE), _ok(STATIC), _ok(PACK)])
+        http = _Http([_ok({"stationId": "42"}), _ok(TREE), _ok(STATIC), _ok(LIVE), _ok(PACK)])
         client = api.MySigenSession(http, "eu", "u@example.invalid", "p")
         listed = await client.async_read_battery_modules()
         self.assertEqual(client.battery_modules, listed)
         self.assertEqual((await client.async_module_static("BAT-A"))["rated_capacity"], 8.06)
+        self.assertEqual((await client.async_module_readings("BAT-A"))["soc"], 74.5)
         self.assertEqual((await client.async_module_pack("BAT-A"))["cell_temperature"], 25.3)
         self.assertEqual([(path, query) for _m, path, query in http.requests[1:]], [
             ("device/devicetreepanel/topology", {"stationId": "42"}),
             ("device/sigen/device/static/info",
              {"stationId": "42", "snCode": "BAT-A", "deviceType": "4"}),
+            ("device/sigen/device/dynamic/info",
+             {"stationId": "42", "snCode": "BAT-A", "deviceType": "4", "refreshFlag": ""}),
             ("device/device/pack/queryPackMergeInfo", {"stationId": "42", "snCode": "BAT-A"}),
         ])
         self.assertTrue(all(method == "GET" for method, _p, _q in http.requests))
+        # mySigen refuses the readings (code 1000) without a package name.
+        # The add-on gives its own, and only on that read.
+        packages = [headers.get("sg-pkg") for headers in http.headers[1:]]
+        self.assertEqual(packages, [None, None, "sigen_mysigen", None])
+        self.assertFalse(any(
+            key.lower() in ("sg-platform", "sg-source") for headers in http.headers
+            for key in headers
+        ))
 
     async def test_station_check_fills_the_module_list(self):
         http = _Http([_ok({"stationId": "42"}), _ok(TREE), _ok([])])
@@ -183,11 +207,15 @@ class _Session:
             raise api.MySigenConnectionError("HTTP 500", 500)
         return {
             "static": {"model": f"M-{serial}"},
+            "readings": {"soc": 50.0},
             "pack": {"cell_temperature": 20.0},
         }[what]
 
     async def async_module_static(self, serial):
         return await self._answer("static", serial)
+
+    async def async_module_readings(self, serial):
+        return await self._answer("readings", serial)
 
     async def async_module_pack(self, serial):
         return await self._answer("pack", serial)
@@ -207,13 +235,15 @@ class TestSchedule(unittest.TestCase):
         self.assertEqual(_run(reader.async_read_next(session, 30.0)), "B")
         self.assertIsNone(_run(reader.async_read_next(session, 60.0)))
         self.assertEqual(session.calls, [
-            ("static", "A"), ("pack", "A"), ("static", "B"), ("pack", "B"),
+            ("static", "A"), ("readings", "A"), ("pack", "A"),
+            ("static", "B"), ("readings", "B"), ("pack", "B"),
         ])
         # Readings are due again after the interval; the model after a day.
         session.calls.clear()
         self.assertEqual(_run(reader.async_read_next(session, modules.MODULE_INTERVAL)), "A")
-        self.assertEqual(session.calls, [("pack", "A")])
+        self.assertEqual(session.calls, [("readings", "A"), ("pack", "A")])
         self.assertEqual(reader.value("A", "model"), "M-A")
+        self.assertEqual(reader.value("A", "soc"), 50.0)
         self.assertEqual(reader.value("A", "cell_temperature"), 20.0)
         self.assertTrue(reader.available("A", modules.INFO))
         # B is due first; A's model is read again on the next poll.
@@ -222,6 +252,22 @@ class TestSchedule(unittest.TestCase):
         self.assertEqual(_run(reader.async_read_next(session, day)), "B")
         self.assertEqual(_run(reader.async_read_next(session, day + 30)), "A")
         self.assertIn(("static", "A"), session.calls)
+
+    def test_one_failing_read_leaves_the_others(self):
+        reader = modules.ModuleReader(MODULES[:1])
+        session = _Session(fail={("readings", "A")})
+        _run(reader.async_read_next(session, 0.0))
+        self.assertFalse(reader.available("A", modules.READINGS))
+        self.assertIsNone(reader.value("A", "soc"))
+        self.assertTrue(reader.available("A", modules.PACK))
+        self.assertEqual(reader.value("A", "cell_temperature"), 20.0)
+        self.assertEqual(reader.errors[modules.READINGS]["A"], "MySigenConnectionError: HTTP 500")
+        self.assertNotIn("A", reader.errors[modules.PACK])
+        # Retried a minute later; a good answer clears the error.
+        session.fail.clear()
+        _run(reader.async_read_next(session, modules.MODULE_RETRY))
+        self.assertTrue(reader.available("A", modules.READINGS))
+        self.assertNotIn("A", reader.errors[modules.READINGS])
 
     def test_a_failed_info_read_leaves_the_pack(self):
         reader = modules.ModuleReader(MODULES[:1])

@@ -13,7 +13,7 @@ from .api import BatteryModule, MySigenConnectionError, MySigenPermissionError
 
 _LOGGER = logging.getLogger(__name__)
 
-# When a module's pack readings are due again. The actual age can be
+# When a module's readings are due again. The actual age can be
 # longer: one module is read per poll.
 MODULE_INTERVAL = 300.0
 # Model, firmware and rated capacity change rarely.
@@ -21,10 +21,11 @@ MODULE_STATIC_INTERVAL = 86400.0
 # A failed read is tried once more this soon, then at the normal interval.
 MODULE_RETRY = 60.0
 
-# The two reads of a module. Each succeeds or fails on its own.
+# The three reads of a module. Each succeeds or fails on its own.
 INFO = "info"
+READINGS = "readings"
 PACK = "pack"
-SOURCES = (INFO, PACK)
+SOURCES = (INFO, READINGS, PACK)
 
 
 def module_identifier(entry_id: str, serial: str) -> str:
@@ -34,6 +35,7 @@ def module_identifier(entry_id: str, serial: str) -> str:
 
 class _Session(Protocol):
     async def async_module_static(self, serial: str) -> dict[str, Any]: ...
+    async def async_module_readings(self, serial: str) -> dict[str, Any]: ...
     async def async_module_pack(self, serial: str) -> dict[str, Any]: ...
 
 
@@ -95,7 +97,8 @@ class ModuleReader:
                 MODULE_STATIC_INTERVAL if ok else MODULE_INTERVAL
             )
         if self._live_due[serial] <= now:
-            ok = await self._read(PACK, serial, session.async_module_pack)
+            ok = await self._read(READINGS, serial, session.async_module_readings)
+            ok = await self._read(PACK, serial, session.async_module_pack) and ok
             if not ok and serial not in self._retrying:
                 self._retrying.add(serial)
                 self._live_due[serial] = now + MODULE_RETRY

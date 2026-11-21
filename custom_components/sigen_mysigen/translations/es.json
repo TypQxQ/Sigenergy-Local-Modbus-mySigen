@@ -210,6 +210,9 @@
       "dc_charger_stop_level": {
         "name": "Límite de carga DC actual (mySigen)"
       },
+      "battery_module_soc": {
+        "name": "Estado de carga (mySigen)"
+      },
       "battery_module_discharged": {
         "name": "Energía total descargada (mySigen)"
       },
@@ -218,6 +221,15 @@
       },
       "battery_module_cell_voltage": {
         "name": "Tensión media de las celdas (mySigen)"
+      },
+      "battery_module_power": {
+        "name": "Potencia (mySigen)"
+      },
+      "battery_module_pack_voltage": {
+        "name": "Tensión del paquete (mySigen)"
+      },
+      "battery_module_heating": {
+        "name": "Estado de la calefacción (mySigen)"
       },
       "battery_module_capacity": {
         "name": "Capacidad nominal (mySigen)"

@@ -50,15 +50,19 @@ Sigenergy ESS reads each inverter's battery as a whole. mySigen also knows each 
 
 | | Entity | What it shows |
 | :-: | --- | --- |
+| ✅ | State of charge | The module's own charge level |
 | ✅ | Total energy discharged | Lifetime discharge of the module, in kWh; for warranty throughput |
 | ✅ | Average cell temperature | Average over the module's cells |
 | ✅ | Average cell voltage | Average over the module's cells |
 | ✅ | Rated capacity | The module's capacity on paper, e.g. 8.06 kWh |
+| ⬜ | Power | The module's charging or discharging power; negative while discharging |
+| ⬜ | Pack voltage | The module's voltage as mySigen reports it |
+| ⬜ | Heating status | Whether the module is heating itself |
 
 The device also shows the model and firmware. To keep the request count low, one module is read per poll, and each module is read again about every five minutes; with many modules or a long polling interval it takes longer. Model, firmware and rated capacity are read once a day.
 
 > [!NOTE]
-> mySigen does not give a charge level or power per module; the battery's charge level and power are in Sigenergy ESS. Total energy discharged moves in steps of 10 kWh, as mySigen reports it in MWh with two decimals.
+> Total energy discharged moves in steps of 10 kWh, as mySigen reports it in MWh with two decimals.
 
 ## 🔋 Battery overrides
 

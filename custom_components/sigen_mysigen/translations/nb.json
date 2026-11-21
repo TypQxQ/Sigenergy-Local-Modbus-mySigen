@@ -210,6 +210,9 @@
       "dc_charger_stop_level": {
         "name": "DC-laderens gjeldende ladegrense (mySigen)"
       },
+      "battery_module_soc": {
+        "name": "Ladetilstand (mySigen)"
+      },
       "battery_module_discharged": {
         "name": "Total utladet energi (mySigen)"
       },
@@ -218,6 +221,15 @@
       },
       "battery_module_cell_voltage": {
         "name": "Gjennomsnittlig cellespenning (mySigen)"
+      },
+      "battery_module_power": {
+        "name": "Effekt (mySigen)"
+      },
+      "battery_module_pack_voltage": {
+        "name": "Pakkespenning (mySigen)"
+      },
+      "battery_module_heating": {
+        "name": "Varmestatus (mySigen)"
       },
       "battery_module_capacity": {
         "name": "Nominell kapasitet (mySigen)"

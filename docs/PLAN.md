@@ -25,7 +25,7 @@
 | ↗️ | **Battery export** | Allow or block the battery sending power to the grid |
 | 📉 | **Peak shaving** | On or off, and the grid limit to stay under |
 | 📈 | **Gateway readings** | Grid voltage and current per phase, peaks and dips, phase order |
-| 🔋 | **Battery modules** | Model, rated capacity, cell temperature and voltage, and lifetime discharge per module |
+| 🔋 | **Battery modules** | Charge level, power, cell temperature and voltage, lifetime discharge, model and rated capacity per module |
 | 🌍 | **Eleven languages** | Following the plant's entity name language |
 
 <sub>Tested on one system: a European account, one inverter with four battery modules, a Gateway, no charger.</sub>

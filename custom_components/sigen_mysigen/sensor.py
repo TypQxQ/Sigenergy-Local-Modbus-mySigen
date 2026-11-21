@@ -30,7 +30,7 @@ from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
-from .modules import INFO, PACK, module_identifier
+from .modules import INFO, PACK, READINGS, module_identifier
 
 _VOLT = (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
 _AMPERE = (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
@@ -108,6 +108,9 @@ class _ModuleReading:
 
 # Entity key -> what it shows. The reading is part of the unique IDs.
 MODULE_READINGS: dict[str, _ModuleReading] = {
+    "battery_module_soc": _ModuleReading(
+        "soc", READINGS, (SensorDeviceClass.BATTERY, PERCENTAGE, 1)
+    ),
     "battery_module_discharged": _ModuleReading(
         "discharged", PACK,
         (SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 0),
@@ -119,6 +122,17 @@ MODULE_READINGS: dict[str, _ModuleReading] = {
     ),
     "battery_module_cell_voltage": _ModuleReading(
         "cell_voltage", PACK, (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 3)
+    ),
+    "battery_module_power": _ModuleReading(
+        "power", READINGS, (SensorDeviceClass.POWER, UnitOfPower.KILO_WATT, 3),
+        enabled=False,
+    ),
+    "battery_module_pack_voltage": _ModuleReading(
+        "pack_voltage", READINGS,
+        (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1), enabled=False,
+    ),
+    "battery_module_heating": _ModuleReading(
+        "heating", READINGS, None, None, enabled=False, diagnostic=True
     ),
     "battery_module_capacity": _ModuleReading(
         "rated_capacity", INFO,

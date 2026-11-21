@@ -165,13 +165,14 @@ async def async_get_config_entry_diagnostics(
             for module in reader.modules
         ],
     }
-    # Structure of the first module's two answers, every value masked, so
+    # Structure of the first module's three answers, every value masked, so
     # the field names can be checked against a real plant.
     if reader.modules and not coordinator.rate_limit_wait:
         serial = reader.modules[0].serial
         shapes: dict[str, Any] = {}
         for name, read in (
             ("info", coordinator.session.async_module_static_raw),
+            ("readings", coordinator.session.async_module_live_raw),
             ("pack", coordinator.session.async_module_pack_raw),
         ):
             try:

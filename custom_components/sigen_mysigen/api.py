@@ -67,11 +67,14 @@ _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
 _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
 # One battery module each. Request formats follow sigenergy2mqtt
-# (MIT License, https://github.com/seud0nym/sigenergy2mqtt). Its third
-# read, device/sigen/device/dynamic/info, is not used: on a real plant
-# mySigen answers it with code 1000 for battery modules.
+# (MIT License, https://github.com/seud0nym/sigenergy2mqtt).
 _MODULE_STATIC_PATH = "device/sigen/device/static/info"
+_MODULE_LIVE_PATH = "device/sigen/device/dynamic/info"
 _MODULE_PACK_PATH = "device/device/pack/queryPackMergeInfo"
+# mySigen answers the readings read with code 1000 unless the request names
+# the app package that sends it; any name is accepted. The add-on names
+# itself rather than posing as a Sigenergy app.
+_PACKAGE_HEADER = {"sg-pkg": "sigen_mysigen"}
 _GATEWAY_PATH = "device/gateway/{station_id}"
 _OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
 _MODES_PATH = "device/energy-profile/mode/all/{station_id}"
@@ -669,6 +672,7 @@ _UNIT_FACTORS: dict[str, dict[str, float]] = {
     "kWh": {"wh": 0.001, "kwh": 1.0, "mwh": 1000.0},
     "kW": {"w": 0.001, "kw": 1.0},
     "V": {"mv": 0.001, "v": 1.0},
+    "%": {"%": 1.0},
 }
 _CELSIUS = ("°c", "℃", "c")
 _FAHRENHEIT = ("°f", "℉", "f")
@@ -731,6 +735,12 @@ MODULE_STATIC_FIELDS = {
     "model": _ModuleField("device model", None),
     "firmware": _ModuleField("software version", None),
     "rated_capacity": _ModuleField("rated battery capacity", "kWh"),
+}
+MODULE_LIVE_FIELDS = {
+    "soc": _ModuleField("battery soc", "%"),
+    "power": _ModuleField("charging & discharging power", "kW"),
+    "pack_voltage": _ModuleField("battery pack voltage", "V"),
+    "heating": _ModuleField("heating status", None),
 }
 MODULE_PACK_FIELDS = {
     "discharged": _ModuleField("total discharge amount", "kWh"),
@@ -896,13 +906,19 @@ class MySigenSession:
                 self._refresh_token = None
         await self._async_login()
 
-    async def _async_get_once(self, path: str, params: dict[str, str] | None) -> Any:
+    async def _async_get_once(
+        self,
+        path: str,
+        params: dict[str, str] | None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         try:
             async with self._session.request(
                 "GET",
                 f"{REGIONS[self._region]}{path}",
                 params=params,
                 headers={
+                    **(headers or {}),
                     "Authorization": f"Bearer {self._access_token}",
                     "Content-Type": "application/json",
                 },
@@ -932,7 +948,11 @@ class MySigenSession:
         return payload.get("data")
 
     async def _async_get(
-        self, what: str, path: str, params: dict[str, str] | None = None
+        self,
+        what: str,
+        path: str,
+        params: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """GET one path, signing in again once if the session was dropped.
 
@@ -942,11 +962,11 @@ class MySigenSession:
         try:
             await self._async_ensure_token()
             try:
-                return await self._async_get_once(path, params)
+                return await self._async_get_once(path, params, headers)
             except MySigenAuthError:
                 self._access_token = None
                 await self._async_ensure_token()
-                return await self._async_get_once(path, params)
+                return await self._async_get_once(path, params, headers)
         except (MySigenAuthError, MySigenPermissionError) as err:
             raise type(err)(f"{what}: {err}") from err
 
@@ -1060,15 +1080,28 @@ class MySigenSession:
         self.battery_modules = parse_battery_modules(data)
         return self.battery_modules
 
-    async def _async_module_get(self, what: str, path: str, serial: str, **extra: str) -> Any:
+    async def _async_module_get(
+        self,
+        what: str,
+        path: str,
+        serial: str,
+        headers: dict[str, str] | None = None,
+        **extra: str,
+    ) -> Any:
         return await self._async_get(what, path, {
             "stationId": await self.async_station_id(), "snCode": serial, **extra,
-        })
+        }, headers)
 
     async def async_module_static_raw(self, serial: str) -> Any:
         return await self._async_module_get(
             "battery module", _MODULE_STATIC_PATH, serial,
             deviceType=str(BATTERY_DEVICE_TYPE),
+        )
+
+    async def async_module_live_raw(self, serial: str) -> Any:
+        return await self._async_module_get(
+            "battery module readings", _MODULE_LIVE_PATH, serial, _PACKAGE_HEADER,
+            deviceType=str(BATTERY_DEVICE_TYPE), refreshFlag="",
         )
 
     async def async_module_pack_raw(self, serial: str) -> Any:
@@ -1078,6 +1111,12 @@ class MySigenSession:
         """Model, firmware and rated capacity of one module."""
         return parse_module_values(
             await self.async_module_static_raw(serial), "paramInfoVOList", MODULE_STATIC_FIELDS
+        )
+
+    async def async_module_readings(self, serial: str) -> dict[str, float | str]:
+        """Charge level, power, pack voltage and heating of one module."""
+        return parse_module_values(
+            await self.async_module_live_raw(serial), "realTimeInfo", MODULE_LIVE_FIELDS
         )
 
     async def async_module_pack(self, serial: str) -> dict[str, float | str]:

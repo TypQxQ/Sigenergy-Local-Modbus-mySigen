@@ -210,6 +210,9 @@
       "dc_charger_stop_level": {
         "name": "Nykyinen DC-latausraja (mySigen)"
       },
+      "battery_module_soc": {
+        "name": "Varaustila (mySigen)"
+      },
       "battery_module_discharged": {
         "name": "Purettu energia yhteensä (mySigen)"
       },
@@ -218,6 +221,15 @@
       },
       "battery_module_cell_voltage": {
         "name": "Kennojen keskijännite (mySigen)"
+      },
+      "battery_module_power": {
+        "name": "Teho (mySigen)"
+      },
+      "battery_module_pack_voltage": {
+        "name": "Akkupaketin jännite (mySigen)"
+      },
+      "battery_module_heating": {
+        "name": "Lämmityksen tila (mySigen)"
       },
       "battery_module_capacity": {
         "name": "Nimelliskapasiteetti (mySigen)"
