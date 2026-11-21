@@ -40,7 +40,7 @@ from .api import (
     OverrideStatus,
     single_send_trace_config,
 )
-from .modules import INFO, ModuleReader, module_identifier
+from .modules import INFO, ModuleReader
 from .const import (
     CONF_ALLOW_CONTROL,
     CONF_ALLOW_GRID_DISCONNECT,
@@ -153,6 +153,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self._settings_read_at = float("-inf")
         # Battery modules; set up once the device tree has been read.
         self.modules = ModuleReader(())
+        # Serial -> the module's device, registered to the Modbus plant entry.
+        self.module_devices: dict[str, dr.DeviceEntry] = {}
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
         self.has_gateway: bool | None = None
@@ -344,9 +346,9 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         if not static:
             return
         registry = dr.async_get(self.hass)
-        device = registry.async_get_device(
-            identifiers={(DOMAIN, module_identifier(self.config_entry.entry_id, serial))}
-        )
+        # By the ID setup registered: identifiers are unique only per entry.
+        placed = self.module_devices.get(serial)
+        device = registry.async_get(placed.id) if placed is not None else None
         model, firmware = static.get("model"), static.get("firmware")
         if device is not None and (
             (model and device.model != model) or (firmware and device.sw_version != firmware)

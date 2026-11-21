@@ -37,6 +37,7 @@ from .api import (
     MySigenError,
     MySigenPermissionError,
     MySigenRateLimitError,
+    normalize_serial,
 )
 from .const import (
     CONF_PLANT_ENTRY_ID,
@@ -48,7 +49,7 @@ from .const import (
 from .commands import async_run_command
 from .coordinator import MySigenCoordinator
 from .link import STATION_MISMATCH, async_link_problem
-from .modules import ModuleReader, module_identifier
+from .modules import INFO, ModuleReader, module_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -195,7 +196,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.debug("mySigen device tree read failed: %s", err)
             modules = ()
     coordinator.modules = ModuleReader(modules)
-    _remove_old_devices(hass, entry, modules)
+    _remove_old_devices(hass, entry, plant_entry_id, modules)
 
     # A failure here only delays this entry; the Modbus plant is unaffected.
     try:
@@ -223,6 +224,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator.entity_name_translations = await async_get_translations(
             hass, language, "entity", {DOMAIN}
         )
+    await _async_place_module_devices(
+        hass, entry, coordinator,
+        language if language in ENTITY_NAME_LANGUAGES else hass.config.language,
+    )
 
     coordinator.platforms = list(PLATFORMS)
     if coordinator.allow_control:
@@ -242,31 +247,101 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+def _module_identifiers(entry: ConfigEntry, device: dr.DeviceEntry) -> set[str]:
+    """This entry's battery module identifiers on a device."""
+    prefix = module_identifier(entry.entry_id, "")
+    return {
+        ident for domain, ident in device.identifiers
+        if domain == DOMAIN and ident.startswith(prefix)
+    }
+
+
 def _remove_old_devices(
-    hass: HomeAssistant, entry: ConfigEntry, modules: tuple
+    hass: HomeAssistant, entry: ConfigEntry, plant_entry_id: str, modules: tuple
 ) -> None:
     """Remove devices this entry no longer provides.
 
-    Everything except the battery modules lives on the Modbus plant device,
-    so any other device is left over from an earlier version. A module
-    device is removed only when mySigen lists modules and not this one: an
-    empty list is more likely a passing fault.
+    This add-on owns no devices: everything, the battery module devices
+    included, is registered to the Modbus plant's entry. Any device of this
+    entry is left over from an earlier version. A module device is removed
+    only when mySigen lists modules and not this one: an empty list is more
+    likely a passing fault.
     """
     keep = {module_identifier(entry.entry_id, module.serial) for module in modules}
-    prefix = module_identifier(entry.entry_id, "")
     registry = dr.async_get(hass)
     for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
-        ours = {ident for domain, ident in device.identifiers if domain == DOMAIN}
-        if ours & keep:
-            continue
-        if not modules and any(ident.startswith(prefix) for ident in ours):
-            continue
         registry.async_remove_device(device.id)
+    if not modules:
+        return
+    for device in dr.async_entries_for_config_entry(registry, plant_entry_id):
+        ours = _module_identifiers(entry, device)
+        if ours and not ours & keep:
+            registry.async_remove_device(device.id)
+
+
+async def _async_place_module_devices(
+    hass: HomeAssistant, entry: ConfigEntry, coordinator: MySigenCoordinator, language: str
+) -> None:
+    """Register each battery module's device to the Modbus plant's entry.
+
+    The module devices then show with the plant and its inverters under
+    Sigenergy ESS, like every other device the add-on's entities are on.
+    Home Assistant translates device names only for the integration that
+    creates the device, so the name is taken from this add-on's own
+    translations here.
+    """
+    plant_entry_id = entry.data[CONF_PLANT_ENTRY_ID]
+    names = await async_get_translations(hass, language, "device", {DOMAIN})
+    template = names.get(
+        f"component.{DOMAIN}.device.battery_module.name", "Sigen battery module {position}"
+    )
+    registry = dr.async_get(hass)
+    plant_devices = dr.async_entries_for_config_entry(registry, plant_entry_id)
+    plant_device = next(
+        (
+            device.id for device in plant_devices
+            if (MODBUS_DOMAIN, f"{plant_entry_id}_plant") in device.identifiers
+        ),
+        None,
+    )
+    for index, module in enumerate(coordinator.modules.modules, start=1):
+        # Under its inverter, or the plant when the inverter is not found.
+        parent = next(
+            (
+                device.id for device in plant_devices
+                if module.inverter_serial
+                and normalize_serial(device.serial_number) == module.inverter_serial
+            ),
+            plant_device,
+        )
+        static = coordinator.modules.data[INFO].get(module.serial) or {}
+        known = {
+            key: value
+            for key, value in (("model", static.get("model")), ("sw_version", static.get("firmware")))
+            if value
+        }
+        coordinator.module_devices[module.serial] = registry.async_get_or_create(
+            config_entry_id=plant_entry_id,
+            identifiers={(DOMAIN, module_identifier(entry.entry_id, module.serial))},
+            name=template.replace("{position}", module.position or str(index)),
+            manufacturer="Sigenergy",
+            serial_number=module.serial,
+            via_device_id=parent,
+            **known,
+        )
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Forget the state kept for a removed connection."""
+    """Forget the state kept for a removed connection.
+
+    The battery module devices belong to the Modbus plant's entry, so Home
+    Assistant does not remove them with this one.
+    """
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    registry = dr.async_get(hass)
+    for device in list(registry.devices.values()):
+        if _module_identifiers(entry, device):
+            registry.async_remove_device(device.id)
     for key in _ISSUES:
         ir.async_delete_issue(hass, DOMAIN, _issue_id(key, entry))
 

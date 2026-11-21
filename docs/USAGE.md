@@ -46,7 +46,7 @@ Every name ends with **(mySigen)**, in every language, so you can tell these apa
 
 ## 🔋 Battery modules
 
-Sigenergy ESS reads each inverter's battery as a whole. mySigen also knows each **battery module**, so every module gets a device of its own, **Sigen battery module 1**, 2 and so on, placed under its inverter. They appear by themselves when mySigen lists modules.
+Sigenergy ESS reads each inverter's battery as a whole. mySigen also knows each **battery module**, so every module gets a device of its own, **Sigen battery module 1**, 2 and so on, under its inverter and listed with the other Sigenergy ESS devices. They appear by themselves when mySigen lists modules, and go away when you remove the add-on.
 
 | | Entity | What it shows |
 | :-: | --- | --- |

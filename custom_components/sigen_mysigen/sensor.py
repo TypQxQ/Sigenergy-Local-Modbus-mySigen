@@ -22,15 +22,14 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule, normalize_serial
-from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
+from .api import DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule
+from .const import DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
-from .modules import INFO, PACK, READINGS, module_identifier
+from .modules import INFO, PACK, READINGS
 
 _VOLT = (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
 _AMPERE = (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
@@ -170,8 +169,10 @@ async def async_setup_entry(
             DcChargeModeInUse(coordinator, "dc_charger_mode"),
             DcStopLevel(coordinator, "dc_charger_stop_level"),
         ]
-    for index, module in enumerate(coordinator.modules.modules, start=1):
-        device = _module_device(hass, coordinator, module, index)
+    for module in coordinator.modules.modules:
+        device = coordinator.module_devices.get(module.serial)
+        if device is None:
+            continue
         entities += [
             BatteryModuleSensor(coordinator, key, module, device) for key in MODULE_READINGS
         ]
@@ -329,32 +330,6 @@ class DcStopLevel(MySigenEntity, SensorEntity):
         return setting.stop_level if setting is not None else None
 
 
-def _module_device(
-    hass: HomeAssistant, coordinator: MySigenCoordinator, module: BatteryModule, index: int
-) -> DeviceInfo:
-    """The device of one battery module, placed under its inverter."""
-    entry = coordinator.config_entry
-    plant_entry_id = entry.data[CONF_PLANT_ENTRY_ID]
-    parent = (MODBUS_DOMAIN, f"{plant_entry_id}_plant")
-    for device in dr.async_entries_for_config_entry(dr.async_get(hass), plant_entry_id):
-        if module.inverter_serial and normalize_serial(device.serial_number) == module.inverter_serial:
-            parent = next(
-                (ident for ident in device.identifiers if ident[0] == MODBUS_DOMAIN), parent
-            )
-            break
-    static = coordinator.modules.data[INFO].get(module.serial) or {}
-    return DeviceInfo(
-        identifiers={(DOMAIN, module_identifier(entry.entry_id, module.serial))},
-        translation_key="battery_module",
-        translation_placeholders={"position": module.position or str(index)},
-        manufacturer="Sigenergy",
-        model=static.get("model"),
-        sw_version=static.get("firmware"),
-        serial_number=module.serial,
-        via_device=parent,
-    )
-
-
 class BatteryModuleSensor(MySigenEntity, SensorEntity):
     """One reading of one battery module, on that module's own device."""
 
@@ -363,15 +338,14 @@ class BatteryModuleSensor(MySigenEntity, SensorEntity):
         coordinator: MySigenCoordinator,
         key: str,
         module: BatteryModule,
-        device: DeviceInfo,
+        device: dr.DeviceEntry,
     ) -> None:
         spec = MODULE_READINGS[key]
         super().__init__(
             coordinator, key, unique_key=f"battery_{module.serial}_{spec.reading}"
         )
-        # A module has no Modbus device; it gets one of its own.
-        self.device_entry = None
-        self._attr_device_info = device
+        # The module's own device, registered to the Modbus plant's entry.
+        self.device_entry = device
         self._serial = module.serial
         self._spec = spec
         if spec.kind is not None:
