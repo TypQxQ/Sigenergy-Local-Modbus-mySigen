@@ -17,7 +17,7 @@ from .control import (
     async_set_v2x_enabled,
 )
 from .entity import MySigenEntity
-from .link import plant_grid_state, remote_ems_state
+from .link import plant_grid_state
 
 
 async def async_setup_entry(
@@ -45,28 +45,28 @@ class BatteryExport(MySigenEntity, SwitchEntity):
 
     @property
     def available(self) -> bool:
-        export = self.coordinator.battery_export
-        return super().available and export is not None and export.owner is not None
+        return super().available and self.coordinator.battery_export is not None
 
     @property
     def is_on(self) -> bool | None:
         export = self.coordinator.battery_export
-        return export.owner if export is not None else None
+        return export.allowed if export is not None else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        # What applies right now; an installer setting can override the owner's.
+        # Whether export is allowed right now; an installer setting can
+        # override the owner's.
         export = self.coordinator.battery_export
-        return {"in_effect": export.effective} if export is not None else None
+        return {"in_effect": export.allowed_in_effect} if export is not None else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await async_run_setting(
-            self.coordinator, async_set_battery_export(self.coordinator, enabled=True)
+            self.coordinator, async_set_battery_export(self.coordinator, allowed=True)
         )
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await async_run_setting(
-            self.coordinator, async_set_battery_export(self.coordinator, enabled=False)
+            self.coordinator, async_set_battery_export(self.coordinator, allowed=False)
         )
 
 
@@ -154,12 +154,9 @@ class AllowV2x(MySigenEntity, SwitchEntity):
         return self.coordinator.v2x_enabled
 
     async def _async_set(self, enabled: bool) -> None:
-        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
-        await async_run_setting(self.coordinator, async_set_v2x_enabled(
-            self.coordinator,
-            enabled=enabled,
-            remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
-        ))
+        await async_run_setting(
+            self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._async_set(True)

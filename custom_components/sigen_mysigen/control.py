@@ -19,6 +19,8 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from .api import (
+    DEFAULT_FLOOR_RANGE,
+    DEFAULT_LEVEL_RANGE,
     CONTROL_MODES,
     DC_CHARGE_MODES,
     GRID_GOING_OFF,
@@ -369,7 +371,7 @@ async def async_set_operating_mode(
 async def async_set_battery_export(
     coordinator: Any,
     *,
-    enabled: bool,
+    allowed: bool,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Allow or block exporting from the battery. It stays until changed back."""
@@ -377,8 +379,8 @@ async def async_set_battery_export(
         coordinator,
         "battery_export",
         read=coordinator.session.async_battery_export,
-        send=lambda current: coordinator.session.async_set_battery_export(current, enabled),
-        expected=lambda current: current.owner is enabled,
+        send=lambda current: coordinator.session.async_set_battery_export(current, allowed),
+        expected=lambda current: current.allowed is allowed,
         publish=coordinator.publish_battery_export,
         sleep=sleep,
     )
@@ -522,41 +524,32 @@ async def async_set_off_grid(
     )
 
 
-def _refuse_with_remote_ems(remote_ems: Callable[[], str | None]) -> Callable[[Any], None]:
-    """A `before` check: Remote EMS also steers the charger, so leave it alone."""
-
-    def before(_current: Any) -> None:
-        state = remote_ems()
-        if state == REMOTE_EMS_ON:
-            raise CommandRefused(
-                "Remote EMS is active on the plant. The charger was left unchanged."
-            )
-        if state != REMOTE_EMS_OFF:
-            raise CommandRefused("Could not confirm that Remote EMS is off. Nothing was sent.")
-
-    return before
-
-
 def _check_charger(coordinator: Any) -> None:
     if not coordinator.has_dc_charger:
         raise CommandRefused("mySigen lists no DC charger for this plant.")
 
 
-def _check_level(coordinator: Any, level: int) -> None:
-    if coordinator.soc_range is None:
-        raise CommandRefused(
-            "mySigen has not reported the allowed charge levels yet. Nothing was sent."
-        )
-    low, high = coordinator.soc_range
+def _check_level(level: int, allowed: tuple[int, int]) -> None:
+    low, high = allowed
     if not low <= level <= high:
         raise CommandRefused(f"The vehicle charge level must be {low} to {high} %.")
+
+
+def dc_stop_range(coordinator: Any) -> tuple[int, int]:
+    """The levels the charge limit may take; 0 to 100 % when not reported."""
+    return coordinator.soc_range or DEFAULT_LEVEL_RANGE
+
+
+def dc_floor_range(coordinator: Any) -> tuple[int, int]:
+    """The levels the V2X floor may take, from the charger's last answer."""
+    mode = coordinator.dc_charge_mode
+    return mode.floor_range if mode is not None else DEFAULT_FLOOR_RANGE
 
 
 async def async_set_dc_charge_mode(
     coordinator: Any,
     *,
     mode: str,
-    remote_ems: Callable[[], str | None],
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Choose how the DC charger charges. It stays until changed back."""
@@ -571,7 +564,6 @@ async def async_set_dc_charge_mode(
         expected=lambda current: current.mode == mode,
         publish=coordinator.publish_dc_charge_mode,
         sleep=sleep,
-        before=_refuse_with_remote_ems(remote_ems),
     )
 
 
@@ -579,12 +571,10 @@ async def async_set_dc_discharge_floor(
     coordinator: Any,
     *,
     level: int,
-    remote_ems: Callable[[], str | None],
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Set the charge level the car keeps when it supplies power."""
     _check_charger(coordinator)
-    _check_level(coordinator, level)
     return await _change_setting(
         coordinator,
         "dc_discharge_floor",
@@ -595,7 +585,8 @@ async def async_set_dc_discharge_floor(
         expected=lambda current: current.discharge_floor == level,
         publish=coordinator.publish_dc_charge_mode,
         sleep=sleep,
-        before=_refuse_with_remote_ems(remote_ems),
+        # The charger's own limits, from the answer just read.
+        before=lambda current: _check_level(level, current.floor_range),
     )
 
 
@@ -603,12 +594,11 @@ async def async_set_dc_stop_level(
     coordinator: Any,
     *,
     level: int,
-    remote_ems: Callable[[], str | None],
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Set the vehicle charge level at which charging stops."""
     _check_charger(coordinator)
-    _check_level(coordinator, level)
+    _check_level(level, dc_stop_range(coordinator))
     return await _change_setting(
         coordinator,
         "dc_stop_level",
@@ -617,7 +607,6 @@ async def async_set_dc_stop_level(
         expected=lambda current: current.stop_level == level,
         publish=coordinator.publish_dc_charge_setting,
         sleep=sleep,
-        before=_refuse_with_remote_ems(remote_ems),
     )
 
 
@@ -625,7 +614,6 @@ async def async_set_v2x_enabled(
     coordinator: Any,
     *,
     enabled: bool,
-    remote_ems: Callable[[], str | None],
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Allow or block the car supplying power to the home."""
@@ -638,5 +626,4 @@ async def async_set_v2x_enabled(
         expected=lambda current: current is enabled,
         publish=coordinator.publish_v2x_enabled,
         sleep=sleep,
-        before=_refuse_with_remote_ems(remote_ems),
     )

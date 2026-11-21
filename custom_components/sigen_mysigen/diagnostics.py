@@ -116,7 +116,7 @@ async def async_get_config_entry_diagnostics(
         "available_modes": sorted(coordinator.available_modes),
         "operating_mode": coordinator.operating_mode,
         "battery_export": None if export is None else {
-            "owner": export.owner, "in_effect": export.effective,
+            "allowed": export.allowed, "allowed_in_effect": export.allowed_in_effect,
             "installer": export.installer,
         },
         "peak_shaving": None if peak is None else {

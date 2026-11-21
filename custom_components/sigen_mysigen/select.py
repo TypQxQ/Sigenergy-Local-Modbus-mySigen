@@ -111,12 +111,6 @@ class DcChargingMode(MySigenEntity, SelectEntity):
         return mode.mode if mode is not None else None
 
     async def async_select_option(self, option: str) -> None:
-        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
         await async_run_setting(
-            self.coordinator,
-            async_set_dc_charge_mode(
-                self.coordinator,
-                mode=option,
-                remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
-            ),
+            self.coordinator, async_set_dc_charge_mode(self.coordinator, mode=option)
         )

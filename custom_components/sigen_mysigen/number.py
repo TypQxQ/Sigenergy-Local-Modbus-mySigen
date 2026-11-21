@@ -20,14 +20,15 @@ from .api import (
     MIN_OVERRIDE_MINUTES,
 )
 from .commands import async_run_setting
-from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER, CONF_PLANT_ENTRY_ID
+from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER
 from .control import (
     async_set_dc_discharge_floor,
     async_set_dc_stop_level,
     async_set_grid_current_limit,
     async_set_peak_shaving,
+    dc_floor_range,
+    dc_stop_range,
 )
-from .link import remote_ems_state
 from .entity import MySigenEntity
 
 
@@ -185,30 +186,27 @@ class _DcLevel(MySigenEntity, NumberEntity):
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_mode = NumberMode.BOX
 
+    def _range(self) -> tuple[int, int]:
+        raise NotImplementedError
+
     @property
     def native_min_value(self) -> float:
-        return self.coordinator.soc_range[0] if self.coordinator.soc_range else 0
+        return self._range()[0]
 
     @property
     def native_max_value(self) -> float:
-        return self.coordinator.soc_range[1] if self.coordinator.soc_range else 100
+        return self._range()[1]
 
     @property
     def available(self) -> bool:
-        return (
-            super().available
-            and self.coordinator.soc_range is not None
-            and self.native_value is not None
-        )
-
-    def _remote_ems(self) -> str | None:
-        return remote_ems_state(
-            self.hass, self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
-        )
+        return super().available and self.native_value is not None
 
 
 class DcStopChargingAt(_DcLevel):
     """Charging stops when the car reaches this level."""
+
+    def _range(self) -> tuple[int, int]:
+        return dc_stop_range(self.coordinator)
 
     @property
     def native_value(self) -> int | None:
@@ -217,12 +215,15 @@ class DcStopChargingAt(_DcLevel):
 
     async def async_set_native_value(self, value: float) -> None:
         await async_run_setting(self.coordinator, async_set_dc_stop_level(
-            self.coordinator, level=int(round(value)), remote_ems=self._remote_ems,
+            self.coordinator, level=int(round(value)),
         ))
 
 
 class DcDischargeFloor(_DcLevel):
     """The car stops supplying power at this level."""
+
+    def _range(self) -> tuple[int, int]:
+        return dc_floor_range(self.coordinator)
 
     @property
     def native_value(self) -> int | None:
@@ -231,5 +232,5 @@ class DcDischargeFloor(_DcLevel):
 
     async def async_set_native_value(self, value: float) -> None:
         await async_run_setting(self.coordinator, async_set_dc_discharge_floor(
-            self.coordinator, level=int(round(value)), remote_ems=self._remote_ems,
+            self.coordinator, level=int(round(value)),
         ))
