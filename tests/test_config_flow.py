@@ -1,7 +1,7 @@
 """Setup asks for the settings after sign-in; Reconfigure keeps the same ones.
 
 config_flow.py is loaded with small stand-ins for Home Assistant and
-voluptuous, so these run without either installed.
+probatio, so these run without either installed.
 """
 from __future__ import annotations
 
@@ -107,7 +107,7 @@ def _anything(*_args, **_kwargs):
 def _load_flow():
     _module("awesomeversion", AwesomeVersion=str)
     _module(
-        "voluptuous", Schema=_Schema,
+        "probatio", Schema=_Schema,
         Required=_Marker, Optional=_Marker,
     )
     _module("homeassistant")

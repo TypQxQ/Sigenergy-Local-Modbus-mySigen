@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-import voluptuous as vol
+import probatio
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -72,14 +72,14 @@ ATTR_MODE = "mode"
 ATTR_DURATION = "duration"
 ATTR_POWER = "power_limit"
 
-_CANCEL_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTRY_ID): cv.string})
+_CANCEL_SCHEMA = probatio.Schema({probatio.Optional(ATTR_ENTRY_ID): cv.string})
 _START_SCHEMA = _CANCEL_SCHEMA.extend({
-    vol.Required(ATTR_MODE): vol.In(CONTROL_MODES),
-    vol.Required(ATTR_DURATION): vol.All(
-        vol.Coerce(int), vol.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
+    probatio.Required(ATTR_MODE): probatio.In(CONTROL_MODES),
+    probatio.Required(ATTR_DURATION): probatio.All(
+        probatio.Coerce(int), probatio.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
     ),
-    vol.Optional(ATTR_POWER): vol.All(
-        vol.Coerce(float), vol.Range(min=0, max=MAX_POWER_LIMIT_KW, min_included=False)
+    probatio.Optional(ATTR_POWER): probatio.All(
+        probatio.Coerce(float), probatio.Range(min=0, max=MAX_POWER_LIMIT_KW, min_included=False)
     ),
 })
 
@@ -345,7 +345,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     registry = dr.async_get(hass)
-    for device in list(registry.devices.values()):
+    # Iterate the devices; using them as a mapping is deprecated and stops
+    # working in Home Assistant 2027.9.
+    for device in list(registry.devices):
         if _module_identifiers(entry, device):
             registry.async_remove_device(device.id)
     for key in _ISSUES:

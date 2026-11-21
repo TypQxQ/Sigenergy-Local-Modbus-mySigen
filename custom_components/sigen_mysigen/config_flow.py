@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from awesomeversion import AwesomeVersion
-import voluptuous as vol
+import probatio
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_NAME, CONF_PASSWORD, CONF_USERNAME
@@ -64,9 +64,9 @@ _PASSWORD_SELECTOR = TextSelector(
 )
 
 # Asked after sign-in and again under Reconfigure.
-_SETTINGS_SCHEMA = vol.Schema(
+_SETTINGS_SCHEMA = probatio.Schema(
     {
-        vol.Required(CONF_SCAN_INTERVAL): NumberSelector(
+        probatio.Required(CONF_SCAN_INTERVAL): NumberSelector(
             NumberSelectorConfig(
                 min=MIN_SCAN_INTERVAL,
                 max=MAX_SCAN_INTERVAL,
@@ -75,8 +75,8 @@ _SETTINGS_SCHEMA = vol.Schema(
                 mode=NumberSelectorMode.BOX,
             )
         ),
-        vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
-        vol.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
+        probatio.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
+        probatio.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
     }
 )
 
@@ -187,9 +187,9 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_settings()
             errors["base"] = error
 
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_PLANT_ENTRY_ID): SelectSelector(
+                probatio.Required(CONF_PLANT_ENTRY_ID): SelectSelector(
                     SelectSelectorConfig(
                         options=[
                             SelectOptionDict(value=entry_id, label=name)
@@ -198,19 +198,19 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required(CONF_REGION, default=DEFAULT_REGION): SelectSelector(
+                probatio.Required(CONF_REGION, default=DEFAULT_REGION): SelectSelector(
                     SelectSelectorConfig(
                         options=list(REGIONS),
                         mode=SelectSelectorMode.DROPDOWN,
                         translation_key="region",
                     )
                 ),
-                vol.Required(CONF_USERNAME): TextSelector(
+                probatio.Required(CONF_USERNAME): TextSelector(
                     TextSelectorConfig(
                         type=TextSelectorType.EMAIL, autocomplete="username"
                     )
                 ),
-                vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
             }
         )
         suggested = {
@@ -278,7 +278,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}),
+            data_schema=probatio.Schema({probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}),
             description_placeholders={"username": entry.data[CONF_USERNAME]},
             errors=errors,
         )
@@ -318,18 +318,18 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
             errors["base"] = error
 
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_USERNAME): TextSelector(
+                probatio.Required(CONF_USERNAME): TextSelector(
                     TextSelectorConfig(
                         type=TextSelectorType.EMAIL, autocomplete="username"
                     )
                 ),
-                vol.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                probatio.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
             }
         ).extend(_SETTINGS_SCHEMA.schema).extend(
             {
-                vol.Required(CONF_ENTITY_NAME_LANGUAGE): SelectSelector(
+                probatio.Required(CONF_ENTITY_NAME_LANGUAGE): SelectSelector(
                     SelectSelectorConfig(
                         options=list(ENTITY_NAME_LANGUAGE_OPTIONS),
                         mode=SelectSelectorMode.DROPDOWN,
