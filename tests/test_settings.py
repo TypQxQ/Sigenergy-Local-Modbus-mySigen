@@ -35,8 +35,14 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(api.parse_available_modes({"defaultWorkingModes": "x"}), frozenset())
 
     def test_battery_export(self):
+        # mySigen stores a limitation: false means export is allowed.
         export = api.parse_battery_export(EXPORT)
-        self.assertEqual((export.owner, export.effective, export.installer), (False, False, None))
+        self.assertEqual((export.allowed, export.allowed_in_effect, export.installer),
+                         (True, True, None))
+        blocked = api.parse_battery_export({**EXPORT, "ownerSetEnable": True, "currentEnable": True})
+        self.assertEqual((blocked.allowed, blocked.allowed_in_effect), (False, False))
+        unknown = api.parse_battery_export({**EXPORT, "currentEnable": None})
+        self.assertIsNone(unknown.allowed_in_effect)
         for bad in (None, {}, {"ownerSetEnable": None}, {"ownerSetEnable": "true"}):
             self.assertIsNone(api.parse_battery_export(bad))
 
@@ -103,7 +109,7 @@ class TestWrites(unittest.IsolatedAsyncioTestCase):
         http, client = self._client(ok, ok, ok, ok)
         await client.async_set_operating_mode(0)
         await client.async_set_battery_export(api.parse_battery_export(
-            {**EXPORT, "installerSetEnable": True}), True)
+            {**EXPORT, "installerSetEnable": True}), False)
         await client.async_set_peak_shaving(api.parse_peak_shaving(PEAK).with_enabled(False))
         self.assertEqual(http.requests[1], ("PUT", "mode", {
             "stationId": 42, "operationMode": 0, "workingMode": 0, "profileId": -1}))
@@ -162,8 +168,8 @@ class _Session:
     async def async_set_operating_mode(self, code):
         await self._write("mode", code)
 
-    async def async_set_battery_export(self, current, enabled):
-        await self._write("export", current.installer, enabled)
+    async def async_set_battery_export(self, current, allowed):
+        await self._write("export", current.installer, allowed)
 
     async def async_set_peak_shaving(self, schedule):
         await self._write("peak", schedule["controlMode"], schedule["settingList"][0]["peakPower"])
@@ -194,8 +200,9 @@ async def _no_sleep(_seconds):
     return None
 
 
-OFF_EXPORT = api.parse_battery_export(EXPORT)
-ON_EXPORT = api.parse_battery_export({**EXPORT, "ownerSetEnable": True})
+# Named for what the switch shows: export allowed or blocked.
+ALLOWED_EXPORT = api.parse_battery_export(EXPORT)
+BLOCKED_EXPORT = api.parse_battery_export({**EXPORT, "ownerSetEnable": True})
 PEAK_ON = api.parse_peak_shaving(PEAK)
 PEAK_OFF = api.parse_peak_shaving({**PEAK, "controlMode": 0})
 
@@ -244,23 +251,28 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.session.writes, [])
 
     async def test_battery_export_and_readback_outcomes(self):
-        coordinator = _Coordinator({"export": [OFF_EXPORT, ON_EXPORT]})
-        result = await control.async_set_battery_export(coordinator, enabled=True, sleep=_no_sleep)
+        # Blocking export sets mySigen's limitation; the switch turns off.
+        coordinator = _Coordinator({"export": [ALLOWED_EXPORT, BLOCKED_EXPORT]})
+        result = await control.async_set_battery_export(coordinator, allowed=False, sleep=_no_sleep)
         self.assertEqual(result, "confirmed")
-        self.assertEqual(coordinator.session.writes, [("export", None, True)])
-        coordinator = _Coordinator({"export": [OFF_EXPORT, OFF_EXPORT, OFF_EXPORT]})
+        self.assertEqual(coordinator.session.writes, [("export", None, False)])
+        coordinator = _Coordinator({"export": [ALLOWED_EXPORT, ALLOWED_EXPORT, ALLOWED_EXPORT]})
         with self.assertRaises(control.CommandNotConfirmed):
-            await control.async_set_battery_export(coordinator, enabled=True, sleep=_no_sleep)
+            await control.async_set_battery_export(coordinator, allowed=False, sleep=_no_sleep)
         error = api.MySigenConnectionError("x")
-        coordinator = _Coordinator({"export": [OFF_EXPORT, error, error]})
+        coordinator = _Coordinator({"export": [ALLOWED_EXPORT, error, error]})
         with self.assertRaises(control.CommandUnknown):
-            await control.async_set_battery_export(coordinator, enabled=True, sleep=_no_sleep)
+            await control.async_set_battery_export(coordinator, allowed=False, sleep=_no_sleep)
         self.assertEqual(len(coordinator.session.writes), 1)
+        # Already allowed: nothing is sent.
+        coordinator = _Coordinator({"export": [ALLOWED_EXPORT]})
+        await control.async_set_battery_export(coordinator, allowed=True, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
 
     async def test_lost_answer_is_unknown_and_not_sent_again(self):
-        coordinator = _Coordinator({"export": [OFF_EXPORT]}, api.MySigenUnknownOutcome("x"))
+        coordinator = _Coordinator({"export": [ALLOWED_EXPORT]}, api.MySigenUnknownOutcome("x"))
         with self.assertRaises(control.CommandUnknown):
-            await control.async_set_battery_export(coordinator, enabled=True, sleep=_no_sleep)
+            await control.async_set_battery_export(coordinator, allowed=False, sleep=_no_sleep)
         self.assertEqual(len(coordinator.session.writes), 1)
 
     async def test_peak_shaving_switch_and_limit(self):

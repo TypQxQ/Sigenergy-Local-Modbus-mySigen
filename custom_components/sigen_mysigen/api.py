@@ -314,12 +314,27 @@ def parse_operating_mode(data: Any) -> int | None:
 
 @dataclass(frozen=True)
 class BatteryExport:
-    """Whether the battery may export to the grid."""
+    """Whether the battery may export to the grid.
 
-    owner: bool | None
-    effective: bool | None
+    mySigen stores a *limitation*: true means the battery is blocked from
+    exporting. The add-on shows the opposite, "allowed", so the values are
+    read and written through `allowed` and never used the other way round.
+    """
+
+    # The owner's limitation, as mySigen stores it.
+    limited: bool
+    # The limitation that applies now; an installer setting can override.
+    limited_in_effect: bool | None
     # Sent back unchanged with every change.
     installer: Any = None
+
+    @property
+    def allowed(self) -> bool:
+        return not self.limited
+
+    @property
+    def allowed_in_effect(self) -> bool | None:
+        return None if self.limited_in_effect is None else not self.limited_in_effect
 
 
 def parse_battery_export(data: Any) -> BatteryExport | None:
@@ -327,8 +342,8 @@ def parse_battery_export(data: Any) -> BatteryExport | None:
         return None
     effective = data.get("currentEnable")
     return BatteryExport(
-        owner=data["ownerSetEnable"],
-        effective=effective if isinstance(effective, bool) else None,
+        limited=data["ownerSetEnable"],
+        limited_in_effect=effective if isinstance(effective, bool) else None,
         installer=data.get("installerSetEnable"),
     )
 
@@ -1355,12 +1370,15 @@ class MySigenSession:
             "profileId": -1,
         })
 
-    async def async_set_battery_export(self, current: BatteryExport, enabled: bool) -> None:
-        """Allow or block battery export, keeping the installer's setting. Sent once."""
+    async def async_set_battery_export(self, current: BatteryExport, allowed: bool) -> None:
+        """Allow or block battery export, keeping the installer's setting. Sent once.
+
+        mySigen's field is a limitation, so allowing export sends false.
+        """
         await self._async_put("set battery export", _EXPORT_WRITE_PATH, {
             "stationId": await self._async_station_number(),
             "installerSetEnable": current.installer,
-            "ownerSetEnable": enabled,
+            "ownerSetEnable": not allowed,
         })
 
     async def async_set_peak_shaving(self, schedule: dict[str, Any]) -> None:

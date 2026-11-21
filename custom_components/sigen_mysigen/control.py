@@ -371,7 +371,7 @@ async def async_set_operating_mode(
 async def async_set_battery_export(
     coordinator: Any,
     *,
-    enabled: bool,
+    allowed: bool,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Allow or block exporting from the battery. It stays until changed back."""
@@ -379,8 +379,8 @@ async def async_set_battery_export(
         coordinator,
         "battery_export",
         read=coordinator.session.async_battery_export,
-        send=lambda current: coordinator.session.async_set_battery_export(current, enabled),
-        expected=lambda current: current.owner is enabled,
+        send=lambda current: coordinator.session.async_set_battery_export(current, allowed),
+        expected=lambda current: current.allowed is allowed,
         publish=coordinator.publish_battery_export,
         sleep=sleep,
     )
