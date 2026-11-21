@@ -7,7 +7,7 @@
 **Every entity and control, and how each change is checked.**<br>
 New here? Start with the [README](../README.md).
 
-📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
+📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 💡 [Smart loads](#-smart-loads) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
 
 </div>
 
@@ -44,7 +44,7 @@ Names follow the **Entity name language** of Sigenergy ESS, so both read the sam
 | ✅ | Power from EV allowed (V2X) | Whether the car may power the home |
 
 > [!NOTE]
-> Grid frequency, grid connection state, power, energy and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
+> Grid frequency, grid connection state, power, energy, smart load readings and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
 
 ## 🔋 Battery modules
 
@@ -162,6 +162,21 @@ Start and stop charging and the power limits stay in Sigenergy ESS. These settin
 
 > [!NOTE]
 > **Not yet tried on a real charger.** These were built from other mySigen clients. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+
+## 💡 Smart loads
+
+A smart load is an appliance, such as a water heater, on one of the SigenStor's or the Gateway's own load ports, set up in the mySigen app. With **Allow battery control** on, each one gets a switch, disabled until you enable it:
+
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 💡 | Smart load *name* | Switch | Switches the load on or off, like its switch in the mySigen app. *Name* is the name you gave the load in the app. |
+
+The switch works while the load is under manual control in mySigen, which is when the app shows its switch; otherwise it is refused and nothing is sent. Remote EMS doesn't switch smart loads, so the switch also works while Remote EMS is on. The attributes show the `port`, whether it is `attached_to` the `sigenstor` or the `gateway`, and whether the load is under `manual_control`.
+
+While a switch is enabled, the states are read at every update, so a change made in the app shows within one update interval. A load you add or remove in the app appears or goes within an hour. Power and energy of each smart load stay in Sigenergy ESS. Loads on third-party devices, such as a Shelly relay, are left out: control those directly.
+
+> [!NOTE]
+> **Tried on one plant so far.** Have a smart load? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
 
 ## 🛡️ How changes are checked
 

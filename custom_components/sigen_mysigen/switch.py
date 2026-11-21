@@ -1,4 +1,4 @@
-"""Switches for plant settings that stay until changed back (step C)."""
+"""Switches for plant settings that stay until changed back, and smart loads."""
 from __future__ import annotations
 
 from typing import Any
@@ -10,10 +10,12 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .commands import async_run_setting
 from .const import CONF_PLANT_ENTRY_ID
+from .api import SmartLoad
 from .control import (
     async_set_battery_export,
     async_set_off_grid,
     async_set_peak_shaving,
+    async_set_smart_load,
     async_set_v2x_enabled,
 )
 from .entity import MySigenEntity
@@ -35,6 +37,7 @@ async def async_setup_entry(
         entities.append(GridDisconnect(coordinator, "grid_disconnect"))
     if coordinator.has_dc_charger:
         entities.append(AllowV2x(coordinator, "dc_charger_allow_v2x"))
+    entities.extend(SmartLoadSwitch(coordinator, load) for load in coordinator.smart_loads)
     async_add_entities(entities)
 
 
@@ -156,6 +159,66 @@ class AllowV2x(MySigenEntity, SwitchEntity):
     async def _async_set(self, enabled: bool) -> None:
         await async_run_setting(
             self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)
+
+
+class SmartLoadSwitch(MySigenEntity, SwitchEntity):
+    """On: the smart load on a SigenStor or Gateway port gets power.
+
+    Works while mySigen controls the load by hand, where the app shows its
+    switch. The states are read at every poll while a switch is enabled.
+    """
+
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: Any, load: SmartLoad) -> None:
+        super().__init__(coordinator, "smart_load", f"smart_load_{load.load_id}")
+        self._load = load
+        self._attr_translation_placeholders = {"load": load.name}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.coordinator.watched_smart_loads.add(self._load.load_id)
+        # Show the state now rather than after the next poll.
+        await self.coordinator.async_request_refresh()
+
+    async def async_will_remove_from_hass(self) -> None:
+        self.coordinator.watched_smart_loads.discard(self._load.load_id)
+        await super().async_will_remove_from_hass()
+
+    @property
+    def _state(self) -> Any:
+        return self.coordinator.smart_load_states.get(self._load.load_id)
+
+    @property
+    def available(self) -> bool:
+        state = self._state
+        return super().available and state is not None and state.on is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        state = self._state
+        return state.on if state is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        state = self._state
+        return {
+            "port": self._load.path,
+            "attached_to": self._load.host,
+            "manual_control": state.manual if state is not None else None,
+        }
+
+    async def _async_set(self, on: bool) -> None:
+        await async_run_setting(
+            self.coordinator,
+            async_set_smart_load(self.coordinator, load_id=self._load.load_id, on=on),
         )
 
     async def async_turn_on(self, **kwargs: Any) -> None:

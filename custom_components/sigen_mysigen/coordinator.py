@@ -39,6 +39,8 @@ from .api import (
     MySigenRateLimitError,
     MySigenSession,
     OverrideStatus,
+    SmartLoad,
+    SmartLoadState,
     single_send_trace_config,
 )
 from .modules import INFO, ModuleReader
@@ -153,6 +155,14 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # The charger list is read again this often; a change reloads the entry.
         self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
         self._settings_read_at = float("-inf")
+        # Smart loads on SigenStor and Gateway ports; listed at setup while
+        # control is allowed, and checked again with the charger list.
+        self.smart_loads: tuple[SmartLoad, ...] = ()
+        # Load id -> state; a load missing here shows as unavailable.
+        self.smart_load_states: dict[int, SmartLoadState] = {}
+        # Loads whose switch is enabled in Home Assistant. The states are
+        # read at every poll only while there is one.
+        self.watched_smart_loads: set[int] = set()
         # Battery modules; set up once the device tree has been read.
         self.modules = ModuleReader(())
         # Serial -> the module's device, registered to the Modbus plant entry.
@@ -276,6 +286,23 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.v2x_enabled = value
         self.async_update_listeners()
 
+    def publish_smart_load(self, load_id: int, state: SmartLoadState) -> None:
+        self.smart_load_states = {**self.smart_load_states, load_id: state}
+        self.async_update_listeners()
+
+    async def _async_read_smart_loads(self) -> None:
+        """Read the smart loads' states. A failing read clears them."""
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            try:
+                self.smart_load_states = await self.session.async_smart_load_states()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                # mySigen no longer confirms the old states: show them as
+                # unavailable rather than as current.
+                _LOGGER.debug("mySigen smart load read failed: %s", err)
+                self.smart_load_states = {}
+
     async def _async_read_charger(self) -> None:
         """Read the DC charger's settings. A failing read clears its value."""
         async with self.command_lock:
@@ -343,6 +370,19 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             # inverter, which its device shows, so whole records are compared.
             if modules and set(modules) != set(self.modules.modules):
                 _LOGGER.info("mySigen lists different battery modules now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            if not self.allow_control:
+                return
+            try:
+                loads = await self.session.async_smart_loads()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen smart load list read failed: %s", err)
+                return
+            # The list comes with the generator and other devices, so an
+            # answer that lists no smart load is still an answer.
+            if set(loads) != set(self.smart_loads):
+                _LOGGER.info("mySigen lists different smart loads now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 
     async def _async_read_module(self) -> None:
@@ -505,6 +545,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_charger()
+            if self.allow_control and self.smart_loads and self.watched_smart_loads:
+                await self._async_read_smart_loads()
             if self.modules.modules:
                 await self._async_read_module()
             if time.monotonic() >= self._station_reread_at:

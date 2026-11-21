@@ -54,6 +54,9 @@ class MySigenEntity(CoordinatorEntity[MySigenCoordinator]):
         )
         if name is None:
             return
+        # Fill in placeholders such as a smart load's own name.
+        for key, value in (getattr(self, "_attr_translation_placeholders", None) or {}).items():
+            name = name.replace(f"{{{key}}}", value)
         # Keep Home Assistant's normal suggested ID. Setting the name alone
         # would also change how the entity ID is generated.
         if not hasattr(self, "_language_suggested_object_id"):

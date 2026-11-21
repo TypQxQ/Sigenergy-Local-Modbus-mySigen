@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Salli sähkö autosta (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Älykäs kuorma {load} (mySigen)"
       }
     }
   },

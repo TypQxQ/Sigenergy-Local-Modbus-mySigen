@@ -1,9 +1,9 @@
 """Small mySigen client.
 
 Request formats follow solidfox/sigenergy-cloud (MIT License,
-https://github.com/solidfox/sigenergy-cloud). It signs in and reads. The
-only requests that change a plant start and cancel the temporary battery
-override, and they are sent exactly once (see control.py for the rules).
+https://github.com/solidfox/sigenergy-cloud) and the mySigen app. It signs
+in and reads. Every request that changes the plant goes through
+`_async_put` and is sent exactly once (see control.py for the rules).
 
 Never log request bodies, response bodies, credentials or tokens.
 """
@@ -97,6 +97,33 @@ _DC_SETTING_PATH = "device/dcevse/charge/setting"
 _DC_V2X_PATH = "device/station-v2x/select"
 _DC_V2X_WRITE_PATH = "device/station-v2x/open-close"
 _SOC_RANGE_PATH = "device/charge/mode/soc/range"
+# Smart loads on the SigenStor's and the Gateway's own ports. Captured from
+# the mySigen web app on a real plant while a load was switched off and on.
+_SMART_LOAD_LIST_PATH = "third-party-device/tp-device/manage/card/static-info"
+_SMART_LOAD_STATE_PATH = "third-party-device/tp-device/manage/card/dynamic-info"
+_SMART_LOAD_SWITCH_PATH = "third-party-device/tp-device/smart-loads/control-mode/manual/switch"
+# AC charger, read for diagnostics only. Paths and parameters from the
+# mySigen web app's code; no AC charger answer has been seen yet.
+AC_CHARGER_DEVICE_TYPE = 6
+AC_CHARGER_PROBES: tuple[tuple[str, str], ...] = (
+    # A list of the charging mode codes the charger supports.
+    ("supported_modes", "device/charge/mode/support/mode"),
+    ("generation", "device/acevse/charger/generation"),
+    # The two mode models the app reads, depending on the charger.
+    ("charge_mode", "device/acevse/charge/mode"),
+    ("charge_mode_ac", "device/charge/mode/ac"),
+    ("live", "device/acevse/charge/realtime"),
+)
+# Fields that hold codes and settings, kept as values in the diagnostics.
+AC_CHARGER_KEEP = frozenset({
+    "chargeMode", "enableFromPack", "cutoffSocFromPack", "enableFromGrid",
+    "maxPowerFromGrid", "socLowerLimit", "socUpperLimit", "minKeepChargeTime",
+    "maxGridChargePower", "pvEnergyStartPower", "maxPowerFromPack", "deviceType",
+    "priority", "allowsDischargePower", "vehicleDischargeCutoffSoc",
+    "minimumDischargeCutoffSoc", "maximumDischargeCutoffSoc", "seccRunState",
+    "chargingStartMethod", "runningTime", "singleChargingPower",
+    "timeRemainingOnCharging",
+})
 _LABEL_KEYS = ("paramKey", "key")
 _NUMBER_WITH_UNIT = re.compile(r"(-?\d+(?:\.\d+)?)\s*([A-Za-z]*)")
 # Rows of the Gateway answer that become readings. Labels are compared in
@@ -567,6 +594,103 @@ def parse_soc_range(data: Any) -> tuple[int, int] | None:
     return _level_range(data.get("socLowerLimit"), data.get("socUpperLimit"), DEFAULT_LEVEL_RANGE)
 
 
+# The device list's type for a smart load. Loads on the SigenStor's and the
+# Gateway's own ports both have it.
+SMART_LOAD_TYPE = 11
+# Device tree types of the Sigen devices whose ports the add-on switches.
+SMART_LOAD_HOSTS = {2: "sigenstor", 8: "gateway"}
+# The mySigen app shows the on/off switch only in this operation mode.
+SMART_LOAD_MANUAL = 1
+
+
+@dataclass(frozen=True)
+class SmartLoad:
+    """A smart load on a SigenStor or Gateway port, as mySigen lists it."""
+
+    load_id: int
+    # The port number mySigen switches it by; unique within the plant.
+    path: int
+    name: str
+    # "sigenstor" or "gateway": the device the port belongs to.
+    host: str
+
+
+@dataclass(frozen=True)
+class SmartLoadState:
+    """Whether a smart load is switched on, and how mySigen controls it."""
+
+    on: bool | None
+    operation_mode: int | None
+
+    @property
+    def manual(self) -> bool:
+        return self.operation_mode == SMART_LOAD_MANUAL
+
+
+def parse_device_kinds(data: Any) -> dict[str, int]:
+    """Serial number -> device type, for every node of the device tree."""
+    kinds: dict[str, int] = {}
+    pending = [data]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, list):
+            pending.extend(node)
+            continue
+        if not isinstance(node, dict):
+            continue
+        kind, serial = _device_type(node), _node_serial(node)
+        if kind is not None and serial:
+            kinds.setdefault(serial, kind)
+        if node.get("nodeList") is not None:
+            pending.append(node["nodeList"])
+    return kinds
+
+
+def parse_smart_loads(data: Any, kinds: dict[str, int]) -> tuple[SmartLoad, ...]:
+    """The switchable smart loads on SigenStor and Gateway ports, by port.
+
+    A load counts only when mySigen marks it controllable and it hangs on a
+    SigenStor or a Gateway of the device tree. Third-party loads, the
+    generator and anything that does not fit are left out.
+    """
+    if not isinstance(data, list):
+        return ()
+    loads: dict[int, SmartLoad] = {}
+    for row in data:
+        if not isinstance(row, dict) or _int_or_none(row.get("type")) != SMART_LOAD_TYPE:
+            continue
+        if row.get("isControllable") is not True:
+            continue
+        load_id, path = _int_or_none(row.get("id")), _int_or_none(row.get("loadPath"))
+        host = SMART_LOAD_HOSTS.get(
+            kinds.get(normalize_serial(row.get("connectDeviceSnCode")) or "")
+        )
+        if load_id is None or load_id < 0 or path is None or host is None or path in loads:
+            continue
+        name = row.get("name")
+        name = name.strip() if isinstance(name, str) and name.strip() else str(path)
+        loads[path] = SmartLoad(load_id, path, name, host)
+    return tuple(loads[path] for path in sorted(loads))
+
+
+def parse_smart_load_states(data: Any) -> dict[int, SmartLoadState]:
+    """Load id -> its state. A switch value other than 0 or 1 is unknown."""
+    if not isinstance(data, list):
+        return {}
+    states: dict[int, SmartLoadState] = {}
+    for row in data:
+        if not isinstance(row, dict):
+            continue
+        load_id = _int_or_none(row.get("id"))
+        if load_id is None or load_id < 0:
+            continue
+        states[load_id] = SmartLoadState(
+            {0: False, 1: True}.get(_int_or_none(row.get("manualSwitch"))),
+            _int_or_none(row.get("operationMode")),
+        )
+    return states
+
+
 GRID_ON = "on_grid"
 GRID_GOING_OFF = "going_off_grid"
 GRID_OFF = "off_grid"
@@ -983,8 +1107,14 @@ class MySigenSession:
         self._station_id: str | None = None
         # DC chargers mySigen lists for the station, read with the station id.
         self.dc_serials: tuple[str, ...] = ()
+        # AC chargers, the same way; only read for diagnostics.
+        self.ac_serials: tuple[str, ...] = ()
+        # What the station answer says about AC chargers, for diagnostics.
+        self.ac_station_fields: dict[str, Any] = {}
         # Battery modules from the last device tree read; None until read.
         self.battery_modules: tuple[BatteryModule, ...] | None = None
+        # Serial number -> device type, from the last device tree read.
+        self.device_kinds: dict[str, int] = {}
         self._logged_keys = False
 
     def _store(self, tokens: dict[str, Any]) -> None:
@@ -1107,6 +1237,14 @@ class MySigenSession:
         self.dc_serials = tuple(
             str(sn) for sn in serials if sn not in (None, "")
         ) if isinstance(serials, list) else ()
+        serials = data.get("acSnList")
+        self.ac_serials = tuple(
+            str(sn) for sn in serials if sn not in (None, "")
+        ) if isinstance(serials, list) else ()
+        self.ac_station_fields = {
+            key: data.get(key) for key in ("hasAcCharger", "acNum")
+            if data.get(key) is None or isinstance(data.get(key), (bool, int))
+        }
         return True
 
     @property
@@ -1182,6 +1320,7 @@ class MySigenSession:
             serials |= parse(data)
             if path == _TOPOLOGY_PATH:
                 self.battery_modules = parse_battery_modules(data)
+                self.device_kinds = parse_device_kinds(data)
         return serials
 
     async def async_read_battery_modules(self) -> tuple[BatteryModule, ...]:
@@ -1190,6 +1329,7 @@ class MySigenSession:
             "device tree", _TOPOLOGY_PATH, {"stationId": await self.async_station_id()}
         )
         self.battery_modules = parse_battery_modules(data)
+        self.device_kinds = parse_device_kinds(data)
         return self.battery_modules
 
     async def _async_module_get(
@@ -1238,9 +1378,17 @@ class MySigenSession:
         )
 
     async def _async_put(
-        self, what: str, path: str, body: dict[str, Any], method: str = "PUT"
+        self,
+        what: str,
+        path: str,
+        body: dict[str, Any] | None,
+        method: str = "PUT",
+        params: dict[str, str] | None = None,
     ) -> None:
-        """Send one change. It is never repeated, not even after a sign-out."""
+        """Send one change. It is never repeated, not even after a sign-out.
+
+        `body` None sends no body; `params` go in the query string.
+        """
         if self._write_session is None or self._write_session.closed:
             raise MySigenRejectedError(f"{what}: not sent, no single-send connection")
         try:
@@ -1251,7 +1399,8 @@ class MySigenSession:
             async with self._write_session.request(
                 method,
                 f"{REGIONS[self._region]}{path}",
-                json=body,
+                **({} if body is None else {"json": body}),
+                **({} if params is None else {"params": params}),
                 allow_redirects=False,
                 trace_request_ctx={},
                 headers={
@@ -1424,6 +1573,58 @@ class MySigenSession:
             {"onGridState": 1 if off_grid else 0,
              "stationId": await self._async_station_number()},
             method="POST",
+        )
+
+    async def async_ac_charger_raw(self, name: str, serial: str) -> Any:
+        """One AC charger answer as mySigen returns it, for diagnostics."""
+        path = dict(AC_CHARGER_PROBES)[name]
+        params = {"stationId": await self.async_station_id(), "snCode": serial}
+        if name == "supported_modes":
+            params["deviceType"] = str(AC_CHARGER_DEVICE_TYPE)
+        return await self._async_get(f"AC charger {name}", path, params)
+
+    async def async_smart_loads(self) -> tuple[SmartLoad, ...]:
+        """The smart loads on SigenStor and Gateway ports that can be switched.
+
+        Only a list, placed with a device tree that lists devices, counts as
+        an answer: anything else raises, so a passing fault never reads as
+        "every load was removed".
+        """
+        if not self.device_kinds:
+            await self.async_read_battery_modules()
+        if not self.device_kinds:
+            raise MySigenConnectionError("smart load list: the device tree lists no devices")
+        data = await self._async_get(
+            "smart load list", _SMART_LOAD_LIST_PATH,
+            {"stationId": await self.async_station_id(), "showNewGenerator": "true"},
+        )
+        if not isinstance(data, list):
+            raise MySigenConnectionError("smart load list: the answer is not a list")
+        return parse_smart_loads(data, self.device_kinds)
+
+    async def async_smart_load_states(self) -> dict[int, SmartLoadState]:
+        """Every listed load's switch and operation mode, by load id."""
+        return parse_smart_load_states(await self._async_get(
+            "smart load states", _SMART_LOAD_STATE_PATH,
+            {"stationId": await self.async_station_id()},
+        ))
+
+    async def async_set_smart_load(self, path: int, on: bool) -> None:
+        """Switch the smart load on one port on or off. Sent once.
+
+        As the mySigen app sends it: a PATCH with the values in the query
+        string and no body.
+        """
+        await self._async_put(
+            "switch smart load",
+            _SMART_LOAD_SWITCH_PATH,
+            None,
+            method="PATCH",
+            params={
+                "stationId": str(await self._async_station_number()),
+                "loadPath": str(int(path)),
+                "manualSwitch": "1" if on else "0",
+            },
         )
 
     async def async_gateway(self) -> Any:

@@ -7,10 +7,10 @@
 **What works today, what needs your help, and what comes next.**
 
 ![Working and tested](https://img.shields.io/badge/working_%26_tested-7-2ea44f?style=for-the-badge)
-![Needs testers](https://img.shields.io/badge/needs_testers-4-f0a500?style=for-the-badge)
-![Planned](https://img.shields.io/badge/planned-2-0969da?style=for-the-badge)
+![Needs testers](https://img.shields.io/badge/needs_testers-5-f0a500?style=for-the-badge)
+![Planned](https://img.shields.io/badge/planned-1-0969da?style=for-the-badge)
 
-<sub>Updated 21 November 2026 · version 0.1.1b3</sub>
+<sub>Updated 21 November 2026 · version 0.1.1b4</sub>
 
 </div>
 
@@ -36,6 +36,7 @@
 | :-: | --- | --- |
 | 🔌 | **Disconnect from the grid** | The status reads correctly, but no disconnect has been sent yet |
 | 🚗 | **DC charger** | Charging mode, stop level, reserve and V2X have never met a real charger |
+| 💡 | **Smart loads** | On/off switches for SigenStor and Gateway ports; switched on one plant only |
 | 🗺️ | **Other systems** | Other regions, models, firmware, and systems without a Gateway |
 | 🗣️ | **Translations** | Nine of the eleven languages need a native speaker |
 
@@ -44,12 +45,11 @@
 
 ## 📋 Planned
 
-Waiting for someone with the equipment to share diagnostics.
+Waiting for someone with the equipment to share diagnostics. Since 0.1.1b4 the diagnostics read an AC charger's settings, so one file is enough.
 
 | | Feature | What it will do |
 | :-: | --- | --- |
-| 💡 | **Smart loads** | Switch each one on or off |
-| 🔋 | **AC charger** | Charging mode, session energy and duration, current and voltage per phase |
+| 🔋 | **AC charger** | Charging mode, battery boost and its cut-off level, session energy and duration |
 
 ## 💭 Not planned yet
 

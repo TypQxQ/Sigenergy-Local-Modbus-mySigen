@@ -273,11 +273,14 @@ async def _change_setting(
     publish: Callable[[Any], None],
     sleep: Callable[[float], Awaitable[None]],
     before: Callable[[Any], None] | None = None,
+    settle: bool = False,
 ) -> str:
     """Change a setting that stays: read, send once, read back.
 
     Nothing is sent when the fresh read already shows the requested value.
     `before` may refuse after the read, with nothing awaited before the send.
+    `settle` waits before the first read-back too, for a value the plant
+    reports with a short delay.
     """
 
     async def change() -> str:
@@ -303,7 +306,7 @@ async def _change_setting(
         await _send(coordinator, lambda: send(current))
         latest = None
         for attempt in range(2):
-            if attempt:
+            if attempt or settle:
                 await sleep(_READBACK_DELAY)
             try:
                 latest = await read()
@@ -626,4 +629,53 @@ async def async_set_v2x_enabled(
         expected=lambda current: current is enabled,
         publish=coordinator.publish_v2x_enabled,
         sleep=sleep,
+    )
+
+
+async def async_set_smart_load(
+    coordinator: Any,
+    *,
+    load_id: int,
+    on: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Switch a smart load on a SigenStor or Gateway port on or off.
+
+    Remote EMS does not switch smart loads and the app does not block it, so
+    it is not checked. The load must be under manual control in mySigen,
+    where the app shows its switch.
+    """
+    load = next((load for load in coordinator.smart_loads if load.load_id == load_id), None)
+    if load is None:
+        raise CommandRefused("mySigen no longer lists this smart load. Nothing was sent.")
+
+    async def read() -> Any:
+        return (await coordinator.session.async_smart_load_states()).get(load_id)
+
+    def before(current: Any) -> None:
+        # Also reached when the load already shows the requested state but is
+        # not under manual control: that is refused, not confirmed.
+        if not current.manual:
+            raise CommandRefused(
+                "mySigen is not controlling this smart load by hand right now "
+                f"(operation mode {current.operation_mode}). Set it to manual in "
+                "the mySigen app. Nothing was sent."
+            )
+        if current.on is None:
+            raise CommandRefused(
+                "mySigen did not report whether the smart load is on. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "smart_load",
+        read=read,
+        send=lambda _current: coordinator.session.async_set_smart_load(load.path, on),
+        # Only counts under manual control, also when it is already set.
+        expected=lambda current: current.manual and current.on is on,
+        publish=lambda current: coordinator.publish_smart_load(load_id, current),
+        sleep=sleep,
+        before=before,
+        # The state follows a switch within a few seconds, not at once.
+        settle=True,
     )

@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Strom vom E-Auto erlauben (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Smarte Last {load} (mySigen)"
       }
     }
   },
