@@ -7,7 +7,7 @@
 **Control your Sigenergy battery from Home Assistant, without Remote EMS.**<br>
 Sigen AI stays in charge. Modbus can stay read-only.
 
-[![Release](https://img.shields.io/github/v/release/TypQxQ/Sigenergy-Local-Modbus-mySigen?include_prereleases&style=for-the-badge&label=release)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases)
+[![Release](https://img.shields.io/github/v/release/TypQxQ/Sigenergy-Local-Modbus-mySigen?style=for-the-badge&label=release)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases)
 [![Testers wanted](https://img.shields.io/badge/testers-wanted-f0a500?style=for-the-badge)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
 [![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.11+-18bcf2?style=for-the-badge&logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 
@@ -26,7 +26,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | 📈 | **Gateway** | Grid voltage and current on every phase. |
 
 > [!TIP]
-> **Beta, and ready for real testing.** [Tell us how it runs on your system →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+> **Tested on one system so far.** [Tell us how it runs on yours →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
 
 <a name="install"></a>
 
@@ -35,7 +35,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 <a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=TypQxQ&repository=Sigenergy-Local-Modbus-mySigen&category=integration"><img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open in Marketplace" /></a>
 
 1. Click the button to add the add-on to the Marketplace. Until it is listed in the catalog, it is added as a custom repository, which needs a GitHub connection.
-2. Every release is a beta for now, so first enable prereleases for this repository, then install **Sigenergy ESS – mySigen cloud** and pick the newest beta. Without prereleases the install fails with a download error.
+2. Install **Sigenergy ESS – mySigen cloud**. To try a beta, enable prereleases for this repository and pick the beta version.
 3. Restart if Home Assistant asks.
 
 You need Home Assistant 2026.11+ and [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 2.0.3+ with a plant set up.
