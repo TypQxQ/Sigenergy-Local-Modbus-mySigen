@@ -13,12 +13,72 @@ from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
-from .api import MySigenError, MySigenRateLimitError, masked_shape
+from .api import (
+    AC_CHARGER_KEEP,
+    AC_CHARGER_PROBES,
+    MySigenError,
+    MySigenRateLimitError,
+    masked_shape,
+)
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .link import local_inverter_serials
 from .modules import SOURCES
 
 TO_REDACT = {CONF_USERNAME, CONF_PASSWORD}
+
+
+def _small_ints(value: Any) -> list[int] | int | None:
+    """Mode codes or a generation number as given; None for anything else."""
+    def code(item: Any) -> int | None:
+        if isinstance(item, bool):
+            return None
+        if isinstance(item, int) and 0 <= item < 1000:
+            return item
+        if isinstance(item, str) and item.strip().isdigit() and len(item.strip()) <= 3:
+            return int(item)
+        return None
+
+    if isinstance(value, list):
+        codes = [code(item) for item in value[:20]]
+        return None if None in codes else codes
+    return code(value)
+
+
+async def _ac_charger_probe(coordinator: Any) -> dict[str, Any]:
+    """The first AC charger's answers, read once for this download.
+
+    Nothing reads them otherwise: the add-on has no AC charger entities yet.
+    Codes and settings are kept, everything else is masked.
+    """
+    session = coordinator.session
+    result: dict[str, Any] = {
+        "listed": len(session.ac_serials),
+        "station_fields": dict(session.ac_station_fields),
+    }
+    if not session.ac_serials:
+        return result
+    if wait := coordinator.rate_limit_wait:
+        result["probe"] = f"rate limited: waiting {wait:.0f} s"
+        return result
+    serial = session.ac_serials[0]
+    probe: dict[str, Any] = {}
+    for name, _path in AC_CHARGER_PROBES:
+        try:
+            data = await session.async_ac_charger_raw(name, serial)
+        except MySigenRateLimitError as err:
+            wait = coordinator.note_rate_limit(err)
+            probe[name] = f"rate limited: waiting {wait:.0f} s"
+            break
+        except MySigenError as err:
+            probe[name] = f"unavailable: {type(err).__name__}: {err}"
+            continue
+        codes = _small_ints(data) if name in ("supported_modes", "generation") else None
+        probe[name] = (
+            {"value": codes} if codes is not None
+            else masked_shape(data, keep=AC_CHARGER_KEEP)
+        )
+    result["probe"] = probe
+    return result
 
 
 async def async_get_config_entry_diagnostics(
@@ -147,6 +207,22 @@ async def async_get_config_entry_diagnostics(
         "v2x_enabled": coordinator.v2x_enabled,
         "level_range": coordinator.soc_range,
     }
+    # Ports and states only; the names people gave their loads stay out.
+    result["smart_loads"] = {
+        "device_types_known": len(coordinator.session.device_kinds),
+        "loads": [
+            {
+                "port": load.path,
+                "attached_to": load.host,
+                "switch_enabled": load.load_id in coordinator.watched_smart_loads,
+                "on": None if state is None else state.on,
+                "operation_mode": None if state is None else state.operation_mode,
+            }
+            for load in coordinator.smart_loads
+            for state in (coordinator.smart_load_states.get(load.load_id),)
+        ],
+    }
+    result["ac_charger"] = await _ac_charger_probe(coordinator)
 
     # Positions and which readings arrived; the serial numbers stay out.
     reader = coordinator.modules

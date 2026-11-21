@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Zezwól na energię z auta (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Inteligentne obciążenie {load} (mySigen)"
       }
     }
   },

@@ -162,6 +162,26 @@ class TestEntityIds(unittest.TestCase):
             "number.sigen_plant_next_override_power_limit_mysigen",
         )
 
+    def test_a_smart_load_is_named_after_the_load(self):
+        coordinator = types.SimpleNamespace(
+            hass=None,
+            config_entry=types.SimpleNamespace(
+                entry_id="01ENTRY", data={const.CONF_PLANT_ENTRY_ID: "01PLANT"}
+            ),
+            entity_name_translations=_swedish_translations(),
+        )
+        item = entity.MySigenEntity(coordinator, "smart_load", "smart_load_134389")
+        item._attr_translation_placeholders = {"load": "Other"}
+        # Home Assistant fills the placeholder in the English name for the ID.
+        item.english_name = "Smart load Other (mySigen)"
+        item.platform_data = types.SimpleNamespace(domain="switch")
+        asyncio.run(item.async_prepare_to_add_to_hass())
+        self.assertEqual(item._attr_name, "Smart last Other (mySigen)")
+        self.assertEqual(item._attr_unique_id, "01ENTRY_smart_load_134389")
+        self.assertEqual(
+            _entity_id("switch", item), "switch.sigen_plant_smart_load_other_mysigen"
+        )
+
     def test_a_name_without_the_suffix_still_gets_it_once(self):
         self.assertEqual(entity.with_mysigen_suffix("Peak shaving"), "Peak shaving mySigen")
         self.assertEqual(

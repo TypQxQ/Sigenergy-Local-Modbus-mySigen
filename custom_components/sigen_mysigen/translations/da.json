@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Tillad strøm fra elbilen (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Smart belastning {load} (mySigen)"
       }
     }
   },

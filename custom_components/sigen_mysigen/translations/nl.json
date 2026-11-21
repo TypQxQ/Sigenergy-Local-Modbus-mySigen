@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Stroom uit EV toestaan (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Slimme verbruiker {load} (mySigen)"
       }
     }
   },

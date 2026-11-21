@@ -1433,6 +1433,26 @@ _STEP_I: dict[str, dict[str, str]] = {
 for _language, _extra in _STEP_I.items():
     LANGUAGES[_language].update(_extra)
 
+# Smart loads on SigenStor and Gateway ports. "{load}" is the name given to
+# the load in the mySigen app. The words for "smart load" are the ones
+# Sigenergy ESS uses for its smart load sensors. Only English and Swedish
+# have been checked by a native speaker.
+KEYS["entity.switch.smart_load.name"] = "n_smart_load"
+_SMART_LOADS: dict[str, str] = {
+    "sv": "Smart last {load}",
+    "da": "Smart belastning {load}",
+    "nb": "Smartlast {load}",
+    "de": "Smarte Last {load}",
+    "nl": "Slimme verbruiker {load}",
+    "fr": "Charge intelligente {load}",
+    "es": "Carga inteligente {load}",
+    "it": "Carico intelligente {load}",
+    "fi": "Älykäs kuorma {load}",
+    "pl": "Inteligentne obciążenie {load}",
+}
+for _language, _name in _SMART_LOADS.items():
+    LANGUAGES[_language]["n_smart_load"] = _name
+
 
 def _flatten(node, prefix=""):
     if isinstance(node, dict):

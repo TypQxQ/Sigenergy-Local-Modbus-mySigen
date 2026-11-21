@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Consenti energia dal VE (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Carico intelligente {load} (mySigen)"
       }
     }
   },

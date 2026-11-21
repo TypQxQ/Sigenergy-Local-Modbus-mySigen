@@ -23,6 +23,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | ⚙️ | **Plant settings** | Operating mode, battery export, peak shaving and max grid connection current. |
 | 🔌 | **Off-grid** | Run the home on battery and solar alone. |
 | 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
+| 💡 | **Smart loads** | Switch each smart load on the SigenStor or Gateway on or off. |
 | 📈 | **Gateway** | Grid voltage and current on every phase. |
 | 🔋 | **Battery modules** | Charge level, cell temperature and voltage, lifetime discharge, model and rated capacity for each module. |
 

@@ -331,6 +331,9 @@
       },
       "dc_charger_allow_v2x": {
         "name": "Allow power from EV (V2X) (mySigen)"
+      },
+      "smart_load": {
+        "name": "Smart load {load} (mySigen)"
       }
     }
   },

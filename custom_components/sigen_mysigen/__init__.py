@@ -1,7 +1,7 @@
 """Sigenergy ESS mySigen cloud add-on.
 
 Reads mySigen for a plant that the Sigenergy Local Modbus integration
-already provides. It sends no commands.
+already provides. Changes are sent only while the user has allowed control.
 """
 from __future__ import annotations
 
@@ -201,6 +201,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator.modules = ModuleReader(modules)
     _remove_old_devices(hass, entry, plant_entry_id, modules)
 
+    # Smart loads get switches, so they are only listed while control is on.
+    smart_loads_known = False
+    if coordinator.allow_control:
+        try:
+            coordinator.smart_loads = await coordinator.session.async_smart_loads()
+            smart_loads_known = True
+        except MySigenAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"mySigen refused the stored account ({err})"
+            ) from err
+        except MySigenRateLimitError as err:
+            wait = coordinator.note_rate_limit(err)
+            raise ConfigEntryNotReady(f"mySigen rate limit, waiting {wait:.0f} s") from err
+        except (MySigenConnectionError, MySigenPermissionError) as err:
+            # No switches this time; the hourly check reads the list again.
+            _LOGGER.debug("mySigen smart load list read failed: %s", err)
+
     # A failure here only delays this entry; the Modbus plant is unaffected.
     try:
         await coordinator.async_config_entry_first_refresh()
@@ -241,10 +258,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Control or grid disconnecting was switched off: those entities must
     # not linger unavailable.
     registry = er.async_get(hass)
+    smart_load_prefix = f"{entry.entry_id}_smart_load_"
+    listed = {f"{smart_load_prefix}{load.load_id}" for load in coordinator.smart_loads}
     for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
         if (entity.domain in CONTROL_PLATFORMS and not coordinator.allow_control) or (
             entity.unique_id == f"{entry.entry_id}_grid_disconnect"
             and not coordinator.allow_grid_disconnect
+        ) or (
+            # A smart load mySigen no longer lists, known from a list that
+            # was read this time.
+            smart_loads_known
+            and entity.unique_id.startswith(smart_load_prefix)
+            and entity.unique_id not in listed
         ):
             registry.async_remove(entity.entity_id)
 
