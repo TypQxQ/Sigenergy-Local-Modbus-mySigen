@@ -33,7 +33,9 @@ from .api import (
     MAX_POWER_LIMIT_KW,
     MIN_OVERRIDE_MINUTES,
     MySigenAuthError,
+    MySigenConnectionError,
     MySigenError,
+    MySigenPermissionError,
     MySigenRateLimitError,
 )
 from .const import (
@@ -46,6 +48,7 @@ from .const import (
 from .commands import async_run_command
 from .coordinator import MySigenCoordinator
 from .link import STATION_MISMATCH, async_link_problem
+from .modules import ModuleReader, module_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,12 +146,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if plant_entry is None or plant_entry.domain != MODBUS_DOMAIN:
         _raise_link_issue(hass, entry, "plant_missing")
 
-    # This add-on owns no devices. Drop any that an earlier version created
-    # for this entry; its entities live on the Modbus plant device.
-    device_registry = dr.async_get(hass)
-    for device in dr.async_entries_for_config_entry(device_registry, entry.entry_id):
-        device_registry.async_remove_device(device.id)
-
     coordinator = MySigenCoordinator(hass, entry)
 
     # Send nothing while mySigen has asked for fewer requests. The wait is
@@ -180,6 +177,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
     for key in _ISSUES:
         ir.async_delete_issue(hass, DOMAIN, _issue_id(key, entry))
+
+    # Battery modules, from the device tree the station check just read.
+    modules = coordinator.session.battery_modules
+    if modules is None:
+        try:
+            modules = await coordinator.session.async_read_battery_modules()
+        except MySigenAuthError as err:
+            raise ConfigEntryAuthFailed(
+                f"mySigen refused the stored account ({err})"
+            ) from err
+        except MySigenRateLimitError as err:
+            wait = coordinator.note_rate_limit(err)
+            raise ConfigEntryNotReady(f"mySigen rate limit, waiting {wait:.0f} s") from err
+        except (MySigenConnectionError, MySigenPermissionError) as err:
+            # Readings without modules; the hourly check reads the list again.
+            _LOGGER.debug("mySigen device tree read failed: %s", err)
+            modules = ()
+    coordinator.modules = ModuleReader(modules)
+    _remove_old_devices(hass, entry, modules)
 
     # A failure here only delays this entry; the Modbus plant is unaffected.
     try:
@@ -224,6 +240,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
     return True
+
+
+def _remove_old_devices(
+    hass: HomeAssistant, entry: ConfigEntry, modules: tuple
+) -> None:
+    """Remove devices this entry no longer provides.
+
+    Everything except the battery modules lives on the Modbus plant device,
+    so any other device is left over from an earlier version. A module
+    device is removed only when mySigen lists modules and not this one: an
+    empty list is more likely a passing fault.
+    """
+    keep = {module_identifier(entry.entry_id, module.serial) for module in modules}
+    prefix = module_identifier(entry.entry_id, "")
+    registry = dr.async_get(hass)
+    for device in dr.async_entries_for_config_entry(registry, entry.entry_id):
+        ours = {ident for domain, ident in device.identifiers if domain == DOMAIN}
+        if ours & keep:
+            continue
+        if not modules and any(ident.startswith(prefix) for ident in ours):
+            continue
+        registry.async_remove_device(device.id)
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:

@@ -24,6 +24,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | 🔌 | **Off-grid** | Run the home on battery and solar alone. |
 | 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
 | 📈 | **Gateway** | Grid voltage and current on every phase. |
+| 🔋 | **Battery modules** | Model, rated capacity, cell temperature and voltage, and lifetime discharge for each module. |
 
 > [!TIP]
 > **Tested on one system so far.** [Tell us how it runs on yours →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)

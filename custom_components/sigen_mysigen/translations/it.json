@@ -209,6 +209,18 @@
       },
       "dc_charger_stop_level": {
         "name": "Limite di ricarica DC attuale (mySigen)"
+      },
+      "battery_module_discharged": {
+        "name": "Energia totale scaricata (mySigen)"
+      },
+      "battery_module_cell_temperature": {
+        "name": "Temperatura media delle celle (mySigen)"
+      },
+      "battery_module_cell_voltage": {
+        "name": "Tensione media delle celle (mySigen)"
+      },
+      "battery_module_capacity": {
+        "name": "Capacità nominale (mySigen)"
       }
     },
     "number": {
@@ -325,6 +337,11 @@
           "description": "Quale connessione usare. Può essere omessa quando ce n'è una sola."
         }
       }
+    }
+  },
+  "device": {
+    "battery_module": {
+      "name": "Modulo batteria Sigen {position}"
     }
   }
 }

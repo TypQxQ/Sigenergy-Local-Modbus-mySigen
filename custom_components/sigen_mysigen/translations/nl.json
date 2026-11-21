@@ -209,6 +209,18 @@
       },
       "dc_charger_stop_level": {
         "name": "Huidige DC-laadlimiet (mySigen)"
+      },
+      "battery_module_discharged": {
+        "name": "Totaal ontladen energie (mySigen)"
+      },
+      "battery_module_cell_temperature": {
+        "name": "Gemiddelde celtemperatuur (mySigen)"
+      },
+      "battery_module_cell_voltage": {
+        "name": "Gemiddelde celspanning (mySigen)"
+      },
+      "battery_module_capacity": {
+        "name": "Nominale capaciteit (mySigen)"
       }
     },
     "number": {
@@ -325,6 +337,11 @@
           "description": "Welke verbinding moet worden gebruikt. Kan worden weggelaten als er maar één is."
         }
       }
+    }
+  },
+  "device": {
+    "battery_module": {
+      "name": "Sigen batterijmodule {position}"
     }
   }
 }

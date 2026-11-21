@@ -15,18 +15,22 @@ from homeassistant.const import (
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
+    UnitOfEnergy,
     UnitOfFrequency,
     UnitOfPower,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import DC_CHARGE_MODES, OVERRIDE_MODES
-from .const import DOMAIN
+from .api import DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule, normalize_serial
+from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
+from .modules import INFO, PACK, module_identifier
 
 _VOLT = (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
 _AMPERE = (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
@@ -86,6 +90,43 @@ GATEWAY_TEXTS: dict[str, _Text] = {
     "gateway_model": _Text("model", diagnostic=True),
     "generator_contactor": _Text("generator_contactor", enabled=False),
 }
+
+
+@dataclass(frozen=True)
+class _ModuleReading:
+    """One reading of a battery module."""
+
+    reading: str
+    # Which of the module's three reads it comes from.
+    source: str
+    # (device class, unit, decimals); None for a text.
+    kind: tuple[SensorDeviceClass, str, int] | None
+    state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT
+    enabled: bool = True
+    diagnostic: bool = False
+
+
+# Entity key -> what it shows. The reading is part of the unique IDs.
+MODULE_READINGS: dict[str, _ModuleReading] = {
+    "battery_module_discharged": _ModuleReading(
+        "discharged", PACK,
+        (SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 0),
+        SensorStateClass.TOTAL_INCREASING,
+    ),
+    "battery_module_cell_temperature": _ModuleReading(
+        "cell_temperature", PACK,
+        (SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS, 1),
+    ),
+    "battery_module_cell_voltage": _ModuleReading(
+        "cell_voltage", PACK, (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 3)
+    ),
+    "battery_module_capacity": _ModuleReading(
+        "rated_capacity", INFO,
+        (SensorDeviceClass.ENERGY_STORAGE, UnitOfEnergy.KILO_WATT_HOUR, 2),
+        None, diagnostic=True,
+    ),
+}
+
 # Removed because the Modbus integration already provides them.
 _REMOVED = ("gateway_grid_frequency", "gateway_grid_contactor")
 
@@ -114,6 +155,11 @@ async def async_setup_entry(
         entities += [
             DcChargeModeInUse(coordinator, "dc_charger_mode"),
             DcStopLevel(coordinator, "dc_charger_stop_level"),
+        ]
+    for index, module in enumerate(coordinator.modules.modules, start=1):
+        device = _module_device(hass, coordinator, module, index)
+        entities += [
+            BatteryModuleSensor(coordinator, key, module, device) for key in MODULE_READINGS
         ]
 
     def gateway_entities() -> list[SensorEntity]:
@@ -267,3 +313,68 @@ class DcStopLevel(MySigenEntity, SensorEntity):
     def native_value(self) -> int | None:
         setting = self.coordinator.dc_charge_setting
         return setting.stop_level if setting is not None else None
+
+
+def _module_device(
+    hass: HomeAssistant, coordinator: MySigenCoordinator, module: BatteryModule, index: int
+) -> DeviceInfo:
+    """The device of one battery module, placed under its inverter."""
+    entry = coordinator.config_entry
+    plant_entry_id = entry.data[CONF_PLANT_ENTRY_ID]
+    parent = (MODBUS_DOMAIN, f"{plant_entry_id}_plant")
+    for device in dr.async_entries_for_config_entry(dr.async_get(hass), plant_entry_id):
+        if module.inverter_serial and normalize_serial(device.serial_number) == module.inverter_serial:
+            parent = next(
+                (ident for ident in device.identifiers if ident[0] == MODBUS_DOMAIN), parent
+            )
+            break
+    static = coordinator.modules.data[INFO].get(module.serial) or {}
+    return DeviceInfo(
+        identifiers={(DOMAIN, module_identifier(entry.entry_id, module.serial))},
+        translation_key="battery_module",
+        translation_placeholders={"position": module.position or str(index)},
+        manufacturer="Sigenergy",
+        model=static.get("model"),
+        sw_version=static.get("firmware"),
+        serial_number=module.serial,
+        via_device=parent,
+    )
+
+
+class BatteryModuleSensor(MySigenEntity, SensorEntity):
+    """One reading of one battery module, on that module's own device."""
+
+    def __init__(
+        self,
+        coordinator: MySigenCoordinator,
+        key: str,
+        module: BatteryModule,
+        device: DeviceInfo,
+    ) -> None:
+        spec = MODULE_READINGS[key]
+        super().__init__(
+            coordinator, key, unique_key=f"battery_{module.serial}_{spec.reading}"
+        )
+        # A module has no Modbus device; it gets one of its own.
+        self.device_entry = None
+        self._attr_device_info = device
+        self._serial = module.serial
+        self._spec = spec
+        if spec.kind is not None:
+            self._attr_device_class, unit, decimals = spec.kind
+            self._attr_native_unit_of_measurement = unit
+            self._attr_suggested_display_precision = decimals
+        self._attr_state_class = spec.state_class
+        self._attr_entity_registry_enabled_default = spec.enabled
+        if spec.diagnostic:
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.modules.available(
+            self._serial, self._spec.source
+        )
+
+    @property
+    def native_value(self) -> float | str | None:
+        return self.coordinator.modules.value(self._serial, self._spec.reading)

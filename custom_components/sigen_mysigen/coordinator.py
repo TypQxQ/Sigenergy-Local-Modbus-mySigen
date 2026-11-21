@@ -12,7 +12,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import (
     async_create_clientsession,
     async_get_clientsession,
@@ -40,6 +40,7 @@ from .api import (
     OverrideStatus,
     single_send_trace_config,
 )
+from .modules import INFO, ModuleReader, module_identifier
 from .const import (
     CONF_ALLOW_CONTROL,
     CONF_ALLOW_GRID_DISCONNECT,
@@ -150,6 +151,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # The charger list is read again this often; a change reloads the entry.
         self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
         self._settings_read_at = float("-inf")
+        # Battery modules; set up once the device tree has been read.
+        self.modules = ModuleReader(())
         # None until mySigen has answered: True with readings, False without.
         # While False the Gateway is asked once an hour, not on every poll.
         self.has_gateway: bool | None = None
@@ -320,6 +323,39 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             if self.session.dc_serial != before:
                 _LOGGER.info("mySigen lists a different DC charger now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            try:
+                modules = await self.session.async_read_battery_modules()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen device tree read failed: %s", err)
+                return
+            # An empty list is more likely a passing fault than every module
+            # gone, so only a list with modules replaces the current one. A
+            # module that moved keeps its serial but changes its position or
+            # inverter, which its device shows, so whole records are compared.
+            if modules and set(modules) != set(self.modules.modules):
+                _LOGGER.info("mySigen lists different battery modules now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+
+    async def _async_read_module(self) -> None:
+        """Read the battery module that is due, and name its device."""
+        serial = await self.modules.async_read_next(self.session, time.monotonic())
+        static = self.modules.data[INFO].get(serial) if serial else None
+        if not static:
+            return
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(
+            identifiers={(DOMAIN, module_identifier(self.config_entry.entry_id, serial))}
+        )
+        model, firmware = static.get("model"), static.get("firmware")
+        if device is not None and (
+            (model and device.model != model) or (firmware and device.sw_version != firmware)
+        ):
+            registry.async_update_device(
+                device.id,
+                model=model or device.model,
+                sw_version=firmware or device.sw_version,
+            )
 
     def publish_grid_connection(self, connection: GridConnection) -> None:
         self.grid_connection = connection
@@ -460,6 +496,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_charger()
+            if self.modules.modules:
+                await self._async_read_module()
             if time.monotonic() >= self._station_reread_at:
                 await self._async_recheck_chargers()
         except MySigenAuthError as err:

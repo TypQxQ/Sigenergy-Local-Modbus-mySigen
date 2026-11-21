@@ -209,6 +209,18 @@
       },
       "dc_charger_stop_level": {
         "name": "Nykyinen DC-latausraja (mySigen)"
+      },
+      "battery_module_discharged": {
+        "name": "Purettu energia yhteensä (mySigen)"
+      },
+      "battery_module_cell_temperature": {
+        "name": "Kennojen keskilämpötila (mySigen)"
+      },
+      "battery_module_cell_voltage": {
+        "name": "Kennojen keskijännite (mySigen)"
+      },
+      "battery_module_capacity": {
+        "name": "Nimelliskapasiteetti (mySigen)"
       }
     },
     "number": {
@@ -325,6 +337,11 @@
           "description": "Käytettävä yhteys. Voidaan jättää pois, kun yhteyksiä on vain yksi."
         }
       }
+    }
+  },
+  "device": {
+    "battery_module": {
+      "name": "Sigen-akkumoduuli {position}"
     }
   }
 }

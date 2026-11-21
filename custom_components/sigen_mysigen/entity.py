@@ -16,11 +16,15 @@ class MySigenEntity(CoordinatorEntity[MySigenCoordinator]):
 
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: MySigenCoordinator, key: str) -> None:
+    def __init__(
+        self, coordinator: MySigenCoordinator, key: str, unique_key: str | None = None
+    ) -> None:
         super().__init__(coordinator)
         entry = coordinator.config_entry
         self._attr_translation_key = key
-        self._attr_unique_id = f"{entry.entry_id}_{key}"
+        # `unique_key` tells apart entities that share a name, such as the
+        # same reading of several battery modules.
+        self._attr_unique_id = f"{entry.entry_id}_{unique_key or key}"
         # Link to the device the Modbus integration owns, the way helper
         # entities do. Passing device_info with its identifier instead makes
         # Home Assistant create a second device for this config entry.

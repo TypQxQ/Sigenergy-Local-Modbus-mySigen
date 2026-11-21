@@ -1249,6 +1249,91 @@ for _language, _extra in _STEP_F.items():
     LANGUAGES[_language].update(_extra)
 
 
+KEYS.update({
+    "entity.sensor.battery_module_discharged.name": "n_mod_discharged",
+    "entity.sensor.battery_module_cell_temperature.name": "n_mod_cell_temp",
+    "entity.sensor.battery_module_cell_voltage.name": "n_mod_cell_volt",
+    "entity.sensor.battery_module_capacity.name": "n_mod_capacity",
+    "device.battery_module.name": "d_module",
+})
+# Step G: battery modules. The device name is not an entity name, so it
+# gets no suffix.
+_STEP_G: dict[str, dict[str, str]] = {
+    "sv": {
+        "n_mod_discharged": "Total urladdad energi",
+        "n_mod_cell_temp": "Genomsnittlig celltemperatur",
+        "n_mod_cell_volt": "Genomsnittlig cellspänning",
+        "n_mod_capacity": "Märkkapacitet",
+        "d_module": "Sigen batterimodul {position}",
+    },
+    "da": {
+        "n_mod_discharged": "Samlet afladet energi",
+        "n_mod_cell_temp": "Gennemsnitlig celletemperatur",
+        "n_mod_cell_volt": "Gennemsnitlig cellespænding",
+        "n_mod_capacity": "Nominel kapacitet",
+        "d_module": "Sigen batterimodul {position}",
+    },
+    "nb": {
+        "n_mod_discharged": "Total utladet energi",
+        "n_mod_cell_temp": "Gjennomsnittlig celletemperatur",
+        "n_mod_cell_volt": "Gjennomsnittlig cellespenning",
+        "n_mod_capacity": "Nominell kapasitet",
+        "d_module": "Sigen batterimodul {position}",
+    },
+    "de": {
+        "n_mod_discharged": "Gesamte entladene Energie",
+        "n_mod_cell_temp": "Durchschnittliche Zelltemperatur",
+        "n_mod_cell_volt": "Durchschnittliche Zellspannung",
+        "n_mod_capacity": "Nennkapazität",
+        "d_module": "Sigen Batteriemodul {position}",
+    },
+    "nl": {
+        "n_mod_discharged": "Totaal ontladen energie",
+        "n_mod_cell_temp": "Gemiddelde celtemperatuur",
+        "n_mod_cell_volt": "Gemiddelde celspanning",
+        "n_mod_capacity": "Nominale capaciteit",
+        "d_module": "Sigen batterijmodule {position}",
+    },
+    "fr": {
+        "n_mod_discharged": "Énergie totale déchargée",
+        "n_mod_cell_temp": "Température moyenne des cellules",
+        "n_mod_cell_volt": "Tension moyenne des cellules",
+        "n_mod_capacity": "Capacité nominale",
+        "d_module": "Module de batterie Sigen {position}",
+    },
+    "es": {
+        "n_mod_discharged": "Energía total descargada",
+        "n_mod_cell_temp": "Temperatura media de las celdas",
+        "n_mod_cell_volt": "Tensión media de las celdas",
+        "n_mod_capacity": "Capacidad nominal",
+        "d_module": "Módulo de batería Sigen {position}",
+    },
+    "it": {
+        "n_mod_discharged": "Energia totale scaricata",
+        "n_mod_cell_temp": "Temperatura media delle celle",
+        "n_mod_cell_volt": "Tensione media delle celle",
+        "n_mod_capacity": "Capacità nominale",
+        "d_module": "Modulo batteria Sigen {position}",
+    },
+    "fi": {
+        "n_mod_discharged": "Purettu energia yhteensä",
+        "n_mod_cell_temp": "Kennojen keskilämpötila",
+        "n_mod_cell_volt": "Kennojen keskijännite",
+        "n_mod_capacity": "Nimelliskapasiteetti",
+        "d_module": "Sigen-akkumoduuli {position}",
+    },
+    "pl": {
+        "n_mod_discharged": "Całkowita energia rozładowana",
+        "n_mod_cell_temp": "Średnia temperatura ogniw",
+        "n_mod_cell_volt": "Średnie napięcie ogniw",
+        "n_mod_capacity": "Pojemność znamionowa",
+        "d_module": "Moduł baterii Sigen {position}",
+    },
+}
+for _language, _extra in _STEP_G.items():
+    LANGUAGES[_language].update(_extra)
+
+
 def _flatten(node, prefix=""):
     if isinstance(node, dict):
         for key, value in node.items():

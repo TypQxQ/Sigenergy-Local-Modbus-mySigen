@@ -209,6 +209,18 @@
       },
       "dc_charger_stop_level": {
         "name": "DC-laderens gjeldende ladegrense (mySigen)"
+      },
+      "battery_module_discharged": {
+        "name": "Total utladet energi (mySigen)"
+      },
+      "battery_module_cell_temperature": {
+        "name": "Gjennomsnittlig celletemperatur (mySigen)"
+      },
+      "battery_module_cell_voltage": {
+        "name": "Gjennomsnittlig cellespenning (mySigen)"
+      },
+      "battery_module_capacity": {
+        "name": "Nominell kapasitet (mySigen)"
       }
     },
     "number": {
@@ -325,6 +337,11 @@
           "description": "Hvilken tilkobling som skal brukes. Kan utelates når det bare finnes én."
         }
       }
+    }
+  },
+  "device": {
+    "battery_module": {
+      "name": "Sigen batterimodul {position}"
     }
   }
 }
