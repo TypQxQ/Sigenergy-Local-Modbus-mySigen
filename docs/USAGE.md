@@ -158,7 +158,7 @@ When mySigen lists a DC charger, its sensors appear by themselves. With **Allow 
 | 🔒 | Minimum EV charge for V2X | Number, % | The car stops supplying power at this level, so at least this much stays in the car |
 | 🏠 | Allow power from EV (V2X) | Switch | Allow or block the car powering the home, no Remote EMS needed |
 
-Start and stop charging and the power limits stay in Sigenergy ESS. Changes are refused while Remote EMS is on.
+Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. A charge level outside what the charger allows is refused; where mySigen gives no limits, 0 to 100 % applies to the charge limit and 20 to 100 % to the V2X minimum, as in the mySigen app.
 
 > [!NOTE]
 > **Not yet tried on a real charger.** These were built from other mySigen clients. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)

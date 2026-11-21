@@ -447,6 +447,20 @@ def parse_peak_shaving(data: Any) -> PeakShaving | None:
 
 # DC charger chargeMode codes as solidfox's integration observed them.
 DC_CHARGE_MODES = {"fast_charging": 0, "solar_surplus": 1, "bidirectional": 2}
+# The levels the mySigen app assumes when mySigen leaves an end out.
+DEFAULT_LEVEL_RANGE = (0, 100)
+DEFAULT_FLOOR_RANGE = (20, 100)
+
+
+def _level_range(low: Any, high: Any, default: tuple[int, int]) -> tuple[int, int]:
+    """A range of vehicle charge levels; a missing or odd end takes the default."""
+    low_value = _int_or_none(low)
+    high_value = _int_or_none(high)
+    low_value = default[0] if low_value is None else low_value
+    high_value = default[1] if high_value is None else high_value
+    if not 0 <= low_value < high_value <= 100:
+        return default
+    return low_value, high_value
 # Fields the app sends back with a mode change; written as they were read.
 _DC_MODE_FIELDS = (
     "enableFromPack", "cutoffSocFromPack", "allowsDischargePower", "vehicleDischargeCutoffSoc",
@@ -468,6 +482,18 @@ class DcChargeMode:
     def discharge_floor(self) -> int | None:
         """The car stops supplying power at this charge level."""
         return _int_or_none(self.raw.get("vehicleDischargeCutoffSoc"))
+
+    @property
+    def floor_range(self) -> tuple[int, int]:
+        """The levels the V2X floor may take, as the charger reports them.
+
+        A missing end is 20 or 100 %, as the mySigen app reads it.
+        """
+        return _level_range(
+            self.raw.get("minimumDischargeCutoffSoc"),
+            self.raw.get("maximumDischargeCutoffSoc"),
+            DEFAULT_FLOOR_RANGE,
+        )
 
     def body(self, mode: str | None = None, discharge_floor: int | None = None) -> dict[str, Any]:
         """A change: the mode code plus the read fields, one of them changed."""
@@ -516,13 +542,14 @@ def parse_v2x_enabled(data: Any) -> bool | None:
 
 
 def parse_soc_range(data: Any) -> tuple[int, int] | None:
+    """The charge levels the charge limit may take.
+
+    A missing end is 0 or 100 %, as the mySigen app reads it; some plants
+    leave both out. None only for an answer that is not a range at all.
+    """
     if not isinstance(data, dict):
         return None
-    low = _int_or_none(data.get("socLowerLimit"))
-    high = _int_or_none(data.get("socUpperLimit"))
-    if low is None or high is None or not 0 <= low < high <= 100:
-        return None
-    return low, high
+    return _level_range(data.get("socLowerLimit"), data.get("socUpperLimit"), DEFAULT_LEVEL_RANGE)
 
 
 GRID_ON = "on_grid"

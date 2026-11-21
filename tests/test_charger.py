@@ -39,7 +39,19 @@ class TestParsing(unittest.TestCase):
         self.assertIsNone(api.parse_v2x_enabled({"dischargeEnable": 3}))
         # The range as the development plant answered it.
         self.assertEqual(api.parse_soc_range({"socUpperLimit": 100, "socLowerLimit": 5}), (5, 100))
-        self.assertIsNone(api.parse_soc_range({"socUpperLimit": 5, "socLowerLimit": 100}))
+        # A missing or odd end is 0 or 100 %, as the mySigen app reads it.
+        self.assertEqual(api.parse_soc_range({}), (0, 100))
+        self.assertEqual(api.parse_soc_range({"socUpperLimit": 90}), (0, 90))
+        self.assertEqual(api.parse_soc_range({"socUpperLimit": 5, "socLowerLimit": 100}), (0, 100))
+        self.assertIsNone(api.parse_soc_range(None))
+
+    def test_v2x_floor_range(self):
+        # The charger's own limits, as StephenE's plant sends the fields.
+        self.assertEqual(api.parse_dc_charge_mode(
+            {**MODE, "minimumDischargeCutoffSoc": 10, "maximumDischargeCutoffSoc": 80}
+        ).floor_range, (10, 80))
+        # Missing: 20 to 100 %, as the mySigen app assumes.
+        self.assertEqual(api.parse_dc_charge_mode(MODE).floor_range, (20, 100))
 
 
 class TestRequests(unittest.IsolatedAsyncioTestCase):
@@ -134,42 +146,40 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
     async def test_changes_are_sent_once_and_confirmed(self):
         coordinator = _ChargerCoordinator({"mode": [mode(1), mode(0)]})
         result = await control.async_set_dc_charge_mode(
-            coordinator, mode="fast_charging", remote_ems=self.ems(), sleep=_no_sleep)
+            coordinator, mode="fast_charging", sleep=_no_sleep)
         self.assertEqual(result, "confirmed")
         self.assertEqual(coordinator.session.writes, [("mode", 0, 30)])
 
         coordinator = _ChargerCoordinator({"mode": [mode(1), mode(1, 45)]})
         await control.async_set_dc_discharge_floor(
-            coordinator, level=45, remote_ems=self.ems(), sleep=_no_sleep)
+            coordinator, level=45, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("mode", 1, 45)])
 
         coordinator = _ChargerCoordinator({"setting": [setting(80), setting(90)]})
         await control.async_set_dc_stop_level(
-            coordinator, level=90, remote_ems=self.ems(), sleep=_no_sleep)
+            coordinator, level=90, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("setting", 12.0, 90)])
 
         coordinator = _ChargerCoordinator({"v2x": [False, True]})
         await control.async_set_v2x_enabled(
-            coordinator, enabled=True, remote_ems=self.ems(), sleep=_no_sleep)
+            coordinator, enabled=True, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("v2x", True)])
         self.assertEqual([s[0] for s in coordinator.settings], ["v2x_enabled"])
 
     async def test_nothing_sent_when_already_set(self):
         coordinator = _ChargerCoordinator({"v2x": [True]})
         await control.async_set_v2x_enabled(
-            coordinator, enabled=True, remote_ems=self.ems(), sleep=_no_sleep)
+            coordinator, enabled=True, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [])
 
     async def test_refusals_send_nothing(self):
         cases = [
             (dict(charger=False), "mode", dict(mode="fast_charging"), "no DC charger"),
             (dict(), "mode", dict(mode="schedule"), "not available"),
-            (dict(), "mode", dict(mode="fast_charging", remote_ems=self.ems("on")), "Remote EMS"),
-            (dict(), "mode", dict(mode="fast_charging", remote_ems=self.ems(None)), "Remote EMS"),
             (dict(allow=False), "mode", dict(mode="fast_charging"), "switched off"),
             (dict(), "stop", dict(level=101), "5 to 100"),
-            (dict(soc_range=None), "stop", dict(level=80), "allowed charge levels"),
-            (dict(), "floor", dict(level=2), "5 to 100"),
+            # The floor follows the charger's limits, 20 to 100 % by default.
+            (dict(), "floor", dict(level=10), "20 to 100"),
         ]
         functions = {
             "mode": control.async_set_dc_charge_mode,
@@ -179,10 +189,38 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         for coordinator_args, which, call_args, text in cases:
             coordinator = _ChargerCoordinator(
                 {"mode": [mode(1)], "setting": [setting(80)]}, **coordinator_args)
-            call_args.setdefault("remote_ems", self.ems())
             with self.assertRaisesRegex(control.CommandRefused, text):
                 await functions[which](coordinator, sleep=_no_sleep, **call_args)
             self.assertEqual(coordinator.session.writes, [])
+
+
+class TestNoRemoteEmsRule(unittest.IsolatedAsyncioTestCase):
+    """Remote EMS does not control these settings and the app does not block them."""
+
+    async def test_charger_changes_take_no_remote_ems_check(self):
+        for function in (
+            control.async_set_dc_charge_mode, control.async_set_dc_discharge_floor,
+            control.async_set_dc_stop_level, control.async_set_v2x_enabled,
+        ):
+            self.assertNotIn("remote_ems", function.__code__.co_varnames, function.__name__)
+
+    async def test_without_a_reported_range_the_limit_is_0_to_100(self):
+        coordinator = _ChargerCoordinator({"setting": [setting(80), setting(95)]}, soc_range=None)
+        self.assertEqual(control.dc_stop_range(coordinator), (0, 100))
+        await control.async_set_dc_stop_level(coordinator, level=95, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [("setting", 12.0, 95)])
+
+    async def test_the_floor_uses_the_limits_just_read(self):
+        wide = api.parse_dc_charge_mode({**MODE, "chargeMode": 2, "minimumDischargeCutoffSoc": 5,
+                                         "maximumDischargeCutoffSoc": 90})
+        set_to_10 = api.parse_dc_charge_mode({**wide.raw, "vehicleDischargeCutoffSoc": 10})
+        coordinator = _ChargerCoordinator({"mode": [wide, set_to_10]})
+        await control.async_set_dc_discharge_floor(coordinator, level=10, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [("mode", 2, 10)])
+        coordinator = _ChargerCoordinator({"mode": [wide]})
+        with self.assertRaisesRegex(control.CommandRefused, "5 to 90"):
+            await control.async_set_dc_discharge_floor(coordinator, level=95, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
 
 
 if __name__ == "__main__":

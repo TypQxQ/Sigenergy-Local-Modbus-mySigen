@@ -17,7 +17,7 @@ from .control import (
     async_set_v2x_enabled,
 )
 from .entity import MySigenEntity
-from .link import plant_grid_state, remote_ems_state
+from .link import plant_grid_state
 
 
 async def async_setup_entry(
@@ -154,12 +154,9 @@ class AllowV2x(MySigenEntity, SwitchEntity):
         return self.coordinator.v2x_enabled
 
     async def _async_set(self, enabled: bool) -> None:
-        plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]
-        await async_run_setting(self.coordinator, async_set_v2x_enabled(
-            self.coordinator,
-            enabled=enabled,
-            remote_ems=lambda: remote_ems_state(self.hass, plant_entry_id),
-        ))
+        await async_run_setting(
+            self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._async_set(True)
