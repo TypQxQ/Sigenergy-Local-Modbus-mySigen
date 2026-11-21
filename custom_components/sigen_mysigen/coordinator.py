@@ -330,10 +330,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 _LOGGER.debug("mySigen device tree read failed: %s", err)
                 return
             # An empty list is more likely a passing fault than every module
-            # gone, so only a list with modules replaces the current one.
-            if modules and {m.serial for m in modules} != {
-                m.serial for m in self.modules.modules
-            }:
+            # gone, so only a list with modules replaces the current one. A
+            # module that moved keeps its serial but changes its position or
+            # inverter, which its device shows, so whole records are compared.
+            if modules and set(modules) != set(self.modules.modules):
                 _LOGGER.info("mySigen lists different battery modules now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 

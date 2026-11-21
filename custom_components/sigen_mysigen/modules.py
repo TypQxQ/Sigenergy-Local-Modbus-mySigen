@@ -13,7 +13,8 @@ from .api import BatteryModule, MySigenConnectionError, MySigenPermissionError
 
 _LOGGER = logging.getLogger(__name__)
 
-# How old a module's pack readings may get before it is read again.
+# When a module's pack readings are due again. The actual age can be
+# longer: one module is read per poll.
 MODULE_INTERVAL = 300.0
 # Model, firmware and rated capacity change rarely.
 MODULE_STATIC_INTERVAL = 86400.0
