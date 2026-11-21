@@ -67,9 +67,10 @@ _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
 _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
 # One battery module each. Request formats follow sigenergy2mqtt
-# (MIT License, https://github.com/seud0nym/sigenergy2mqtt).
+# (MIT License, https://github.com/seud0nym/sigenergy2mqtt). Its third
+# read, device/sigen/device/dynamic/info, is not used: on a real plant
+# mySigen answers it with code 1000 for battery modules.
 _MODULE_STATIC_PATH = "device/sigen/device/static/info"
-_MODULE_LIVE_PATH = "device/sigen/device/dynamic/info"
 _MODULE_PACK_PATH = "device/device/pack/queryPackMergeInfo"
 _GATEWAY_PATH = "device/gateway/{station_id}"
 _OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
@@ -668,7 +669,6 @@ _UNIT_FACTORS: dict[str, dict[str, float]] = {
     "kWh": {"wh": 0.001, "kwh": 1.0, "mwh": 1000.0},
     "kW": {"w": 0.001, "kw": 1.0},
     "V": {"mv": 0.001, "v": 1.0},
-    "%": {"%": 1.0},
 }
 _CELSIUS = ("°c", "℃", "c")
 _FAHRENHEIT = ("°f", "℉", "f")
@@ -731,12 +731,6 @@ MODULE_STATIC_FIELDS = {
     "model": _ModuleField("device model", None),
     "firmware": _ModuleField("software version", None),
     "rated_capacity": _ModuleField("rated battery capacity", "kWh"),
-}
-MODULE_LIVE_FIELDS = {
-    "soc": _ModuleField("battery soc", "%"),
-    "power": _ModuleField("charging & discharging power", "kW"),
-    "pack_voltage": _ModuleField("battery pack voltage", "V"),
-    "heating": _ModuleField("heating status", None),
 }
 MODULE_PACK_FIELDS = {
     "discharged": _ModuleField("total discharge amount", "kWh"),
@@ -1077,12 +1071,6 @@ class MySigenSession:
             deviceType=str(BATTERY_DEVICE_TYPE),
         )
 
-    async def async_module_live_raw(self, serial: str) -> Any:
-        return await self._async_module_get(
-            "battery module readings", _MODULE_LIVE_PATH, serial,
-            deviceType=str(BATTERY_DEVICE_TYPE), refreshFlag="",
-        )
-
     async def async_module_pack_raw(self, serial: str) -> Any:
         return await self._async_module_get("battery pack", _MODULE_PACK_PATH, serial)
 
@@ -1092,15 +1080,11 @@ class MySigenSession:
             await self.async_module_static_raw(serial), "paramInfoVOList", MODULE_STATIC_FIELDS
         )
 
-    async def async_module_live(self, serial: str) -> dict[str, float | str]:
-        """Current readings and lifetime totals of one module (two requests)."""
-        values = parse_module_values(
-            await self.async_module_live_raw(serial), "realTimeInfo", MODULE_LIVE_FIELDS
-        )
-        values.update(parse_module_values(
+    async def async_module_pack(self, serial: str) -> dict[str, float | str]:
+        """Lifetime discharge and average cell values of one module."""
+        return parse_module_values(
             await self.async_module_pack_raw(serial), "paramInfoVOList", MODULE_PACK_FIELDS
-        ))
-        return values
+        )
 
     async def _async_put(
         self, what: str, path: str, body: dict[str, Any], method: str = "PUT"

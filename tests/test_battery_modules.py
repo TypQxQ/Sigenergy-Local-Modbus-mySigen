@@ -1,6 +1,7 @@
-"""Battery modules: the device tree, the three reads and when they are made.
+"""Battery modules: the device tree, the two reads and when they are made.
 
-Answer shapes follow sigenergy2mqtt's facsimile of the mySigen service.
+Answer shapes are as the development plant answered (labels and units);
+the values are sigenergy2mqtt's.
 """
 from __future__ import annotations
 
@@ -58,12 +59,6 @@ STATIC = {"paramInfoVOList": [
     _row("Device Model", "SigenStor BAT 8.0"),
     _row("Rated Battery Capacity", "8.06", "kWh"),
 ]}
-LIVE = {"realTimeInfo": [
-    _row("Battery SOC", "72.3", "%"),
-    _row("Charging & Discharging Power", "2.236", "kW"),
-    _row("Battery Pack Voltage", "30.6", "V"),
-    _row("Heating status", "Off"),
-], "dataCurrTimeStamp": ""}
 PACK = {"paramInfoVOList": [
     _row("Total Discharge Amount", "2.96", "MWh"),
     _row("Average Cell Voltage", "3.338", "V"),
@@ -98,11 +93,7 @@ class TestReadings(unittest.TestCase):
              "rated_capacity": 8.06},
         )
 
-    def test_live_and_pack(self):
-        self.assertEqual(
-            api.parse_module_values(LIVE, "realTimeInfo", api.MODULE_LIVE_FIELDS),
-            {"soc": 72.3, "power": 2.236, "pack_voltage": 30.6, "heating": "Off"},
-        )
+    def test_pack(self):
         pack = api.parse_module_values(PACK, "paramInfoVOList", api.MODULE_PACK_FIELDS)
         # MWh is stored as kWh, so the total keeps one unit.
         self.assertAlmostEqual(pack["discharged"], 2960.0)
@@ -126,9 +117,10 @@ class TestReadings(unittest.TestCase):
         self.assertEqual(parse({"paramKey": "E", "paramValueText": "x", "paramValueUnit": "kWh"}), {})
 
     def test_missing_rows_are_unknown(self):
-        for bad in (None, {}, {"realTimeInfo": "x"}, {"realTimeInfo": [None, {"paramKey": 5}]}):
+        for bad in (None, {}, {"paramInfoVOList": "x"},
+                    {"paramInfoVOList": [None, {"paramKey": 5}]}):
             self.assertEqual(
-                api.parse_module_values(bad, "realTimeInfo", api.MODULE_LIVE_FIELDS), {}
+                api.parse_module_values(bad, "paramInfoVOList", api.MODULE_PACK_FIELDS), {}
             )
 
 
@@ -159,19 +151,16 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
         self.addCleanup(patcher.stop)
 
     async def test_paths_and_queries(self):
-        http = _Http([_ok({"stationId": "42"}), _ok(TREE), _ok(STATIC), _ok(LIVE), _ok(PACK)])
+        http = _Http([_ok({"stationId": "42"}), _ok(TREE), _ok(STATIC), _ok(PACK)])
         client = api.MySigenSession(http, "eu", "u@example.invalid", "p")
         listed = await client.async_read_battery_modules()
         self.assertEqual(client.battery_modules, listed)
         self.assertEqual((await client.async_module_static("BAT-A"))["rated_capacity"], 8.06)
-        live = await client.async_module_live("BAT-A")
-        self.assertEqual((live["soc"], live["cell_temperature"]), (72.3, 25.3))
+        self.assertEqual((await client.async_module_pack("BAT-A"))["cell_temperature"], 25.3)
         self.assertEqual([(path, query) for _m, path, query in http.requests[1:]], [
             ("device/devicetreepanel/topology", {"stationId": "42"}),
             ("device/sigen/device/static/info",
              {"stationId": "42", "snCode": "BAT-A", "deviceType": "4"}),
-            ("device/sigen/device/dynamic/info",
-             {"stationId": "42", "snCode": "BAT-A", "deviceType": "4", "refreshFlag": ""}),
             ("device/device/pack/queryPackMergeInfo", {"stationId": "42", "snCode": "BAT-A"}),
         ])
         self.assertTrue(all(method == "GET" for method, _p, _q in http.requests))
@@ -192,13 +181,16 @@ class _Session:
         self.calls.append((what, serial))
         if (what, serial) in self.fail:
             raise api.MySigenConnectionError("HTTP 500", 500)
-        return {"static": {"model": f"M-{serial}"}, "live": {"soc": 50.0}}[what]
+        return {
+            "static": {"model": f"M-{serial}"},
+            "pack": {"cell_temperature": 20.0},
+        }[what]
 
     async def async_module_static(self, serial):
         return await self._answer("static", serial)
 
-    async def async_module_live(self, serial):
-        return await self._answer("live", serial)
+    async def async_module_pack(self, serial):
+        return await self._answer("pack", serial)
 
 
 MODULES = (api.BatteryModule("A", "1", None), api.BatteryModule("B", "2", None))
@@ -215,15 +207,15 @@ class TestSchedule(unittest.TestCase):
         self.assertEqual(_run(reader.async_read_next(session, 30.0)), "B")
         self.assertIsNone(_run(reader.async_read_next(session, 60.0)))
         self.assertEqual(session.calls, [
-            ("static", "A"), ("live", "A"), ("static", "B"), ("live", "B"),
+            ("static", "A"), ("pack", "A"), ("static", "B"), ("pack", "B"),
         ])
         # Readings are due again after the interval; the model after a day.
         session.calls.clear()
         self.assertEqual(_run(reader.async_read_next(session, modules.MODULE_INTERVAL)), "A")
-        self.assertEqual(session.calls, [("live", "A")])
+        self.assertEqual(session.calls, [("pack", "A")])
         self.assertEqual(reader.value("A", "model"), "M-A")
-        self.assertEqual(reader.value("A", "soc"), 50.0)
-        self.assertTrue(reader.available("A", static=True))
+        self.assertEqual(reader.value("A", "cell_temperature"), 20.0)
+        self.assertTrue(reader.available("A", modules.INFO))
         # B is due first; A's model is read again on the next poll.
         session.calls.clear()
         day = modules.MODULE_STATIC_INTERVAL
@@ -231,13 +223,28 @@ class TestSchedule(unittest.TestCase):
         self.assertEqual(_run(reader.async_read_next(session, day + 30)), "A")
         self.assertIn(("static", "A"), session.calls)
 
-    def test_a_failed_reading_is_unavailable_and_retried_once_soon(self):
-        reader, session = modules.ModuleReader(MODULES[:1]), _Session(fail={("live", "A")})
+    def test_a_failed_info_read_leaves_the_pack(self):
+        reader = modules.ModuleReader(MODULES[:1])
+        session = _Session(fail={("static", "A")})
         _run(reader.async_read_next(session, 0.0))
-        self.assertFalse(reader.available("A", static=False))
-        self.assertIsNone(reader.value("A", "soc"))
+        self.assertFalse(reader.available("A", modules.INFO))
+        self.assertTrue(reader.available("A", modules.PACK))
+        self.assertEqual(reader.value("A", "cell_temperature"), 20.0)
+        self.assertEqual(reader.errors[modules.INFO]["A"], "MySigenConnectionError: HTTP 500")
+        # The info is asked again sooner than a day later.
+        session.fail.clear()
+        _run(reader.async_read_next(session, modules.MODULE_INTERVAL))
+        self.assertTrue(reader.available("A", modules.INFO))
+        self.assertNotIn("A", reader.errors[modules.INFO])
+
+    def test_a_failed_reading_is_unavailable_and_retried_once_soon(self):
+        reader = modules.ModuleReader(MODULES[:1])
+        session = _Session(fail={("pack", "A")})
+        _run(reader.async_read_next(session, 0.0))
+        self.assertFalse(reader.available("A", modules.PACK))
+        self.assertIsNone(reader.value("A", "cell_temperature"))
         # The model still shows.
-        self.assertTrue(reader.available("A", static=True))
+        self.assertTrue(reader.available("A", modules.INFO))
         self.assertIsNone(_run(reader.async_read_next(session, modules.MODULE_RETRY - 1)))
         self.assertEqual(_run(reader.async_read_next(session, modules.MODULE_RETRY)), "A")
         # After the retry also failed, the normal interval applies.

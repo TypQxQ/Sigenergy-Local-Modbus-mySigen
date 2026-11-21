@@ -16,6 +16,7 @@ from homeassistant.loader import async_get_integration
 from .api import MySigenError, MySigenRateLimitError, masked_shape
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .link import local_inverter_serials
+from .modules import SOURCES
 
 TO_REDACT = {CONF_USERNAME, CONF_PASSWORD}
 
@@ -150,24 +151,27 @@ async def async_get_config_entry_diagnostics(
             {
                 "position": module.position,
                 "under_inverter": module.inverter_serial is not None,
-                "info": sorted(reader.static.get(module.serial) or {}),
-                "readings": sorted(reader.live.get(module.serial) or {}),
-                "info_failed": module.serial in reader.static
-                and reader.static[module.serial] is None,
-                "readings_failed": module.serial in reader.live
-                and reader.live[module.serial] is None,
+                **{
+                    source: sorted(reader.data[source].get(module.serial) or {})
+                    for source in SOURCES
+                },
+                # Error type and HTTP status or mySigen code; no values.
+                "errors": {
+                    source: reader.errors[source][module.serial]
+                    for source in SOURCES
+                    if module.serial in reader.errors[source]
+                },
             }
             for module in reader.modules
         ],
     }
-    # Structure of the first module's three answers, every value masked, so
+    # Structure of the first module's two answers, every value masked, so
     # the field names can be checked against a real plant.
     if reader.modules and not coordinator.rate_limit_wait:
         serial = reader.modules[0].serial
         shapes: dict[str, Any] = {}
         for name, read in (
             ("info", coordinator.session.async_module_static_raw),
-            ("readings", coordinator.session.async_module_live_raw),
             ("pack", coordinator.session.async_module_pack_raw),
         ):
             try:
@@ -177,6 +181,6 @@ async def async_get_config_entry_diagnostics(
                 shapes[name] = f"rate limited: waiting {wait:.0f} s"
                 break
             except MySigenError as err:
-                shapes[name] = f"unavailable: {type(err).__name__}"
+                shapes[name] = f"unavailable: {type(err).__name__}: {err}"
         result["battery_module_shape"] = shapes
     return result

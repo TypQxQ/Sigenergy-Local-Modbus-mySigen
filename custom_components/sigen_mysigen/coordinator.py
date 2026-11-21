@@ -40,7 +40,7 @@ from .api import (
     OverrideStatus,
     single_send_trace_config,
 )
-from .modules import ModuleReader, module_identifier
+from .modules import INFO, ModuleReader, module_identifier
 from .const import (
     CONF_ALLOW_CONTROL,
     CONF_ALLOW_GRID_DISCONNECT,
@@ -340,7 +340,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     async def _async_read_module(self) -> None:
         """Read the battery module that is due, and name its device."""
         serial = await self.modules.async_read_next(self.session, time.monotonic())
-        static = self.modules.static.get(serial) if serial else None
+        static = self.modules.data[INFO].get(serial) if serial else None
         if not static:
             return
         registry = dr.async_get(self.hass)

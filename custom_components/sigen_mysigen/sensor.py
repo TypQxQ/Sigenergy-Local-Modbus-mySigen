@@ -30,7 +30,7 @@ from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
 from .entity import MySigenEntity
-from .modules import module_identifier
+from .modules import INFO, PACK, module_identifier
 
 _VOLT = (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1)
 _AMPERE = (SensorDeviceClass.CURRENT, UnitOfElectricCurrent.AMPERE, 2)
@@ -97,45 +97,33 @@ class _ModuleReading:
     """One reading of a battery module."""
 
     reading: str
+    # Which of the module's three reads it comes from.
+    source: str
     # (device class, unit, decimals); None for a text.
     kind: tuple[SensorDeviceClass, str, int] | None
     state_class: SensorStateClass | None = SensorStateClass.MEASUREMENT
     enabled: bool = True
     diagnostic: bool = False
-    # Read once a day with the model, not every few minutes.
-    static: bool = False
 
 
 # Entity key -> what it shows. The reading is part of the unique IDs.
 MODULE_READINGS: dict[str, _ModuleReading] = {
-    "battery_module_soc": _ModuleReading(
-        "soc", (SensorDeviceClass.BATTERY, PERCENTAGE, 1)
-    ),
     "battery_module_discharged": _ModuleReading(
-        "discharged",
+        "discharged", PACK,
         (SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR, 0),
         SensorStateClass.TOTAL_INCREASING,
     ),
     "battery_module_cell_temperature": _ModuleReading(
-        "cell_temperature", (SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS, 1)
+        "cell_temperature", PACK,
+        (SensorDeviceClass.TEMPERATURE, UnitOfTemperature.CELSIUS, 1),
     ),
     "battery_module_cell_voltage": _ModuleReading(
-        "cell_voltage", (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 3)
-    ),
-    "battery_module_power": _ModuleReading(
-        "power", (SensorDeviceClass.POWER, UnitOfPower.KILO_WATT, 3), enabled=False
-    ),
-    "battery_module_pack_voltage": _ModuleReading(
-        "pack_voltage", (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 1),
-        enabled=False,
-    ),
-    "battery_module_heating": _ModuleReading(
-        "heating", None, None, enabled=False, diagnostic=True
+        "cell_voltage", PACK, (SensorDeviceClass.VOLTAGE, UnitOfElectricPotential.VOLT, 3)
     ),
     "battery_module_capacity": _ModuleReading(
-        "rated_capacity",
+        "rated_capacity", INFO,
         (SensorDeviceClass.ENERGY_STORAGE, UnitOfEnergy.KILO_WATT_HOUR, 2),
-        None, diagnostic=True, static=True,
+        None, diagnostic=True,
     ),
 }
 
@@ -340,7 +328,7 @@ def _module_device(
                 (ident for ident in device.identifiers if ident[0] == MODBUS_DOMAIN), parent
             )
             break
-    static = coordinator.modules.static.get(module.serial) or {}
+    static = coordinator.modules.data[INFO].get(module.serial) or {}
     return DeviceInfo(
         identifiers={(DOMAIN, module_identifier(entry.entry_id, module.serial))},
         translation_key="battery_module",
@@ -384,7 +372,7 @@ class BatteryModuleSensor(MySigenEntity, SensorEntity):
     @property
     def available(self) -> bool:
         return super().available and self.coordinator.modules.available(
-            self._serial, self._spec.static
+            self._serial, self._spec.source
         )
 
     @property

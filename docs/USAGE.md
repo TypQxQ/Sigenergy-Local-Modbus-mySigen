@@ -50,19 +50,15 @@ Sigenergy ESS reads each inverter's battery as a whole. mySigen also knows each 
 
 | | Entity | What it shows |
 | :-: | --- | --- |
-| ✅ | State of charge | The module's own charge level |
 | ✅ | Total energy discharged | Lifetime discharge of the module, in kWh; for warranty throughput |
 | ✅ | Average cell temperature | Average over the module's cells |
 | ✅ | Average cell voltage | Average over the module's cells |
 | ✅ | Rated capacity | The module's capacity on paper, e.g. 8.06 kWh |
-| ⬜ | Power | Charging or discharging power of the module, as mySigen signs it |
-| ⬜ | Pack voltage | Voltage as mySigen reports it for the module |
-| ⬜ | Heating status | Whether the module is heating itself |
 
 The device also shows the model and firmware. To keep the request count low, one module is read per poll and each module's readings are at most five minutes old. Model, firmware and rated capacity are read once a day.
 
 > [!NOTE]
-> **New, and built from another mySigen client.** If a value stays unknown, please share a diagnostics file: it shows which fields your plant sends, without serial numbers. [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+> mySigen does not give a charge level or power per module; the battery's charge level and power are in Sigenergy ESS. Total energy discharged moves in steps of 10 kWh, as mySigen reports it in MWh with two decimals.
 
 ## 🔋 Battery overrides
 
@@ -176,7 +172,7 @@ When mySigen asks for fewer requests, the add-on pauses and refuses changes unti
 ## ⚠️ Limitations
 
 - **Unofficial interface.** Sigenergy hasn't approved it, and a mySigen update could stop sign-in.
-- **Tested on one system:** a European account, one inverter, a Gateway, no charger. Battery modules not yet confirmed on a real plant.
+- **Tested on one system:** a European account, one inverter with four battery modules, a Gateway, no charger.
 - **One system per account.** If the account starts opening a different system, the connection reloads and checks it against your plant again.
 - **Nine of eleven languages** still need a native speaker's review.
 - **Your password is stored** in Home Assistant so it can sign in again.
