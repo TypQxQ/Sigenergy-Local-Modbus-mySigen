@@ -60,11 +60,39 @@ _PASSWORD_SELECTOR = TextSelector(
     TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
 )
 
+# Asked after sign-in and again under Reconfigure.
+_SETTINGS_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_SCAN_INTERVAL): NumberSelector(
+            NumberSelectorConfig(
+                min=MIN_SCAN_INTERVAL,
+                max=MAX_SCAN_INTERVAL,
+                step=1,
+                unit_of_measurement="s",
+                mode=NumberSelectorMode.BOX,
+            )
+        ),
+        vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
+        vol.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
+    }
+)
+
+
+def _options(user_input: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the stored options for the settings in a submitted form."""
+    return {
+        CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
+        CONF_ALLOW_CONTROL: bool(user_input.get(CONF_ALLOW_CONTROL)),
+        CONF_ALLOW_GRID_DISCONNECT: bool(user_input.get(CONF_ALLOW_GRID_DISCONNECT)),
+    }
+
 
 class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
     """Link a mySigen account to one existing Modbus plant."""
 
     VERSION = 1
+    _data: dict[str, Any]
+    _title: str
 
     async def _async_modbus_problem(self) -> str | None:
         """Return an abort reason when the Modbus integration is unusable."""
@@ -151,11 +179,9 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 plant_entry_id,
             )
             if error is None:
-                return self.async_create_entry(
-                    title=f"{plants[plant_entry_id]} mySigen",
-                    data=user_input,
-                    options={CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL},
-                )
+                self._data = user_input
+                self._title = f"{plants[plant_entry_id]} mySigen"
+                return await self.async_step_settings()
             errors["base"] = error
 
         schema = vol.Schema(
@@ -195,6 +221,32 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose the polling interval and what Home Assistant may control.
+
+        Shown once the account has been checked against the plant. The same
+        choices stay under Reconfigure.
+        """
+        if user_input is not None:
+            # Another flow may have linked this plant meanwhile.
+            self._abort_if_unique_id_configured()
+            return self.async_create_entry(
+                title=self._title, data=self._data, options=_options(user_input)
+            )
+        return self.async_show_form(
+            step_id="settings",
+            data_schema=self.add_suggested_values_to_schema(
+                _SETTINGS_SCHEMA,
+                {
+                    CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
+                    CONF_ALLOW_CONTROL: False,
+                    CONF_ALLOW_GRID_DISCONNECT: False,
+                },
+            ),
         )
 
     async def async_step_reauth(
@@ -252,14 +304,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_update_reload_and_abort(
                     entry,
                     data_updates={CONF_USERNAME: username, CONF_PASSWORD: password},
-                    options={
-                        **entry.options,
-                        CONF_SCAN_INTERVAL: int(user_input[CONF_SCAN_INTERVAL]),
-                        CONF_ALLOW_CONTROL: bool(user_input[CONF_ALLOW_CONTROL]),
-                        CONF_ALLOW_GRID_DISCONNECT: bool(
-                            user_input.get(CONF_ALLOW_GRID_DISCONNECT)
-                        ),
-                    },
+                    options={**entry.options, **_options(user_input)},
                 )
             errors["base"] = error
 
@@ -271,19 +316,8 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 ),
                 vol.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
-                vol.Required(CONF_SCAN_INTERVAL): NumberSelector(
-                    NumberSelectorConfig(
-                        min=MIN_SCAN_INTERVAL,
-                        max=MAX_SCAN_INTERVAL,
-                        step=1,
-                        unit_of_measurement="s",
-                        mode=NumberSelectorMode.BOX,
-                    )
-                ),
-                vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
-                vol.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
             }
-        )
+        ).extend(_SETTINGS_SCHEMA.schema)
         suggested = {
             CONF_USERNAME: (user_input or entry.data)[CONF_USERNAME],
             CONF_SCAN_INTERVAL: (user_input or {}).get(

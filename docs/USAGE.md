@@ -15,7 +15,7 @@ New here? Start with the [README](../README.md).
 
 ## 📊 Entities
 
-Everything appears on your existing **Sigen Plant** device. mySigen is read every 15 to 60 seconds (set under **Reconfigure**); for anything fast, keep using the Modbus entities.
+Everything appears on your existing **Sigen Plant** device. mySigen is read every 15 to 60 seconds (chosen at setup, changed under **Reconfigure**); for anything fast, keep using the Modbus entities.
 
 Every name ends with **(mySigen)**, in every language, so you can tell these apart from the Modbus entities. With default Home Assistant naming settings, a new entity ID typically ends in `_mysigen`, for example `sensor.sigen_plant_battery_override_mode_mysigen`. Your entity ID settings can change the rest, and Home Assistant adds `_2` when an ID is already taken. Entities you already have keep their IDs. The tables below leave the suffix out.
 
@@ -111,7 +111,7 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 
 ## 🔌 Disconnecting from the grid
 
-**Disconnect from grid** is a switch that takes the home off the grid, so it runs on battery and solar alone; switching it off connects it again. To get it, you need a Sigenergy Gateway, and under **Reconfigure** both **Allow battery control** and **Allow disconnecting from the grid**. The switch then starts disabled: enable it in the entity settings.
+**Disconnect from grid** is a switch that takes the home off the grid, so it runs on battery and solar alone; switching it off connects it again. To get it, you need a Sigenergy Gateway, and both **Allow battery control** and **Allow disconnecting from the grid**, chosen at setup or under **Reconfigure**. The switch then starts disabled: enable it in the entity settings.
 
 > [!WARNING]
 > **Off the grid, the battery drains.** When it's empty, the home loses power until you reconnect.

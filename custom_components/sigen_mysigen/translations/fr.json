@@ -15,6 +15,20 @@
           "region": "La région dans laquelle votre compte mySigen a été créé."
         }
       },
+      "settings": {
+        "title": "Paramètres mySigen",
+        "description": "Le compte correspond à cette installation. Choisissez la fréquence de lecture de mySigen par Home Assistant et ce qu'il peut piloter. Vous pourrez le modifier plus tard en reconfigurant la connexion.",
+        "data": {
+          "scan_interval": "Intervalle de lecture",
+          "allow_control": "Autoriser le pilotage de la batterie",
+          "allow_grid_disconnect": "Autoriser la déconnexion du réseau"
+        },
+        "data_description": {
+          "scan_interval": "Entre 15 et 60 secondes. Des intervalles plus courts envoient davantage de requêtes à mySigen.",
+          "allow_control": "Permet à Home Assistant de démarrer et d'arrêter des forçages de la batterie via mySigen, et de modifier les réglages de l'installation et du chargeur DC. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit.",
+          "allow_grid_disconnect": "Ajoute un interrupteur qui déconnecte l'installation du réseau, pour que la maison fonctionne uniquement sur batterie et solaire, puis la reconnecte. Nécessite Autoriser le pilotage de la batterie et une Sigenergy Gateway. Désactivé par défaut."
+        }
+      },
       "reauth_confirm": {
         "title": "Se reconnecter à mySigen",
         "description": "Saisissez le mot de passe actuel de {username}.",
@@ -35,7 +49,7 @@
         "data_description": {
           "password": "Laissez vide pour conserver le mot de passe actuel.",
           "scan_interval": "Entre 15 et 60 secondes. Des intervalles plus courts envoient davantage de requêtes à mySigen.",
-          "allow_control": "Permet à Home Assistant de démarrer et d'annuler un forçage temporisé de la batterie via mySigen. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit.",
+          "allow_control": "Permet à Home Assistant de démarrer et d'arrêter des forçages de la batterie via mySigen, et de modifier les réglages de l'installation et du chargeur DC. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit.",
           "allow_grid_disconnect": "Ajoute un interrupteur qui déconnecte l'installation du réseau, pour que la maison fonctionne uniquement sur batterie et solaire, puis la reconnecte. Nécessite Autoriser le pilotage de la batterie et une Sigenergy Gateway. Désactivé par défaut."
         }
       }

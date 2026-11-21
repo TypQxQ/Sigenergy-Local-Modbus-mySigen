@@ -15,6 +15,20 @@
           "region": "Alue, jolla mySigen-tilisi on luotu."
         }
       },
+      "settings": {
+        "title": "mySigen-asetukset",
+        "description": "Tili kuuluu tähän laitteistoon. Valitse, kuinka usein Home Assistant lukee mySigenistä ja mitä se saa ohjata. Voit muuttaa tätä myöhemmin määrittämällä yhteyden uudelleen.",
+        "data": {
+          "scan_interval": "Lukuväli",
+          "allow_control": "Salli akun ohjaus",
+          "allow_grid_disconnect": "Salli irtikytkentä sähköverkosta"
+        },
+        "data_description": {
+          "scan_interval": "15–60 sekuntia. Lyhyemmät välit lähettävät enemmän pyyntöjä mySigeniin.",
+          "allow_control": "Antaa Home Assistantin käynnistää ja lopettaa akun tilapäisen ohjauksen sekä muuttaa laitteiston ja DC-laturin asetuksia mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit.",
+          "allow_grid_disconnect": "Lisää kytkimen, joka irrottaa laitteiston sähköverkosta, jolloin koti toimii pelkällä akulla ja aurinkosähköllä, ja kytkee sen takaisin. Vaatii asetuksen Salli akun ohjaus ja Sigenergy Gatewayn. Oletuksena pois päältä."
+        }
+      },
       "reauth_confirm": {
         "title": "Kirjaudu mySigeniin uudelleen",
         "description": "Anna käyttäjän {username} nykyinen salasana.",
@@ -35,7 +49,7 @@
         "data_description": {
           "password": "Jätä tyhjäksi, jos haluat säilyttää nykyisen salasanan.",
           "scan_interval": "15–60 sekuntia. Lyhyemmät välit lähettävät enemmän pyyntöjä mySigeniin.",
-          "allow_control": "Antaa Home Assistantin käynnistää ja peruuttaa akun tilapäisen ohjauksen mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit.",
+          "allow_control": "Antaa Home Assistantin käynnistää ja lopettaa akun tilapäisen ohjauksen sekä muuttaa laitteiston ja DC-laturin asetuksia mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit.",
           "allow_grid_disconnect": "Lisää kytkimen, joka irrottaa laitteiston sähköverkosta, jolloin koti toimii pelkällä akulla ja aurinkosähköllä, ja kytkee sen takaisin. Vaatii asetuksen Salli akun ohjaus ja Sigenergy Gatewayn. Oletuksena pois päältä."
         }
       }
