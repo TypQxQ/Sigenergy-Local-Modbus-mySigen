@@ -133,6 +133,28 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
             ("GET", "dynamic-info", {"stationId": "42"}),
         ])
 
+    async def test_a_bad_list_answer_is_a_failed_read_not_an_empty_list(self):
+        # An empty list would remove every smart load switch with its settings.
+        tree = _Response(200, {"code": 0, "data": {"snCode": "AIO-1", "deviceType": 2}})
+        for data in (None, {}, "x"):
+            http, client = self._client(tree, _Response(200, {"code": 0, "data": data}))
+            await client.async_station_id()
+            with self.assertRaises(api.MySigenConnectionError):
+                await client.async_smart_loads()
+        # A real empty list is an answer: no loads.
+        http, client = self._client(tree, _Response(200, {"code": 0, "data": []}))
+        await client.async_station_id()
+        self.assertEqual(await client.async_smart_loads(), ())
+
+    async def test_without_a_device_tree_the_list_is_not_read(self):
+        # Without it no load can be placed, which would also look like none.
+        for data in (None, [], {"deviceType": 2}):
+            http, client = self._client(_Response(200, {"code": 0, "data": data}))
+            await client.async_station_id()
+            with self.assertRaises(api.MySigenConnectionError):
+                await client.async_smart_loads()
+            self.assertEqual([entry[1] for entry in http.sent[1:]], ["topology"])
+
     async def test_a_refusal_and_a_lost_answer_are_not_sent_again(self):
         refused = _Response(200, {"code": 1001, "msg": "fail", "data": None})
         http, client = self._client(refused)
@@ -199,6 +221,22 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self._switch(coordinator), "confirmed")
         self.assertEqual(coordinator.session.writes, [])
         self.assertEqual(coordinator.settings, [("smart_load", "confirmed")])
+
+    async def test_automatic_control_is_refused_even_when_already_set(self):
+        # The app shows no switch then, so "already on" is not a confirmation.
+        for mode in (0, 2, None):
+            coordinator = _LoadCoordinator([states(True, mode=mode)])
+            with self.assertRaisesRegex(control.CommandRefused, "manual"):
+                await self._switch(coordinator)
+            self.assertEqual(coordinator.session.writes, [])
+            self.assertEqual(coordinator.settings, [("smart_load", "refused")])
+
+    async def test_a_read_back_under_automatic_control_does_not_count(self):
+        coordinator = _LoadCoordinator(
+            [states(False), states(True, mode=0), states(True, mode=0)])
+        with self.assertRaises(control.CommandNotConfirmed):
+            await self._switch(coordinator)
+        self.assertEqual(coordinator.session.writes, [("load", 2, True)])
 
     async def test_a_lost_answer_is_unknown_and_not_sent_again(self):
         coordinator = _LoadCoordinator(

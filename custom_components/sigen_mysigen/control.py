@@ -653,15 +653,17 @@ async def async_set_smart_load(
         return (await coordinator.session.async_smart_load_states()).get(load_id)
 
     def before(current: Any) -> None:
-        if current.on is None:
-            raise CommandRefused(
-                "mySigen did not report whether the smart load is on. Nothing was sent."
-            )
+        # Also reached when the load already shows the requested state but is
+        # not under manual control: that is refused, not confirmed.
         if not current.manual:
             raise CommandRefused(
                 "mySigen is not controlling this smart load by hand right now "
                 f"(operation mode {current.operation_mode}). Set it to manual in "
                 "the mySigen app. Nothing was sent."
+            )
+        if current.on is None:
+            raise CommandRefused(
+                "mySigen did not report whether the smart load is on. Nothing was sent."
             )
 
     return await _change_setting(
@@ -669,7 +671,8 @@ async def async_set_smart_load(
         "smart_load",
         read=read,
         send=lambda _current: coordinator.session.async_set_smart_load(load.path, on),
-        expected=lambda current: current.on is on,
+        # Only counts under manual control, also when it is already set.
+        expected=lambda current: current.manual and current.on is on,
         publish=lambda current: coordinator.publish_smart_load(load_id, current),
         sleep=sleep,
         before=before,

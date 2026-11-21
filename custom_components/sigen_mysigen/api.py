@@ -1584,13 +1584,23 @@ class MySigenSession:
         return await self._async_get(f"AC charger {name}", path, params)
 
     async def async_smart_loads(self) -> tuple[SmartLoad, ...]:
-        """The smart loads on SigenStor and Gateway ports that can be switched."""
+        """The smart loads on SigenStor and Gateway ports that can be switched.
+
+        Only a list, placed with a device tree that lists devices, counts as
+        an answer: anything else raises, so a passing fault never reads as
+        "every load was removed".
+        """
         if not self.device_kinds:
             await self.async_read_battery_modules()
-        return parse_smart_loads(await self._async_get(
+        if not self.device_kinds:
+            raise MySigenConnectionError("smart load list: the device tree lists no devices")
+        data = await self._async_get(
             "smart load list", _SMART_LOAD_LIST_PATH,
             {"stationId": await self.async_station_id(), "showNewGenerator": "true"},
-        ), self.device_kinds)
+        )
+        if not isinstance(data, list):
+            raise MySigenConnectionError("smart load list: the answer is not a list")
+        return parse_smart_loads(data, self.device_kinds)
 
     async def async_smart_load_states(self) -> dict[int, SmartLoadState]:
         """Every listed load's switch and operation mode, by load id."""
