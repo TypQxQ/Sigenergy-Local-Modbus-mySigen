@@ -6,11 +6,11 @@
 
 **What works today, what needs your help, and what comes next.**
 
-![Working and tested](https://img.shields.io/badge/working_%26_tested-6-2ea44f?style=for-the-badge)
+![Working and tested](https://img.shields.io/badge/working_%26_tested-7-2ea44f?style=for-the-badge)
 ![Needs testers](https://img.shields.io/badge/needs_testers-4-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-2-0969da?style=for-the-badge)
 
-<sub>Updated 21 November 2026 · version 0.1.0</sub>
+<sub>Updated 21 November 2026 · version 0.1.1b1</sub>
 
 </div>
 
@@ -25,9 +25,10 @@
 | ↗️ | **Battery export** | Allow or block the battery sending power to the grid |
 | 📉 | **Peak shaving** | On or off, and the grid limit to stay under |
 | 📈 | **Gateway readings** | Grid voltage and current per phase, peaks and dips, phase order |
+| 🔋 | **Battery modules** | Charge level, power, cell temperature and voltage, lifetime discharge, model and rated capacity per module |
 | 🌍 | **Eleven languages** | Following the plant's entity name language |
 
-<sub>Tested on one system: a European account, one inverter, a Gateway, no charger.</sub>
+<sub>Tested on one system: a European account, one inverter with four battery modules, a Gateway, no charger.</sub>
 
 ## 🧪 Working, needs testers
 

@@ -16,6 +16,7 @@ from homeassistant.loader import async_get_integration
 from .api import MySigenError, MySigenRateLimitError, masked_shape
 from .const import CONF_PLANT_ENTRY_ID, DOMAIN, MODBUS_DOMAIN
 from .link import local_inverter_serials
+from .modules import SOURCES
 
 TO_REDACT = {CONF_USERNAME, CONF_PASSWORD}
 
@@ -141,4 +142,46 @@ async def async_get_config_entry_diagnostics(
         "v2x_enabled": coordinator.v2x_enabled,
         "level_range": coordinator.soc_range,
     }
+
+    # Positions and which readings arrived; the serial numbers stay out.
+    reader = coordinator.modules
+    result["battery_modules"] = {
+        "listed": len(reader.modules),
+        "modules": [
+            {
+                "position": module.position,
+                "under_inverter": module.inverter_serial is not None,
+                **{
+                    source: sorted(reader.data[source].get(module.serial) or {})
+                    for source in SOURCES
+                },
+                # Error type and HTTP status or mySigen code; no values.
+                "errors": {
+                    source: reader.errors[source][module.serial]
+                    for source in SOURCES
+                    if module.serial in reader.errors[source]
+                },
+            }
+            for module in reader.modules
+        ],
+    }
+    # Structure of the first module's three answers, every value masked, so
+    # the field names can be checked against a real plant.
+    if reader.modules and not coordinator.rate_limit_wait:
+        serial = reader.modules[0].serial
+        shapes: dict[str, Any] = {}
+        for name, read in (
+            ("info", coordinator.session.async_module_static_raw),
+            ("readings", coordinator.session.async_module_live_raw),
+            ("pack", coordinator.session.async_module_pack_raw),
+        ):
+            try:
+                shapes[name] = masked_shape(await read(serial))
+            except MySigenRateLimitError as err:
+                wait = coordinator.note_rate_limit(err)
+                shapes[name] = f"rate limited: waiting {wait:.0f} s"
+                break
+            except MySigenError as err:
+                shapes[name] = f"unavailable: {type(err).__name__}: {err}"
+        result["battery_module_shape"] = shapes
     return result

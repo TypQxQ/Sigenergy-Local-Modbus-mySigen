@@ -66,6 +66,15 @@ _STATION_PATH = "device/owner/station/home"
 _OVERRIDE_PATH = "device/energy-profile/instant/manunal/{station_id}"
 _TOPOLOGY_PATH = "device/devicetreepanel/topology"
 _AIO_PATH = "device/aio/by/station"
+# One battery module each. Request formats follow sigenergy2mqtt
+# (MIT License, https://github.com/seud0nym/sigenergy2mqtt).
+_MODULE_STATIC_PATH = "device/sigen/device/static/info"
+_MODULE_LIVE_PATH = "device/sigen/device/dynamic/info"
+_MODULE_PACK_PATH = "device/device/pack/queryPackMergeInfo"
+# mySigen answers the readings read with code 1000 unless the request names
+# the app package that sends it; any name is accepted. The add-on names
+# itself rather than posing as a Sigenergy app.
+_PACKAGE_HEADER = {"sg-pkg": "sigen_mysigen"}
 _GATEWAY_PATH = "device/gateway/{station_id}"
 _OVERRIDE_WRITE_PATH = "device/energy-profile/instant/manunal"
 _MODES_PATH = "device/energy-profile/mode/all/{station_id}"
@@ -596,6 +605,166 @@ def aio_serials(data: Any) -> set[str]:
     return {serial for item in data if (serial := normalize_serial(item))}
 
 
+# Device tree node types.
+_INVERTER_TYPES = (2, 3)  # All-in-one, inverter
+BATTERY_DEVICE_TYPE = 4
+
+
+@dataclass(frozen=True)
+class BatteryModule:
+    """One battery module as the device tree lists it."""
+
+    serial: str
+    # Where the module sits, as mySigen numbers it; None when not given.
+    position: str | None
+    # The inverter or all-in-one the module hangs under, when the tree says.
+    inverter_serial: str | None
+
+
+def _device_type(node: dict[str, Any]) -> int | None:
+    value = node.get("deviceType")
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value)
+    return None
+
+
+def _node_serial(node: dict[str, Any]) -> str | None:
+    return normalize_serial(node.get("snCode")) or normalize_serial(node.get("showSnCode"))
+
+
+def parse_battery_modules(data: Any) -> tuple[BatteryModule, ...]:
+    """List the battery modules in the station's device tree, in tree order."""
+    found: list[BatteryModule] = []
+    seen: set[str] = set()
+    pending: list[tuple[Any, str | None]] = [(data, None)]
+    while pending:
+        node, inverter = pending.pop(0)
+        if isinstance(node, list):
+            pending[:0] = [(item, inverter) for item in node]
+            continue
+        if not isinstance(node, dict):
+            continue
+        kind = _device_type(node)
+        serial = _node_serial(node)
+        if kind in _INVERTER_TYPES and serial:
+            inverter = serial
+        elif kind == BATTERY_DEVICE_TYPE and serial and serial not in seen:
+            seen.add(serial)
+            position = node.get("batPosition")
+            found.append(BatteryModule(
+                serial,
+                None if position in (None, "") or isinstance(position, (dict, list, bool))
+                else str(position).strip() or None,
+                inverter,
+            ))
+        children = node.get("nodeList")
+        if children is not None:
+            pending.insert(0, (children, inverter))
+    return tuple(found)
+
+
+# Units the module readings are converted to.
+_UNIT_FACTORS: dict[str, dict[str, float]] = {
+    "kWh": {"wh": 0.001, "kwh": 1.0, "mwh": 1000.0},
+    "kW": {"w": 0.001, "kw": 1.0},
+    "V": {"mv": 0.001, "v": 1.0},
+    "%": {"%": 1.0},
+}
+_CELSIUS = ("°c", "℃", "c")
+_FAHRENHEIT = ("°f", "℉", "f")
+
+
+def _param_rows(data: Any, list_name: str) -> dict[str, dict[str, Any]]:
+    """Return the rows of one parameter list by lower-case label."""
+    if not isinstance(data, dict):
+        return {}
+    return {label: row for label, row in _rows(data, list_name, "paramKey") if label}
+
+
+def _param_number(row: dict[str, Any], unit: str) -> float | None:
+    """Read a row as a number in `unit`. A unit it cannot convert is refused."""
+    text = row.get("paramValueText")
+    given = row.get("paramValueUnit")
+    number: float | None = None
+    if isinstance(text, (int, float)) and not isinstance(text, bool):
+        number = float(text)
+    elif isinstance(text, str):
+        try:
+            number = float(text.strip().replace(",", "."))
+        except ValueError:
+            number = None
+    if number is None or not isinstance(given, str) or not given.strip():
+        # Fall back to the combined form, "2.96 MWh".
+        value = row.get("paramValue")
+        match = re.fullmatch(
+            r"\s*(-?\d+(?:[.,]\d+)?)\s*([^\d\s]*)\s*", value
+        ) if isinstance(value, str) else None
+        if match is None:
+            return None
+        number = float(match.group(1).replace(",", "."))
+        given = match.group(2)
+    given = (given or "").strip().lower()
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    if unit == "°C":
+        if given in _CELSIUS:
+            return number
+        if given in _FAHRENHEIT:
+            return (number - 32) * 5 / 9
+        return None
+    factor = _UNIT_FACTORS[unit].get(given)
+    return None if factor is None else number * factor
+
+
+def _param_text(row: dict[str, Any]) -> str | None:
+    return _text(row.get("paramValueText")) or _text(row.get("paramValue"))
+
+
+@dataclass(frozen=True)
+class _ModuleField:
+    label: str
+    unit: str | None  # None for a text
+
+
+# Reading key -> the row it comes from. Keys are part of the unique IDs.
+MODULE_STATIC_FIELDS = {
+    "model": _ModuleField("device model", None),
+    "firmware": _ModuleField("software version", None),
+    "rated_capacity": _ModuleField("rated battery capacity", "kWh"),
+}
+MODULE_LIVE_FIELDS = {
+    "soc": _ModuleField("battery soc", "%"),
+    "power": _ModuleField("charging & discharging power", "kW"),
+    "pack_voltage": _ModuleField("battery pack voltage", "V"),
+    "heating": _ModuleField("heating status", None),
+}
+MODULE_PACK_FIELDS = {
+    "discharged": _ModuleField("total discharge amount", "kWh"),
+    "cell_voltage": _ModuleField("average cell voltage", "V"),
+    "cell_temperature": _ModuleField("average cell temperature", "°C"),
+}
+
+
+def parse_module_values(
+    data: Any, list_name: str, fields: dict[str, _ModuleField]
+) -> dict[str, float | str]:
+    """Pick the known readings out of one module answer. Missing means unknown."""
+    rows = _param_rows(data, list_name)
+    values: dict[str, float | str] = {}
+    for key, field in fields.items():
+        row = rows.get(field.label)
+        if row is None:
+            continue
+        value = _param_text(row) if field.unit is None else _param_number(row, field.unit)
+        if value is not None:
+            values[key] = value
+    return values
+
+
 def parse_override(data: Any) -> OverrideStatus:
     """Turn the override answer into a status, keeping missing apart from off."""
     if not isinstance(data, dict):
@@ -702,6 +871,8 @@ class MySigenSession:
         self._station_id: str | None = None
         # DC chargers mySigen lists for the station, read with the station id.
         self.dc_serials: tuple[str, ...] = ()
+        # Battery modules from the last device tree read; None until read.
+        self.battery_modules: tuple[BatteryModule, ...] | None = None
         self._logged_keys = False
 
     def _store(self, tokens: dict[str, Any]) -> None:
@@ -735,13 +906,19 @@ class MySigenSession:
                 self._refresh_token = None
         await self._async_login()
 
-    async def _async_get_once(self, path: str, params: dict[str, str] | None) -> Any:
+    async def _async_get_once(
+        self,
+        path: str,
+        params: dict[str, str] | None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         try:
             async with self._session.request(
                 "GET",
                 f"{REGIONS[self._region]}{path}",
                 params=params,
                 headers={
+                    **(headers or {}),
                     "Authorization": f"Bearer {self._access_token}",
                     "Content-Type": "application/json",
                 },
@@ -771,7 +948,11 @@ class MySigenSession:
         return payload.get("data")
 
     async def _async_get(
-        self, what: str, path: str, params: dict[str, str] | None = None
+        self,
+        what: str,
+        path: str,
+        params: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         """GET one path, signing in again once if the session was dropped.
 
@@ -781,11 +962,11 @@ class MySigenSession:
         try:
             await self._async_ensure_token()
             try:
-                return await self._async_get_once(path, params)
+                return await self._async_get_once(path, params, headers)
             except MySigenAuthError:
                 self._access_token = None
                 await self._async_ensure_token()
-                return await self._async_get_once(path, params)
+                return await self._async_get_once(path, params, headers)
         except (MySigenAuthError, MySigenPermissionError) as err:
             raise type(err)(f"{what}: {err}") from err
 
@@ -882,10 +1063,67 @@ class MySigenSession:
             ("inverter list", _AIO_PATH, aio_serials),
         ):
             try:
-                serials |= parse(await self._async_get(what, path, params))
+                data = await self._async_get(what, path, params)
             except (MySigenConnectionError, MySigenPermissionError) as err:
                 _LOGGER.debug("mySigen serial source unavailable: %s", err)
+                continue
+            serials |= parse(data)
+            if path == _TOPOLOGY_PATH:
+                self.battery_modules = parse_battery_modules(data)
         return serials
+
+    async def async_read_battery_modules(self) -> tuple[BatteryModule, ...]:
+        """Read the device tree again and return its battery modules."""
+        data = await self._async_get(
+            "device tree", _TOPOLOGY_PATH, {"stationId": await self.async_station_id()}
+        )
+        self.battery_modules = parse_battery_modules(data)
+        return self.battery_modules
+
+    async def _async_module_get(
+        self,
+        what: str,
+        path: str,
+        serial: str,
+        headers: dict[str, str] | None = None,
+        **extra: str,
+    ) -> Any:
+        return await self._async_get(what, path, {
+            "stationId": await self.async_station_id(), "snCode": serial, **extra,
+        }, headers)
+
+    async def async_module_static_raw(self, serial: str) -> Any:
+        return await self._async_module_get(
+            "battery module", _MODULE_STATIC_PATH, serial,
+            deviceType=str(BATTERY_DEVICE_TYPE),
+        )
+
+    async def async_module_live_raw(self, serial: str) -> Any:
+        return await self._async_module_get(
+            "battery module readings", _MODULE_LIVE_PATH, serial, _PACKAGE_HEADER,
+            deviceType=str(BATTERY_DEVICE_TYPE), refreshFlag="",
+        )
+
+    async def async_module_pack_raw(self, serial: str) -> Any:
+        return await self._async_module_get("battery pack", _MODULE_PACK_PATH, serial)
+
+    async def async_module_static(self, serial: str) -> dict[str, float | str]:
+        """Model, firmware and rated capacity of one module."""
+        return parse_module_values(
+            await self.async_module_static_raw(serial), "paramInfoVOList", MODULE_STATIC_FIELDS
+        )
+
+    async def async_module_readings(self, serial: str) -> dict[str, float | str]:
+        """Charge level, power, pack voltage and heating of one module."""
+        return parse_module_values(
+            await self.async_module_live_raw(serial), "realTimeInfo", MODULE_LIVE_FIELDS
+        )
+
+    async def async_module_pack(self, serial: str) -> dict[str, float | str]:
+        """Lifetime discharge and average cell values of one module."""
+        return parse_module_values(
+            await self.async_module_pack_raw(serial), "paramInfoVOList", MODULE_PACK_FIELDS
+        )
 
     async def _async_put(
         self, what: str, path: str, body: dict[str, Any], method: str = "PUT"

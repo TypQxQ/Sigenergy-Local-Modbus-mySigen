@@ -7,7 +7,7 @@
 **Every entity and control, and how each change is checked.**<br>
 New here? Start with the [README](../README.md).
 
-📊 [Entities](#-entities) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
+📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
 
 </div>
 
@@ -43,6 +43,26 @@ Every name ends with **(mySigen)**, in every language, so you can tell these apa
 
 > [!NOTE]
 > Grid frequency, grid connection state, power, energy and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
+
+## 🔋 Battery modules
+
+Sigenergy ESS reads each inverter's battery as a whole. mySigen also knows each **battery module**, so every module gets a device of its own, **Sigen battery module 1**, 2 and so on, under its inverter and listed with the other Sigenergy ESS devices. They appear by themselves when mySigen lists modules, and go away when you remove the add-on.
+
+| | Entity | What it shows |
+| :-: | --- | --- |
+| ✅ | State of charge | The module's own charge level |
+| ✅ | Total energy discharged | Lifetime discharge of the module, in kWh; for warranty throughput |
+| ✅ | Average cell temperature | Average over the module's cells |
+| ✅ | Average cell voltage | Average over the module's cells |
+| ✅ | Rated capacity | The module's capacity on paper, e.g. 8.06 kWh |
+| ⬜ | Power | The module's charging or discharging power; negative while discharging |
+| ⬜ | Pack voltage | The module's voltage as mySigen reports it |
+| ⬜ | Heating status | Whether the module is heating itself |
+
+The device also shows the model and firmware. To keep the request count low, one module is read per poll, and each module is read again about every five minutes; with many modules or a long polling interval it takes longer. Model, firmware and rated capacity are read once a day.
+
+> [!NOTE]
+> Total energy discharged moves in steps of 10 kWh, as mySigen reports it in MWh with two decimals.
 
 ## 🔋 Battery overrides
 
@@ -156,7 +176,7 @@ When mySigen asks for fewer requests, the add-on pauses and refuses changes unti
 ## ⚠️ Limitations
 
 - **Unofficial interface.** Sigenergy hasn't approved it, and a mySigen update could stop sign-in.
-- **Tested on one system:** a European account, one inverter, a Gateway, no charger.
+- **Tested on one system:** a European account, one inverter with four battery modules, a Gateway, no charger.
 - **One system per account.** If the account starts opening a different system, the connection reloads and checks it against your plant again.
 - **Nine of eleven languages** still need a native speaker's review.
 - **Your password is stored** in Home Assistant so it can sign in again.
