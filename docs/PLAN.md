@@ -7,10 +7,10 @@
 **What works today, what needs your help, and what comes next.**
 
 ![Working and tested](https://img.shields.io/badge/working_%26_tested-6-2ea44f?style=for-the-badge)
-![Needs testers](https://img.shields.io/badge/needs_testers-4-f0a500?style=for-the-badge)
+![Needs testers](https://img.shields.io/badge/needs_testers-5-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-2-0969da?style=for-the-badge)
 
-<sub>Updated 21 November 2026 · version 0.1.0</sub>
+<sub>Updated 21 November 2026 · version 0.1.1b1</sub>
 
 </div>
 
@@ -35,6 +35,7 @@
 | :-: | --- | --- |
 | 🔌 | **Disconnect from the grid** | The status reads correctly, but no disconnect has been sent yet |
 | 🚗 | **DC charger** | Charging mode, stop level, reserve and V2X have never met a real charger |
+| 🔋 | **Battery modules** | Per-module charge, cell temperature and voltage, and lifetime discharge; the field names still need a real plant |
 | 🗺️ | **Other systems** | Other regions, models, firmware, and systems without a Gateway |
 | 🗣️ | **Translations** | Nine of the eleven languages need a native speaker |
 

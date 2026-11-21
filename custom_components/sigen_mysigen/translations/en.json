@@ -209,6 +209,30 @@
       },
       "dc_charger_stop_level": {
         "name": "Current DC charge limit (mySigen)"
+      },
+      "battery_module_soc": {
+        "name": "State of charge (mySigen)"
+      },
+      "battery_module_discharged": {
+        "name": "Total energy discharged (mySigen)"
+      },
+      "battery_module_cell_temperature": {
+        "name": "Average cell temperature (mySigen)"
+      },
+      "battery_module_cell_voltage": {
+        "name": "Average cell voltage (mySigen)"
+      },
+      "battery_module_power": {
+        "name": "Power (mySigen)"
+      },
+      "battery_module_pack_voltage": {
+        "name": "Pack voltage (mySigen)"
+      },
+      "battery_module_heating": {
+        "name": "Heating status (mySigen)"
+      },
+      "battery_module_capacity": {
+        "name": "Rated capacity (mySigen)"
       }
     },
     "number": {
@@ -325,6 +349,11 @@
           "description": "Which connection to use. Can be left out when there is only one."
         }
       }
+    }
+  },
+  "device": {
+    "battery_module": {
+      "name": "Sigen battery module {position}"
     }
   }
 }
