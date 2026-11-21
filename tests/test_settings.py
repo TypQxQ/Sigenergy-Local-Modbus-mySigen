@@ -58,10 +58,19 @@ class TestParsing(unittest.TestCase):
             (unset.enabled, unset.effective, unset.owner, unset.installer),
             (False, None, None, None),
         )
-        odd = api.parse_grid_current_limit({"currentLimitation": True})
-        self.assertIsNone(odd.effective)
-        for bad in (None, {}, [], {"other": 1}):
-            self.assertIsNone(api.parse_grid_current_limit(bad))
+        # Only a complete, readable answer counts; a missing or odd field
+        # must not pass for "no installer limit".
+        incomplete = {key: value for key, value in GRID_CURRENT.items()
+                      if key != "installerSetLimitation"}
+        for bad in (
+            None, {}, [], {"other": 1}, {"enable": True}, incomplete,
+            {**GRID_CURRENT, "enable": None},
+            {**GRID_CURRENT, "installerSetLimitation": "x"},
+            {**GRID_CURRENT, "installerSetLimitation": True},
+            {**GRID_CURRENT, "currentLimitation": -1},
+            {**GRID_CURRENT, "ownerSetLimitation": "0"},
+        ):
+            self.assertIsNone(api.parse_grid_current_limit(bad), bad)
 
     def test_peak_shaving(self):
         peak = api.parse_peak_shaving(PEAK)
@@ -293,6 +302,13 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         result = await control.async_set_grid_current_limit(coordinator, amps=20, sleep=_no_sleep)
         self.assertEqual(result, "confirmed")
         self.assertEqual(coordinator.session.writes, [("current", 20.0)])
+
+    async def test_an_incomplete_answer_sends_nothing(self):
+        incomplete = api.parse_grid_current_limit({"enable": True, "currentLimitation": "25.0"})
+        coordinator = _Coordinator({"current": [incomplete]})
+        with self.assertRaisesRegex(control.CommandRefused, "did not report"):
+            await control.async_set_grid_current_limit(coordinator, amps=32, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
 
     async def test_grid_current_limit_refusals(self):
         at_25 = api.parse_grid_current_limit(GRID_CURRENT)

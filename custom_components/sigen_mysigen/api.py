@@ -377,17 +377,27 @@ class PeakShaving:
 _NO_OWNER_LIMIT = 2147483.647
 
 
-def _amperes(value: Any) -> float | None:
-    """Read "25.0" or 25 as amperes; empty or "no limit" is None."""
-    if isinstance(value, bool) or value in (None, ""):
+_UNREADABLE = object()
+
+
+def _amperes(value: Any) -> Any:
+    """Read "25.0" or 25 as amperes.
+
+    Empty and the app's "no limit" value are None. Anything else that is not
+    a positive number is _UNREADABLE, so an odd answer is never taken as
+    "no limit".
+    """
+    if value in (None, ""):
         return None
+    if isinstance(value, bool):
+        return _UNREADABLE
     try:
         amps = float(value)
     except (TypeError, ValueError):
-        return None
-    if amps != amps or amps <= 0 or amps >= _NO_OWNER_LIMIT - 1:
-        return None
-    return amps
+        return _UNREADABLE
+    if amps != amps or amps <= 0:
+        return _UNREADABLE
+    return None if amps >= _NO_OWNER_LIMIT - 1 else amps
 
 
 @dataclass(frozen=True)
@@ -410,21 +420,21 @@ _GRID_CURRENT_KEYS = (
 
 
 def parse_grid_current_limit(data: Any) -> GridCurrentLimit | None:
-    """None only for an answer that is not about this setting.
+    """Read a complete answer; anything else is None, so nothing is sent.
 
-    A plant without a limit answers with empty values and enable false;
-    that is a real answer: no limit.
+    Every field must be there: a missing installer limit must not pass for
+    "no ceiling". A plant without a limit answers with empty values and
+    enable false; that is a real answer: no limit.
     """
-    if not isinstance(data, dict) or not any(key in data for key in _GRID_CURRENT_KEYS):
+    if not isinstance(data, dict) or not all(key in data for key in _GRID_CURRENT_KEYS):
         return None
-    effective = _amperes(data.get("currentLimitation"))
-    installer = _amperes(data.get("installerSetLimitation"))
-    enabled = data.get("enable")
+    enabled = data["enable"]
+    values = [_amperes(data[key]) for key in _GRID_CURRENT_KEYS[1:]]
+    if not isinstance(enabled, bool) or _UNREADABLE in values:
+        return None
+    effective, owner, installer = values
     return GridCurrentLimit(
-        enabled=enabled if isinstance(enabled, bool) else None,
-        effective=effective,
-        owner=_amperes(data.get("ownerSetLimitation")),
-        installer=installer,
+        enabled=enabled, effective=effective, owner=owner, installer=installer,
     )
 
 

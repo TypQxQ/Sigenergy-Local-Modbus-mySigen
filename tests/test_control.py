@@ -96,6 +96,12 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.published, [HOLD])
         self.assertEqual(coordinator.commands, [("start", "confirmed")])
 
+    async def test_one_minute_and_a_full_day_are_started(self):
+        for minutes in (1, 1440):
+            coordinator = _FakeCoordinator([OFF, HOLD])
+            self.assertEqual(await self._start(coordinator, minutes=minutes), "confirmed")
+            self.assertEqual(coordinator.session.writes, [("start", "hold_battery", minutes)])
+
     async def test_nothing_is_sent_when_a_precondition_fails(self):
         cases = [
             (dict(allow=False), {}, "switched off"),
@@ -296,6 +302,14 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(http.requests[2], ("PUT", "manunal", {
             "enable": False, "stationId": 42, "mode": "",
             "duration": "", "powerLimitation": ""}))
+
+    async def test_one_minute_and_a_full_day_are_sent(self):
+        # The mySigen app allows 1 to 1440 minutes; both ends go out as given.
+        ok = _Response(200, {"code": 0, "data": True})
+        for minutes in (1, 1440):
+            http, client = self._client(ok)
+            await client.async_start_override("hold_battery", minutes)
+            self.assertEqual(http.requests[1][2]["duration"], str(minutes))
 
     async def test_only_verified_modes_and_durations_can_be_sent(self):
         http, client = self._client()
