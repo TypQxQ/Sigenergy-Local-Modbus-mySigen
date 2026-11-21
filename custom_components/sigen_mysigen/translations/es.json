@@ -15,6 +15,20 @@
           "region": "La región en la que se creó tu cuenta de mySigen."
         }
       },
+      "settings": {
+        "title": "Ajustes de mySigen",
+        "description": "La cuenta corresponde a esta instalación. Elige con qué frecuencia Home Assistant lee de mySigen y qué puede controlar. Puedes cambiarlo más adelante reconfigurando la conexión.",
+        "data": {
+          "scan_interval": "Intervalo de lectura",
+          "allow_control": "Permitir el control de la batería",
+          "allow_grid_disconnect": "Permitir desconectarse de la red"
+        },
+        "data_description": {
+          "scan_interval": "Entre 15 y 60 segundos. Los intervalos más cortos envían más solicitudes a mySigen.",
+          "allow_control": "Permite que Home Assistant inicie y detenga forzados de la batería a través de mySigen y cambie los ajustes de la instalación y del cargador DC. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit.",
+          "allow_grid_disconnect": "Añade un interruptor que desconecta la instalación de la red, para que la casa funcione solo con batería y energía solar, y la vuelve a conectar. Requiere Permitir el control de la batería y un Sigenergy Gateway. Desactivado de forma predeterminada."
+        }
+      },
       "reauth_confirm": {
         "title": "Volver a iniciar sesión en mySigen",
         "description": "Introduce la contraseña actual de {username}.",
@@ -35,7 +49,7 @@
         "data_description": {
           "password": "Déjalo vacío para conservar la contraseña actual.",
           "scan_interval": "Entre 15 y 60 segundos. Los intervalos más cortos envían más solicitudes a mySigen.",
-          "allow_control": "Permite que Home Assistant inicie y cancele un forzado temporizado de la batería a través de mySigen. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit.",
+          "allow_control": "Permite que Home Assistant inicie y detenga forzados de la batería a través de mySigen y cambie los ajustes de la instalación y del cargador DC. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit.",
           "allow_grid_disconnect": "Añade un interruptor que desconecta la instalación de la red, para que la casa funcione solo con batería y energía solar, y la vuelve a conectar. Requiere Permitir el control de la batería y un Sigenergy Gateway. Desactivado de forma predeterminada."
         }
       }

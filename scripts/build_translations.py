@@ -1181,6 +1181,74 @@ for _language, _extra in _STEP_B.items():
     )
 
 
+KEYS.update({
+    "config.step.settings.title": "settings_title",
+    "config.step.settings.description": "settings_desc",
+    "config.step.settings.data.scan_interval": "interval",
+    "config.step.settings.data.allow_control": "allow",
+    "config.step.settings.data.allow_grid_disconnect": "allow_grid",
+    "config.step.settings.data_description.scan_interval": "interval_help",
+    "config.step.settings.data_description.allow_control": "allow_help",
+    "config.step.settings.data_description.allow_grid_disconnect": "allow_grid_help",
+})
+# Step F: settings asked right after sign-in. Battery control now also covers
+# plant and DC charger settings, so its help says so.
+_STEP_F: dict[str, dict[str, str]] = {
+    "sv": {
+        "settings_title": "Inställningar för mySigen",
+        "settings_desc": "Kontot hör till anläggningen. Välj hur ofta Home Assistant läser från mySigen och vad det får styra. Du kan ändra detta senare genom att konfigurera om anslutningen.",
+        "allow_help": "Låter Home Assistant starta och stoppa batteriöverstyrningar och ändra inställningar för anläggningen och DC-laddaren via mySigen. Avstängt som standard. Kontot behöver behörigheten View and Edit.",
+    },
+    "da": {
+        "settings_title": "Indstillinger for mySigen",
+        "settings_desc": "Kontoen hører til anlægget. Vælg, hvor ofte Home Assistant læser fra mySigen, og hvad den må styre. Du kan ændre det senere ved at omkonfigurere forbindelsen.",
+        "allow_help": "Lader Home Assistant starte og stoppe batterioverstyringer og ændre indstillinger for anlægget og DC-laderen via mySigen. Slået fra som standard. Kontoen skal have rettigheden View and Edit.",
+    },
+    "nb": {
+        "settings_title": "Innstillinger for mySigen",
+        "settings_desc": "Kontoen hører til anlegget. Velg hvor ofte Home Assistant leser fra mySigen, og hva den kan styre. Du kan endre dette senere ved å rekonfigurere tilkoblingen.",
+        "allow_help": "Lar Home Assistant starte og stoppe batterioverstyringer og endre innstillinger for anlegget og DC-laderen via mySigen. Av som standard. Kontoen trenger tilgangen View and Edit.",
+    },
+    "de": {
+        "settings_title": "mySigen-Einstellungen",
+        "settings_desc": "Das Konto gehört zu dieser Anlage. Wähle, wie oft Home Assistant von mySigen liest und was es steuern darf. Du kannst das später ändern, indem du die Verbindung neu konfigurierst.",
+        "allow_help": "Erlaubt Home Assistant, Batterie-Übersteuerungen über mySigen zu starten und zu beenden sowie Einstellungen der Anlage und des DC-Laders zu ändern. Standardmäßig aus. Das Konto benötigt die Berechtigung View and Edit.",
+    },
+    "nl": {
+        "settings_title": "mySigen-instellingen",
+        "settings_desc": "Het account hoort bij deze installatie. Kies hoe vaak Home Assistant van mySigen leest en wat het mag aansturen. Je kunt dit later wijzigen door de verbinding opnieuw te configureren.",
+        "allow_help": "Laat Home Assistant batterij-overrides via mySigen starten en stoppen en instellingen van de installatie en de DC-lader wijzigen. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
+    },
+    "fr": {
+        "settings_title": "Paramètres mySigen",
+        "settings_desc": "Le compte correspond à cette installation. Choisissez la fréquence de lecture de mySigen par Home Assistant et ce qu'il peut piloter. Vous pourrez le modifier plus tard en reconfigurant la connexion.",
+        "allow_help": "Permet à Home Assistant de démarrer et d'arrêter des forçages de la batterie via mySigen, et de modifier les réglages de l'installation et du chargeur DC. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit.",
+    },
+    "es": {
+        "settings_title": "Ajustes de mySigen",
+        "settings_desc": "La cuenta corresponde a esta instalación. Elige con qué frecuencia Home Assistant lee de mySigen y qué puede controlar. Puedes cambiarlo más adelante reconfigurando la conexión.",
+        "allow_help": "Permite que Home Assistant inicie y detenga forzados de la batería a través de mySigen y cambie los ajustes de la instalación y del cargador DC. Desactivado de forma predeterminada. La cuenta necesita el permiso View and Edit.",
+    },
+    "it": {
+        "settings_title": "Impostazioni mySigen",
+        "settings_desc": "L'account corrisponde a questo impianto. Scegli ogni quanto Home Assistant legge da mySigen e cosa può controllare. Puoi modificarlo in seguito riconfigurando la connessione.",
+        "allow_help": "Consente a Home Assistant di avviare e interrompere forzature della batteria tramite mySigen e di modificare le impostazioni dell'impianto e del caricatore DC. Disattivato per impostazione predefinita. L'account deve avere l'autorizzazione View and Edit.",
+    },
+    "fi": {
+        "settings_title": "mySigen-asetukset",
+        "settings_desc": "Tili kuuluu tähän laitteistoon. Valitse, kuinka usein Home Assistant lukee mySigenistä ja mitä se saa ohjata. Voit muuttaa tätä myöhemmin määrittämällä yhteyden uudelleen.",
+        "allow_help": "Antaa Home Assistantin käynnistää ja lopettaa akun tilapäisen ohjauksen sekä muuttaa laitteiston ja DC-laturin asetuksia mySigenin kautta. Oletuksena pois päältä. Tili tarvitsee oikeuden View and Edit.",
+    },
+    "pl": {
+        "settings_title": "Ustawienia mySigen",
+        "settings_desc": "Konto pasuje do tej instalacji. Wybierz, jak często Home Assistant odczytuje dane z mySigen i czym może sterować. Możesz to później zmienić, ponownie konfigurując połączenie.",
+        "allow_help": "Pozwala Home Assistant uruchamiać i zatrzymywać wymuszenia pracy baterii przez mySigen oraz zmieniać ustawienia instalacji i ładowarki DC. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit.",
+    },
+}
+for _language, _extra in _STEP_F.items():
+    LANGUAGES[_language].update(_extra)
+
+
 def _flatten(node, prefix=""):
     if isinstance(node, dict):
         for key, value in node.items():

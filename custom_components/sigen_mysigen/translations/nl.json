@@ -15,6 +15,20 @@
           "region": "De regio waarin je mySigen-account is aangemaakt."
         }
       },
+      "settings": {
+        "title": "mySigen-instellingen",
+        "description": "Het account hoort bij deze installatie. Kies hoe vaak Home Assistant van mySigen leest en wat het mag aansturen. Je kunt dit later wijzigen door de verbinding opnieuw te configureren.",
+        "data": {
+          "scan_interval": "Uitleesinterval",
+          "allow_control": "Batterijbesturing toestaan",
+          "allow_grid_disconnect": "Loskoppelen van het net toestaan"
+        },
+        "data_description": {
+          "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
+          "allow_control": "Laat Home Assistant batterij-overrides via mySigen starten en stoppen en instellingen van de installatie en de DC-lader wijzigen. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
+          "allow_grid_disconnect": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit."
+        }
+      },
       "reauth_confirm": {
         "title": "Opnieuw inloggen bij mySigen",
         "description": "Voer het huidige wachtwoord voor {username} in.",
@@ -35,7 +49,7 @@
         "data_description": {
           "password": "Laat leeg om het huidige wachtwoord te behouden.",
           "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
-          "allow_control": "Laat Home Assistant een tijdelijke batterij-override via mySigen starten en annuleren. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
+          "allow_control": "Laat Home Assistant batterij-overrides via mySigen starten en stoppen en instellingen van de installatie en de DC-lader wijzigen. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
           "allow_grid_disconnect": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit."
         }
       }

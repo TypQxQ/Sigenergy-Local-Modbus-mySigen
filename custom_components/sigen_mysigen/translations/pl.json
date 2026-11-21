@@ -15,6 +15,20 @@
           "region": "Region, w którym utworzono Twoje konto mySigen."
         }
       },
+      "settings": {
+        "title": "Ustawienia mySigen",
+        "description": "Konto pasuje do tej instalacji. Wybierz, jak często Home Assistant odczytuje dane z mySigen i czym może sterować. Możesz to później zmienić, ponownie konfigurując połączenie.",
+        "data": {
+          "scan_interval": "Interwał odczytu",
+          "allow_control": "Zezwól na sterowanie baterią",
+          "allow_grid_disconnect": "Zezwól na odłączanie od sieci"
+        },
+        "data_description": {
+          "scan_interval": "Od 15 do 60 sekund. Krótsze interwały wysyłają więcej żądań do mySigen.",
+          "allow_control": "Pozwala Home Assistant uruchamiać i zatrzymywać wymuszenia pracy baterii przez mySigen oraz zmieniać ustawienia instalacji i ładowarki DC. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit.",
+          "allow_grid_disconnect": "Dodaje przełącznik, który odłącza instalację od sieci, tak że dom działa tylko na baterii i energii słonecznej, i podłącza ją ponownie. Wymaga opcji Zezwól na sterowanie baterią i bramy Sigenergy Gateway. Domyślnie wyłączone."
+        }
+      },
       "reauth_confirm": {
         "title": "Zaloguj się ponownie do mySigen",
         "description": "Podaj aktualne hasło dla {username}.",
@@ -35,7 +49,7 @@
         "data_description": {
           "password": "Pozostaw puste, aby zachować obecne hasło.",
           "scan_interval": "Od 15 do 60 sekund. Krótsze interwały wysyłają więcej żądań do mySigen.",
-          "allow_control": "Pozwala Home Assistant uruchamiać i anulować czasowe wymuszenie pracy baterii przez mySigen. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit.",
+          "allow_control": "Pozwala Home Assistant uruchamiać i zatrzymywać wymuszenia pracy baterii przez mySigen oraz zmieniać ustawienia instalacji i ładowarki DC. Domyślnie wyłączone. Konto wymaga uprawnienia View and Edit.",
           "allow_grid_disconnect": "Dodaje przełącznik, który odłącza instalację od sieci, tak że dom działa tylko na baterii i energii słonecznej, i podłącza ją ponownie. Wymaga opcji Zezwól na sterowanie baterią i bramy Sigenergy Gateway. Domyślnie wyłączone."
         }
       }

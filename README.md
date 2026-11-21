@@ -51,7 +51,7 @@ Download `sigen_mysigen.zip` from a [release](https://github.com/TypQxQ/Sigenerg
 
 1. **Share your system** in the mySigen app with a *new* email address, with **View and Edit** access.
 2. **Add the integration:** **Settings → Devices & services → Add integration → Sigenergy ESS – mySigen cloud**. Pick your plant and sign in with the new account.
-3. **Allow control:** open **Reconfigure**, switch on **Allow battery control**, and enable the controls you want.
+3. **Choose the settings:** how often mySigen is read and, if you want control, **Allow battery control**. Then enable the controls you want. You can change these later under **Reconfigure**.
 
 > [!IMPORTANT]
 > Use a separate account. Signing in with the account you use in the app can sign the app out.
