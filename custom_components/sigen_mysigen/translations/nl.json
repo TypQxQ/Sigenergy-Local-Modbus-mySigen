@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Nominale capaciteit (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generatorvermogen fase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generatorvermogen fase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generatorvermogen fase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Minimale EV-lading voor V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Max. stroom van de netaansluiting (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Duur",
-          "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (30 tot 120)."
+          "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (1 tot 1440, hooguit 24 uur)."
         },
         "power_limit": {
           "name": "Vermogenslimiet",

@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Nimelliskapasiteetti (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generaattorin teho vaihe A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generaattorin teho vaihe B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generaattorin teho vaihe C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Sähköauton vähimmäisvaraus V2X:lle (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Verkkoliitännän enimmäisvirta (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Kesto",
-          "description": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (30–120)."
+          "description": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (1–1440, enintään vuorokausi)."
         },
         "power_limit": {
           "name": "Tehoraja",

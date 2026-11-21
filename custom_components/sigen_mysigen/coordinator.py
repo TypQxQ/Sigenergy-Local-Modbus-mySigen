@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import (
     BatteryExport,
+    GridCurrentLimit,
     DcChargeMode,
     DcChargeSetting,
     GridConnection,
@@ -135,6 +136,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.operating_mode: int | None = None
         self.battery_export: BatteryExport | None = None
         self.peak_shaving: PeakShaving | None = None
+        self.grid_current_limit: GridCurrentLimit | None = None
         self.last_setting: dict[str, str] | None = None
         # Grid connection (step D); only read while disconnecting is allowed.
         self.grid_connection: GridConnection | None = None
@@ -252,6 +254,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
 
     def publish_peak_shaving(self, schedule: PeakShaving) -> None:
         self.peak_shaving = schedule
+        self.async_update_listeners()
+
+    def publish_grid_current_limit(self, limit: GridCurrentLimit) -> None:
+        self.grid_current_limit = limit
         self.async_update_listeners()
 
     @property
@@ -410,6 +416,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             ("operating_mode", self.session.async_operating_mode),
             ("battery_export", self.session.async_battery_export),
             ("peak_shaving", self.session.async_peak_shaving),
+            ("grid_current_limit", self.session.async_grid_current_limit),
         ):
             try:
                 setattr(self, name, await read())

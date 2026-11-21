@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Pojemność znamionowa (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Moc generatora faza A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Moc generatora faza B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Moc generatora faza C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Minimalne naładowanie auta dla V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Maks. prąd przyłącza sieciowego (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Czas trwania",
-          "description": "Minuty do powrotu instalacji do zwykłej strategii (od 30 do 120)."
+          "description": "Minuty do powrotu instalacji do zwykłej strategii (od 1 do 1440, najwyżej doba)."
         },
         "power_limit": {
           "name": "Limit mocy",

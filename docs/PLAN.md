@@ -10,7 +10,7 @@
 ![Needs testers](https://img.shields.io/badge/needs_testers-4-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-2-0969da?style=for-the-badge)
 
-<sub>Updated 21 November 2026 · version 0.1.1b1</sub>
+<sub>Updated 21 November 2026 · version 0.1.1b2</sub>
 
 </div>
 
@@ -20,7 +20,7 @@
 
 | | Feature | What you get |
 | :-: | --- | --- |
-| 🔋 | **Battery overrides** | Hold, charge, discharge or self-consumption for 30–120 min, with an optional power limit |
+| 🔋 | **Battery overrides** | Hold, charge, discharge or self-consumption for 1 min to 24 h, with an optional power limit |
 | ⚙️ | **Operating mode** | Sigen AI, self-consumption, time of use, or full feed-in |
 | ↗️ | **Battery export** | Allow or block the battery sending power to the grid |
 | 📉 | **Peak shaving** | On or off, and the grid limit to stay under |
@@ -55,7 +55,7 @@ Waiting for someone with the equipment to share diagnostics.
 
 Ideas that need more information about how mySigen handles them:
 
-`charging schedules` · `timed V2X sessions` · `Sigen AI forecast` · `charger firmware` · `overrides longer than 2 hours`
+`charging schedules` · `timed V2X sessions` · `Sigen AI forecast` · `charger firmware`
 
 ## 🚫 Won't be added
 

@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Rated capacity (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generator power phase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generator power phase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generator power phase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Minimum EV charge for V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Max grid connection current (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Duration",
-          "description": "Minutes until the plant returns to its normal strategy (30 to 120)."
+          "description": "Minutes until the plant returns to its normal strategy (1 to 1440, at most 24 hours)."
         },
         "power_limit": {
           "name": "Power limit",

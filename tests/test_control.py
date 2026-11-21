@@ -106,8 +106,8 @@ class TestStart(unittest.IsolatedAsyncioTestCase):
             ({}, dict(mode="turbo"), "not available"),
             ({}, dict(power_kw=0.0), "Power limit"),
             ({}, dict(power_kw=100.5), "Power limit"),
-            ({}, dict(minutes=29), "Duration"),
-            ({}, dict(minutes=121), "Duration"),
+            ({}, dict(minutes=0), "Duration"),
+            ({}, dict(minutes=1441), "Duration"),
         ]
         for coordinator_args, call_args, text in cases:
             coordinator = _FakeCoordinator([OFF, HOLD], **coordinator_args)
@@ -299,7 +299,7 @@ class TestWriteRequests(unittest.IsolatedAsyncioTestCase):
 
     async def test_only_verified_modes_and_durations_can_be_sent(self):
         http, client = self._client()
-        for mode, minutes in (("turbo", 60), ("hold_battery", 29), ("hold_battery", 121)):
+        for mode, minutes in (("turbo", 60), ("hold_battery", 0), ("hold_battery", 1441)):
             with self.assertRaises(ValueError):
                 await client.async_start_override(mode, minutes)
         self.assertEqual(len(http.requests), 0)

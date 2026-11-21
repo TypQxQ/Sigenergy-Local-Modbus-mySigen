@@ -76,6 +76,12 @@ GATEWAY_MEASUREMENTS: dict[str, _Measurement] = {
         f"generator_current_{p}": _Measurement(f"generator_current_{p}", _AMPERE, False)
         for p in "abc"
     },
+    **{
+        f"generator_power_{p}": _Measurement(
+            f"generator_power_{p}", (SensorDeviceClass.POWER, UnitOfPower.KILO_WATT, 3), False
+        )
+        for p in "abc"
+    },
     "generator_power": _Measurement(
         "generator_power", (SensorDeviceClass.POWER, UnitOfPower.KILO_WATT, 3), False
     ),

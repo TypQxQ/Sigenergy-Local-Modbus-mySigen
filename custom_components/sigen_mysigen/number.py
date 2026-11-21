@@ -3,7 +3,13 @@ from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfPower, UnitOfTime
+from homeassistant.const import (
+    PERCENTAGE,
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfPower,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -18,6 +24,7 @@ from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER, CONF_PLANT_ENTRY_
 from .control import (
     async_set_dc_discharge_floor,
     async_set_dc_stop_level,
+    async_set_grid_current_limit,
     async_set_peak_shaving,
 )
 from .link import remote_ems_state
@@ -35,6 +42,7 @@ async def async_setup_entry(
         OverrideDuration(coordinator, "battery_override_duration"),
         OverridePowerLimit(coordinator, "battery_override_power_limit"),
         PeakShavingLimit(coordinator, "peak_shaving_limit"),
+        GridCurrentLimitNumber(coordinator, "grid_current_limit"),
     ]
     if coordinator.has_dc_charger:
         entities += [
@@ -123,6 +131,49 @@ class PeakShavingLimit(MySigenEntity, NumberEntity):
         await async_run_setting(
             self.coordinator,
             async_set_peak_shaving(self.coordinator, limit_kw=round(float(value), 1)),
+        )
+
+
+class GridCurrentLimitNumber(MySigenEntity, NumberEntity):
+    """The most current per phase the plant may draw from the grid.
+
+    The app's Grid Settings > Max Grid Connection Current. It cannot go
+    above the installer's ceiling.
+    """
+
+    _attr_entity_registry_enabled_default = False
+    _attr_native_min_value = 1
+    _attr_native_step = 0.1
+    _attr_native_unit_of_measurement = UnitOfElectricCurrent.AMPERE
+    _attr_mode = NumberMode.BOX
+
+    @property
+    def available(self) -> bool:
+        # Without a limit it stays available and shows unknown; setting a
+        # value switches the limit on.
+        return super().available and self.coordinator.grid_current_limit is not None
+
+    @property
+    def native_max_value(self) -> float:
+        limit = self.coordinator.grid_current_limit
+        return limit.installer if limit is not None and limit.installer else 1000.0
+
+    @property
+    def native_value(self) -> float | None:
+        limit = self.coordinator.grid_current_limit
+        return limit.effective if limit is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        limit = self.coordinator.grid_current_limit
+        if limit is None:
+            return None
+        return {"in_effect": limit.enabled, "installer_limit": limit.installer}
+
+    async def async_set_native_value(self, value: float) -> None:
+        await async_run_setting(
+            self.coordinator,
+            async_set_grid_current_limit(self.coordinator, amps=float(value)),
         )
 
 

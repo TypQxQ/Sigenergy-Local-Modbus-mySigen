@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Capacità nominale (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Potenza del generatore fase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Potenza del generatore fase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Potenza del generatore fase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Carica minima del VE per V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Corrente max. della connessione alla rete (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Durata",
-          "description": "Minuti prima che l'impianto torni alla sua strategia normale (da 30 a 120)."
+          "description": "Minuti prima che l'impianto torni alla sua strategia normale (da 1 a 1440, al massimo 24 ore)."
         },
         "power_limit": {
           "name": "Limite di potenza",

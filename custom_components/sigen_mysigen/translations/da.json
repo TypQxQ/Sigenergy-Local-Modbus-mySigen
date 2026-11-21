@@ -233,6 +233,15 @@
       },
       "battery_module_capacity": {
         "name": "Nominel kapacitet (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generatoreffekt fase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generatoreffekt fase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generatoreffekt fase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +259,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Bilens laveste ladeniveau for V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Maks. strøm ved nettilslutningen (mySigen)"
       }
     },
     "select": {
@@ -332,7 +344,7 @@
         },
         "duration": {
           "name": "Varighed",
-          "description": "Minutter, indtil anlægget vender tilbage til sin normale strategi (30 til 120)."
+          "description": "Minutter, indtil anlægget vender tilbage til sin normale strategi (1 til 1440, højst et døgn)."
         },
         "power_limit": {
           "name": "Effektgrænse",

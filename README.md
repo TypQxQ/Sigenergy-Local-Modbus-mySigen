@@ -19,8 +19,8 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 
 | | Feature | What you get |
 | :-: | --- | --- |
-| 🔋 | **Battery overrides** | Hold, charge or discharge for up to two hours. They end by themselves, even if Home Assistant is down. |
-| ⚙️ | **Plant settings** | Operating mode, battery export and peak shaving. |
+| 🔋 | **Battery overrides** | Hold, charge or discharge for 1 minute to 24 hours. They end by themselves, even if Home Assistant is down. |
+| ⚙️ | **Plant settings** | Operating mode, battery export, peak shaving and max grid connection current. |
 | 🔌 | **Off-grid** | Run the home on battery and solar alone. |
 | 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
 | 📈 | **Gateway** | Grid voltage and current on every phase. |
