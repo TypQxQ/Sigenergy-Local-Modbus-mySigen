@@ -40,3 +40,20 @@ CONF_OVERRIDE_POWER = "override_power_kw"
 MODBUS_CONF_ENTITY_NAME_LANGUAGE = "entity_name_language"
 MODBUS_ENTITY_NAME_LANGUAGE_AUTO = "auto"
 ENTITY_NAME_LANGUAGES = ("da", "de", "en", "es", "fi", "fr", "it", "nb", "nl", "pl", "sv")
+
+# This add-on's own name language, set under Reconfigure. "plant" follows
+# the Sigenergy ESS plant's choice, so both read the same on the shared
+# device; "auto" is the Home Assistant server language.
+CONF_ENTITY_NAME_LANGUAGE = "entity_name_language"
+ENTITY_NAME_LANGUAGE_PLANT = "plant"
+ENTITY_NAME_LANGUAGE_AUTO = "auto"
+ENTITY_NAME_LANGUAGE_OPTIONS = (
+    ENTITY_NAME_LANGUAGE_PLANT, ENTITY_NAME_LANGUAGE_AUTO, *ENTITY_NAME_LANGUAGES,
+)
+
+
+def name_language(choice: str | None, plant_language: str | None) -> str | None:
+    """The language for entity names, or None for the server language."""
+    if choice not in ENTITY_NAME_LANGUAGE_OPTIONS or choice == ENTITY_NAME_LANGUAGE_PLANT:
+        choice = plant_language
+    return choice if choice in ENTITY_NAME_LANGUAGES else None

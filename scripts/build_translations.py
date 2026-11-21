@@ -203,7 +203,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Vilken anslutning som ska användas. Kan utelämnas när det bara finns en.",
         "v_mode": "Läge", "v_mode_desc": "Vad batteriet ska göra.",
         "v_duration": "Längd",
-        "v_duration_desc": "Minuter tills anläggningen återgår till sin vanliga strategi (30 till 120).",
+        "v_duration_desc": "Minuter tills anläggningen återgår till sin vanliga strategi (1 till 1440, högst ett dygn).",
         "v_cancel": "Avbryt batteriöverstyrning",
         "v_cancel_desc": "Avslutar den pågående batteriöverstyrningen, även en som startats i mySigen-appen.",
     },
@@ -275,7 +275,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Hvilken forbindelse der skal bruges. Kan udelades, når der kun er én.",
         "v_mode": "Tilstand", "v_mode_desc": "Hvad batteriet skal gøre.",
         "v_duration": "Varighed",
-        "v_duration_desc": "Minutter, indtil anlægget vender tilbage til sin normale strategi (30 til 120).",
+        "v_duration_desc": "Minutter, indtil anlægget vender tilbage til sin normale strategi (1 til 1440, højst et døgn).",
         "v_cancel": "Annullér batterioverstyring",
         "v_cancel_desc": "Afslutter den igangværende batterioverstyring, også en, der er startet i mySigen-appen.",
     },
@@ -347,7 +347,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Hvilken tilkobling som skal brukes. Kan utelates når det bare finnes én.",
         "v_mode": "Modus", "v_mode_desc": "Hva batteriet skal gjøre.",
         "v_duration": "Varighet",
-        "v_duration_desc": "Minutter til anlegget går tilbake til sin vanlige strategi (30 til 120).",
+        "v_duration_desc": "Minutter til anlegget går tilbake til sin vanlige strategi (1 til 1440, høyst ett døgn).",
         "v_cancel": "Avbryt batterioverstyring",
         "v_cancel_desc": "Avslutter den pågående batterioverstyringen, også en som er startet i mySigen-appen.",
     },
@@ -420,7 +420,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Welche Verbindung verwendet werden soll. Kann weggelassen werden, wenn es nur eine gibt.",
         "v_mode": "Modus", "v_mode_desc": "Was die Batterie tun soll.",
         "v_duration": "Dauer",
-        "v_duration_desc": "Minuten, bis die Anlage zu ihrer normalen Strategie zurückkehrt (30 bis 120).",
+        "v_duration_desc": "Minuten, bis die Anlage zu ihrer normalen Strategie zurückkehrt (1 bis 1440, höchstens 24 Stunden).",
         "v_cancel": "Batterie-Übersteuerung abbrechen",
         "v_cancel_desc": "Beendet die laufende Batterie-Übersteuerung, auch eine in der mySigen-App gestartete.",
     },
@@ -492,7 +492,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Welke verbinding moet worden gebruikt. Kan worden weggelaten als er maar één is.",
         "v_mode": "Modus", "v_mode_desc": "Wat de batterij moet doen.",
         "v_duration": "Duur",
-        "v_duration_desc": "Minuten totdat de installatie terugkeert naar haar normale strategie (30 tot 120).",
+        "v_duration_desc": "Minuten totdat de installatie terugkeert naar haar normale strategie (1 tot 1440, hooguit 24 uur).",
         "v_cancel": "Batterij-override annuleren",
         "v_cancel_desc": "Beëindigt de lopende batterij-override, ook een die in de mySigen-app is gestart.",
     },
@@ -566,7 +566,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "La connexion à utiliser. Peut être omise lorsqu'il n'y en a qu'une.",
         "v_mode": "Mode", "v_mode_desc": "Ce que la batterie doit faire.",
         "v_duration": "Durée",
-        "v_duration_desc": "Minutes avant que l'installation ne revienne à sa stratégie normale (30 à 120).",
+        "v_duration_desc": "Minutes avant que l'installation ne revienne à sa stratégie normale (1 à 1440, 24 heures au plus).",
         "v_cancel": "Annuler le forçage de la batterie",
         "v_cancel_desc": "Met fin au forçage de la batterie en cours, y compris s'il a été démarré dans l'application mySigen.",
     },
@@ -640,7 +640,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Qué conexión usar. Se puede omitir cuando solo hay una.",
         "v_mode": "Modo", "v_mode_desc": "Lo que debe hacer la batería.",
         "v_duration": "Duración",
-        "v_duration_desc": "Minutos hasta que la instalación vuelve a su estrategia normal (de 30 a 120).",
+        "v_duration_desc": "Minutos hasta que la instalación vuelve a su estrategia normal (de 1 a 1440, como máximo 24 horas).",
         "v_cancel": "Cancelar el forzado de batería",
         "v_cancel_desc": "Finaliza el forzado de batería en curso, incluido uno iniciado en la aplicación mySigen.",
     },
@@ -713,7 +713,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Quale connessione usare. Può essere omessa quando ce n'è una sola.",
         "v_mode": "Modalità", "v_mode_desc": "Che cosa deve fare la batteria.",
         "v_duration": "Durata",
-        "v_duration_desc": "Minuti prima che l'impianto torni alla sua strategia normale (da 30 a 120).",
+        "v_duration_desc": "Minuti prima che l'impianto torni alla sua strategia normale (da 1 a 1440, al massimo 24 ore).",
         "v_cancel": "Annulla la forzatura batteria",
         "v_cancel_desc": "Termina la forzatura batteria in corso, anche se avviata nell'app mySigen.",
     },
@@ -786,7 +786,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Käytettävä yhteys. Voidaan jättää pois, kun yhteyksiä on vain yksi.",
         "v_mode": "Tila", "v_mode_desc": "Mitä akun pitää tehdä.",
         "v_duration": "Kesto",
-        "v_duration_desc": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (30–120).",
+        "v_duration_desc": "Minuutit, kunnes laitos palaa tavalliseen strategiaansa (1–1440, enintään vuorokausi).",
         "v_cancel": "Peruuta akun tilapäinen ohjaus",
         "v_cancel_desc": "Lopettaa käynnissä olevan akun tilapäisen ohjauksen, myös mySigen-sovelluksessa käynnistetyn.",
     },
@@ -859,7 +859,7 @@ LANGUAGES: dict[str, dict[str, str]] = {
         "v_entry_desc": "Którego połączenia użyć. Można pominąć, gdy jest tylko jedno.",
         "v_mode": "Tryb", "v_mode_desc": "Co ma robić bateria.",
         "v_duration": "Czas trwania",
-        "v_duration_desc": "Minuty do powrotu instalacji do zwykłej strategii (od 30 do 120).",
+        "v_duration_desc": "Minuty do powrotu instalacji do zwykłej strategii (od 1 do 1440, najwyżej doba).",
         "v_cancel": "Anuluj wymuszenie baterii",
         "v_cancel_desc": "Kończy trwające wymuszenie baterii, także uruchomione w aplikacji mySigen.",
     },
@@ -1375,6 +1375,62 @@ _STEP_G: dict[str, dict[str, str]] = {
     },
 }
 for _language, _extra in _STEP_G.items():
+    LANGUAGES[_language].update(_extra)
+
+
+KEYS.update({
+    "entity.number.grid_current_limit.name": "n_grid_current",
+    **{f"entity.sensor.generator_power_{p}.name": f"n_gen_power_ph|{p.upper()}" for p in "abc"},
+})
+# Step H: max grid connection current and generator power per phase.
+_STEP_H: dict[str, dict[str, str]] = {
+    "sv": {"n_grid_current": "Max ström vid nätanslutningen", "n_gen_power_ph": "Generatoreffekt fas {P}"},
+    "da": {"n_grid_current": "Maks. strøm ved nettilslutningen", "n_gen_power_ph": "Generatoreffekt fase {P}"},
+    "nb": {"n_grid_current": "Maks strøm ved nettilkoblingen", "n_gen_power_ph": "Generatoreffekt fase {P}"},
+    "de": {"n_grid_current": "Max. Strom am Netzanschluss", "n_gen_power_ph": "Generatorleistung Phase {P}"},
+    "nl": {"n_grid_current": "Max. stroom van de netaansluiting", "n_gen_power_ph": "Generatorvermogen fase {P}"},
+    "fr": {"n_grid_current": "Courant max. du raccordement réseau", "n_gen_power_ph": "Puissance du générateur phase {P}"},
+    "es": {"n_grid_current": "Corriente máx. de la conexión a red", "n_gen_power_ph": "Potencia del generador fase {P}"},
+    "it": {"n_grid_current": "Corrente max. della connessione alla rete", "n_gen_power_ph": "Potenza del generatore fase {P}"},
+    "fi": {"n_grid_current": "Verkkoliitännän enimmäisvirta", "n_gen_power_ph": "Generaattorin teho vaihe {P}"},
+    "pl": {"n_grid_current": "Maks. prąd przyłącza sieciowego", "n_gen_power_ph": "Moc generatora faza {P}"},
+}
+for _language, _extra in _STEP_H.items():
+    LANGUAGES[_language].update(_extra)
+
+
+KEYS.update({
+    "config.step.reconfigure.data.entity_name_language": "lang_label",
+    "config.step.reconfigure.data_description.entity_name_language": "lang_desc",
+    "selector.entity_name_language.options.plant": "lang_plant",
+    "selector.entity_name_language.options.auto": "lang_auto",
+    "selector.entity_name_language.options.da": "lang_da",
+    "selector.entity_name_language.options.de": "lang_de",
+    "selector.entity_name_language.options.en": "lang_en",
+    "selector.entity_name_language.options.es": "lang_es",
+    "selector.entity_name_language.options.fi": "lang_fi",
+    "selector.entity_name_language.options.fr": "lang_fr",
+    "selector.entity_name_language.options.it": "lang_it",
+    "selector.entity_name_language.options.nb": "lang_nb",
+    "selector.entity_name_language.options.nl": "lang_nl",
+    "selector.entity_name_language.options.pl": "lang_pl",
+    "selector.entity_name_language.options.sv": "lang_sv",
+})
+# Step I: the name language choice. Label, Automatic and the language
+# names are worded as in Sigenergy ESS, so both read the same.
+_STEP_I: dict[str, dict[str, str]] = {
+    "sv": {"lang_label": "Språk för entitetsnamn", "lang_desc": "Samma som Sigenergy ESS följer språket som valts för anläggningen där. Automatiskt använder Home Assistants serverspråk. Egna namn, entitets-ID:n och historik bevaras. När språket ändras läses integrationen in på nytt.", "lang_plant": "Samma som Sigenergy ESS", "lang_auto": "Automatiskt (Home Assistants serverspråk)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "da": {"lang_label": "Sprog for entitetsnavne", "lang_desc": "Samme som Sigenergy ESS følger det sprog, der er valgt for anlægget der. Automatisk bruger Home Assistants serversprog. Egne navne, entitets-ID’er og historik bevares. Ændring af sproget genindlæser integrationen.", "lang_plant": "Samme som Sigenergy ESS", "lang_auto": "Automatisk (Home Assistants serversprog)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "nb": {"lang_label": "Språk for entitetsnavn", "lang_desc": "Samme som Sigenergy ESS følger språket som er valgt for anlegget der. Automatisk bruker Home Assistants serverspråk. Egne navn, entitets-ID-er og historikk bevares. Endring av språket laster integrasjonen på nytt.", "lang_plant": "Samme som Sigenergy ESS", "lang_auto": "Automatisk (Home Assistants serverspråk)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "de": {"lang_label": "Sprache der Entitätsnamen", "lang_desc": "Wie Sigenergy ESS folgt der dort für die Anlage gewählten Sprache. Automatisch verwendet die Home-Assistant-Serversprache. Eigene Namen, Entitäts-IDs und Verlauf bleiben erhalten. Bei einer Sprachänderung wird die Integration neu geladen.", "lang_plant": "Wie Sigenergy ESS", "lang_auto": "Automatisch (Home-Assistant-Serversprache)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "nl": {"lang_label": "Taal voor entiteitsnamen", "lang_desc": "Zelfde als Sigenergy ESS volgt de taal die daar voor de installatie is gekozen. Automatisch gebruikt de servertaal van Home Assistant. Eigen namen, entiteits-ID’s en geschiedenis blijven behouden. Bij een taalwijziging wordt de integratie opnieuw geladen.", "lang_plant": "Zelfde als Sigenergy ESS", "lang_auto": "Automatisch (servertaal van Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "fr": {"lang_label": "Langue des noms d’entités", "lang_desc": "Comme Sigenergy ESS suit la langue choisie pour l’installation dans Sigenergy ESS. Automatique utilise la langue du serveur Home Assistant. Les noms personnalisés, identifiants d’entités et historiques sont conservés. Un changement de langue recharge l’intégration.", "lang_plant": "Comme Sigenergy ESS", "lang_auto": "Automatique (langue du serveur Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "es": {"lang_label": "Idioma de los nombres de entidades", "lang_desc": "Igual que Sigenergy ESS sigue el idioma elegido allí para la instalación. Automático usa el idioma del servidor de Home Assistant. Se conservan los nombres personalizados, los ID de entidades y el historial. Cambiar el idioma recarga la integración.", "lang_plant": "Igual que Sigenergy ESS", "lang_auto": "Automático (idioma del servidor de Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "it": {"lang_label": "Lingua dei nomi delle entità", "lang_desc": "Come Sigenergy ESS segue la lingua scelta lì per l’impianto. Automatico usa la lingua del server Home Assistant. Nomi personalizzati, ID delle entità e cronologia vengono conservati. Il cambio di lingua ricarica l’integrazione.", "lang_plant": "Come Sigenergy ESS", "lang_auto": "Automatico (lingua del server Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "fi": {"lang_label": "Entiteettien nimien kieli", "lang_desc": "Sama kuin Sigenergy ESS noudattaa siellä laitteistolle valittua kieltä. Automaattinen käyttää Home Assistantin palvelimen kieltä. Omat nimet, entiteettitunnukset ja historia säilyvät. Kielen vaihtaminen lataa integraation uudelleen.", "lang_plant": "Sama kuin Sigenergy ESS", "lang_auto": "Automaattinen (Home Assistantin palvelimen kieli)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+    "pl": {"lang_label": "Język nazw encji", "lang_desc": "Opcja Tak jak Sigenergy ESS używa języka wybranego tam dla instalacji. Opcja automatyczna używa języka serwera Home Assistant. Własne nazwy, identyfikatory encji i historia zostają zachowane. Zmiana języka przeładowuje integrację.", "lang_plant": "Tak jak Sigenergy ESS", "lang_auto": "Automatycznie (język serwera Home Assistant)", "lang_da": "Dansk", "lang_de": "Deutsch", "lang_en": "English", "lang_es": "Español", "lang_fi": "Suomi", "lang_fr": "Français", "lang_it": "Italiano", "lang_nb": "Norsk Bokmål", "lang_nl": "Nederlands", "lang_pl": "Polski", "lang_sv": "Svenska"},
+}
+for _language, _extra in _STEP_I.items():
     LANGUAGES[_language].update(_extra)
 
 

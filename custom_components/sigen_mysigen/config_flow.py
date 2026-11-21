@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from awesomeversion import AwesomeVersion
-import voluptuous as vol
+import probatio
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_NAME, CONF_PASSWORD, CONF_USERNAME
@@ -38,12 +38,15 @@ from .api import (
 from .const import (
     CONF_ALLOW_CONTROL,
     CONF_ALLOW_GRID_DISCONNECT,
+    CONF_ENTITY_NAME_LANGUAGE,
     CONF_PLANT_ENTRY_ID,
     CONF_REGION,
     CONF_SCAN_INTERVAL,
     DEFAULT_REGION,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    ENTITY_NAME_LANGUAGE_OPTIONS,
+    ENTITY_NAME_LANGUAGE_PLANT,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
     MIN_MODBUS_VERSION,
@@ -61,9 +64,9 @@ _PASSWORD_SELECTOR = TextSelector(
 )
 
 # Asked after sign-in and again under Reconfigure.
-_SETTINGS_SCHEMA = vol.Schema(
+_SETTINGS_SCHEMA = probatio.Schema(
     {
-        vol.Required(CONF_SCAN_INTERVAL): NumberSelector(
+        probatio.Required(CONF_SCAN_INTERVAL): NumberSelector(
             NumberSelectorConfig(
                 min=MIN_SCAN_INTERVAL,
                 max=MAX_SCAN_INTERVAL,
@@ -72,8 +75,8 @@ _SETTINGS_SCHEMA = vol.Schema(
                 mode=NumberSelectorMode.BOX,
             )
         ),
-        vol.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
-        vol.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
+        probatio.Required(CONF_ALLOW_CONTROL): BooleanSelector(),
+        probatio.Required(CONF_ALLOW_GRID_DISCONNECT): BooleanSelector(),
     }
 )
 
@@ -184,9 +187,9 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self.async_step_settings()
             errors["base"] = error
 
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_PLANT_ENTRY_ID): SelectSelector(
+                probatio.Required(CONF_PLANT_ENTRY_ID): SelectSelector(
                     SelectSelectorConfig(
                         options=[
                             SelectOptionDict(value=entry_id, label=name)
@@ -195,19 +198,19 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required(CONF_REGION, default=DEFAULT_REGION): SelectSelector(
+                probatio.Required(CONF_REGION, default=DEFAULT_REGION): SelectSelector(
                     SelectSelectorConfig(
                         options=list(REGIONS),
                         mode=SelectSelectorMode.DROPDOWN,
                         translation_key="region",
                     )
                 ),
-                vol.Required(CONF_USERNAME): TextSelector(
+                probatio.Required(CONF_USERNAME): TextSelector(
                     TextSelectorConfig(
                         type=TextSelectorType.EMAIL, autocomplete="username"
                     )
                 ),
-                vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
             }
         )
         suggested = {
@@ -275,7 +278,7 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}),
+            data_schema=probatio.Schema({probatio.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}),
             description_placeholders={"username": entry.data[CONF_USERNAME]},
             errors=errors,
         )
@@ -301,23 +304,40 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
                     entry.data[CONF_PLANT_ENTRY_ID],
                 )
             if error is None:
+                language = user_input.get(CONF_ENTITY_NAME_LANGUAGE)
+                if language not in ENTITY_NAME_LANGUAGE_OPTIONS:
+                    language = ENTITY_NAME_LANGUAGE_PLANT
                 return self.async_update_reload_and_abort(
                     entry,
                     data_updates={CONF_USERNAME: username, CONF_PASSWORD: password},
-                    options={**entry.options, **_options(user_input)},
+                    options={
+                        **entry.options,
+                        **_options(user_input),
+                        CONF_ENTITY_NAME_LANGUAGE: language,
+                    },
                 )
             errors["base"] = error
 
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Required(CONF_USERNAME): TextSelector(
+                probatio.Required(CONF_USERNAME): TextSelector(
                     TextSelectorConfig(
                         type=TextSelectorType.EMAIL, autocomplete="username"
                     )
                 ),
-                vol.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                probatio.Optional(CONF_PASSWORD): _PASSWORD_SELECTOR,
             }
-        ).extend(_SETTINGS_SCHEMA.schema)
+        ).extend(_SETTINGS_SCHEMA.schema).extend(
+            {
+                probatio.Required(CONF_ENTITY_NAME_LANGUAGE): SelectSelector(
+                    SelectSelectorConfig(
+                        options=list(ENTITY_NAME_LANGUAGE_OPTIONS),
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="entity_name_language",
+                    )
+                ),
+            }
+        )
         suggested = {
             CONF_USERNAME: (user_input or entry.data)[CONF_USERNAME],
             CONF_SCAN_INTERVAL: (user_input or {}).get(
@@ -330,6 +350,10 @@ class MySigenConfigFlow(ConfigFlow, domain=DOMAIN):
             CONF_ALLOW_GRID_DISCONNECT: (user_input or {}).get(
                 CONF_ALLOW_GRID_DISCONNECT,
                 entry.options.get(CONF_ALLOW_GRID_DISCONNECT) is True,
+            ),
+            CONF_ENTITY_NAME_LANGUAGE: (user_input or {}).get(
+                CONF_ENTITY_NAME_LANGUAGE,
+                entry.options.get(CONF_ENTITY_NAME_LANGUAGE, ENTITY_NAME_LANGUAGE_PLANT),
             ),
         }
         return self.async_show_form(

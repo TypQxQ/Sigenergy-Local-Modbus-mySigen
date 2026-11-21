@@ -19,6 +19,8 @@ Everything appears on your existing **Sigen Plant** device. mySigen is read ever
 
 Every name ends with **(mySigen)**, in every language, so you can tell these apart from the Modbus entities. With default Home Assistant naming settings, a new entity ID typically ends in `_mysigen`, for example `sensor.sigen_plant_battery_override_mode_mysigen`. Your entity ID settings can change the rest, and Home Assistant adds `_2` when an ID is already taken. Entities you already have keep their IDs. The tables below leave the suffix out.
 
+Names follow the **Entity name language** of Sigenergy ESS, so both read the same on the plant device. To use another language for these, pick **Automatic** (the Home Assistant server language) or a language under **Reconfigure**. Changing it reloads the connection; entity IDs and names you set yourself are kept.
+
 <sub>✅ on from the start · ⬜ disabled until you enable it</sub>
 
 | | Entity | What it shows |
@@ -35,7 +37,7 @@ Every name ends with **(mySigen)**, in every language, so you can tell these apa
 | ✅ | Gateway firmware, model | What the Gateway reports about itself |
 | ⬜ | Gateway grid voltage phase A, B, C, 1-min max / min | Highest and lowest voltage in the past minute: short peaks and dips between two readings |
 | ⬜ | Gateway grid phase sequence | Whether the phases are wired in the expected order |
-| ⬜ | Generator voltage, current, power, frequency, contactor | A generator on the Gateway; shown on every Gateway, so off by default |
+| ⬜ | Generator voltage, current and power per phase, total power, frequency, contactor | A generator on the Gateway; shown on every Gateway, so off by default |
 | | **DC charger** | <sub>only when mySigen lists one</sub> |
 | ✅ | Current DC charging mode | The charging mode in use: how the charger decides when to charge |
 | ✅ | Current DC charge limit | The car's charge level where charging stops |
@@ -73,7 +75,7 @@ An override makes the battery do **one thing for a set time**, then hands back t
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
 | 🎯 | Next override mode | Dropdown | What the battery should do; [options below](#what-the-battery-can-do). Sends nothing. |
-| ⏱️ | Next override duration | Number, min | 30 to 120 minutes. Sends nothing. |
+| ⏱️ | Next override duration | Number, min | 1 to 1440 minutes (24 hours), as in the mySigen app. Sends nothing. |
 | ⚡ | Next override power limit | Number, kW | Cap for charging or discharging; **0 = no limit**. Not used for hold battery or self-consumption. Disabled by default. Sends nothing. |
 | ▶️ | Start battery override | Button | Starts the chosen override right away. |
 | ⏹️ | Stop battery override | Button | Ends the running override right away, even one started in the app. |
@@ -95,7 +97,7 @@ The options of the **Next override mode** dropdown. Automations use the key as `
 action: sigen_mysigen.start_battery_override
 data:
   mode: charging      # a key from the table above
-  duration: 60        # 30 to 120 minutes
+  duration: 60        # 1 to 1440 minutes
   power_limit: 3.5    # optional, kW
 ```
 
@@ -126,6 +128,7 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 | ↗️ | Allow battery export to grid | Switch | On: the battery may export to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
 | 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
 | 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
+| 🔌 | Max grid connection current | Number, A | The most current per phase the plant draws from the grid, as in the app's *Grid Settings*. Unknown while no limit is set. Setting it also switches the limit on; switch it off in the app. It can't go above the installer's limit, shown in the `installer_limit` attribute. |
 
 <sub>Read every ten minutes, so a change made in the app can take that long to appear here.</sub>
 

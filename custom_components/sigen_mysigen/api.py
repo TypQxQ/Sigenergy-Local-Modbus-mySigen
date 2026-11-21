@@ -57,8 +57,9 @@ MAX_POWER_LIMIT_KW = 100.0
 # What the app sends for "no limit" in the power modes.
 _UNLIMITED_POWER = "4294967.295"
 # The range the reference client enforces; wider ranges are unverified.
-MIN_OVERRIDE_MINUTES = 30
-MAX_OVERRIDE_MINUTES = 120
+# The mySigen app accepts a custom override of 1 to 1440 minutes (24 hours).
+MIN_OVERRIDE_MINUTES = 1
+MAX_OVERRIDE_MINUTES = 1440
 
 _TOKEN_PATH = "auth/oauth/token"
 _STATION_PATH = "device/owner/station/home"
@@ -84,6 +85,9 @@ _EXPORT_PATH = "device/energy-profile/battery/export/limitation/{station_id}"
 _EXPORT_WRITE_PATH = "device/energy-profile/battery/export/limitation"
 _PEAK_PATH = "device/dischargesetting/peak/shaving/{station_id}"
 _PEAK_WRITE_PATH = "device/dischargesetting/peak/shaving"
+# The app's Grid Settings > Max Grid Connection Current. Amperes per phase.
+_GRID_CURRENT_PATH = "device/energy-profile/parallel/off/grid/{station_id}"
+_GRID_CURRENT_WRITE_PATH = "device/energy-profile/parallel/off/grid"
 _GRID_STATUS_PATH = "device/gateway/gateway-status"
 _GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
 # DC charger (step E). Taken from the solidfox clients; not yet read on a
@@ -115,6 +119,7 @@ _GRID_FIELDS: dict[str, tuple[str, str]] = {
 _GENERATOR_PHASE_ROWS: dict[str, tuple[str, str]] = {
     "voltage": ("generator_voltage", "V"),
     "current": ("generator_current", "A"),
+    "active power": ("generator_power", "kW"),
 }
 # generatorSideInfoList: one row per value.
 _GENERATOR_FIELDS: dict[str, tuple[str, str]] = {
@@ -366,6 +371,71 @@ class PeakShaving:
         index = next(i for i, row in enumerate(rows) if isinstance(row, dict))
         rows[index] = {**rows[index], "peakPower": round(float(limit_kw), 1)}
         return {**self.raw, "settingList": rows}
+
+
+# The app's owner value for "no owner limit": follow the installer's.
+_NO_OWNER_LIMIT = 2147483.647
+
+
+_UNREADABLE = object()
+
+
+def _amperes(value: Any) -> Any:
+    """Read "25.0" or 25 as amperes.
+
+    Empty and the app's "no limit" value are None. Anything else that is not
+    a positive number is _UNREADABLE, so an odd answer is never taken as
+    "no limit".
+    """
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return _UNREADABLE
+    try:
+        amps = float(value)
+    except (TypeError, ValueError):
+        return _UNREADABLE
+    if amps != amps or amps <= 0:
+        return _UNREADABLE
+    return None if amps >= _NO_OWNER_LIMIT - 1 else amps
+
+
+@dataclass(frozen=True)
+class GridCurrentLimit:
+    """The most current the plant may draw from the grid, per phase.
+
+    The installer sets a ceiling; the owner may set a lower limit. The
+    effective value is the one in use.
+    """
+
+    enabled: bool | None
+    effective: float | None
+    owner: float | None
+    installer: float | None
+
+
+_GRID_CURRENT_KEYS = (
+    "enable", "currentLimitation", "ownerSetLimitation", "installerSetLimitation",
+)
+
+
+def parse_grid_current_limit(data: Any) -> GridCurrentLimit | None:
+    """Read a complete answer; anything else is None, so nothing is sent.
+
+    Every field must be there: a missing installer limit must not pass for
+    "no ceiling". A plant without a limit answers with empty values and
+    enable false; that is a real answer: no limit.
+    """
+    if not isinstance(data, dict) or not all(key in data for key in _GRID_CURRENT_KEYS):
+        return None
+    enabled = data["enable"]
+    values = [_amperes(data[key]) for key in _GRID_CURRENT_KEYS[1:]]
+    if not isinstance(enabled, bool) or _UNREADABLE in values:
+        return None
+    effective, owner, installer = values
+    return GridCurrentLimit(
+        enabled=enabled, effective=effective, owner=owner, installer=installer,
+    )
 
 
 def parse_peak_shaving(data: Any) -> PeakShaving | None:
@@ -1274,6 +1344,25 @@ class MySigenSession:
             {**schedule, "stationId": await self._async_station_number()},
             method="POST",
         )
+
+    async def async_grid_current_limit(self) -> GridCurrentLimit | None:
+        """The max grid connection current, as the app's Grid Settings show it."""
+        return parse_grid_current_limit(
+            await self._async_station_get("grid connection current", _GRID_CURRENT_PATH)
+        )
+
+    async def async_set_grid_current_limit(self, amps: float) -> None:
+        """Set the owner's max grid connection current, in amperes. Sent once.
+
+        The limit is switched on with it, as the app does when you save one.
+        The installer's ceiling is not touched.
+        """
+        await self._async_put("set grid connection current", _GRID_CURRENT_WRITE_PATH, {
+            "stationId": await self._async_station_number(),
+            "enable": True,
+            "ownerSetLimitation": f"{float(amps):.1f}",
+            "installerSetLimitation": None,
+        })
 
     async def async_grid_connection(self) -> GridConnection | None:
         """Whether the Gateway holds the plant on or off the grid."""

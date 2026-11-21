@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-import voluptuous as vol
+import probatio
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -40,11 +40,14 @@ from .api import (
     normalize_serial,
 )
 from .const import (
+    CONF_ENTITY_NAME_LANGUAGE,
     CONF_PLANT_ENTRY_ID,
+    ENTITY_NAME_LANGUAGE_PLANT,
     DOMAIN,
     ENTITY_NAME_LANGUAGES,
     MODBUS_CONF_ENTITY_NAME_LANGUAGE,
     MODBUS_DOMAIN,
+    name_language,
 )
 from .commands import async_run_command
 from .coordinator import MySigenCoordinator
@@ -69,14 +72,14 @@ ATTR_MODE = "mode"
 ATTR_DURATION = "duration"
 ATTR_POWER = "power_limit"
 
-_CANCEL_SCHEMA = vol.Schema({vol.Optional(ATTR_ENTRY_ID): cv.string})
+_CANCEL_SCHEMA = probatio.Schema({probatio.Optional(ATTR_ENTRY_ID): cv.string})
 _START_SCHEMA = _CANCEL_SCHEMA.extend({
-    vol.Required(ATTR_MODE): vol.In(CONTROL_MODES),
-    vol.Required(ATTR_DURATION): vol.All(
-        vol.Coerce(int), vol.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
+    probatio.Required(ATTR_MODE): probatio.In(CONTROL_MODES),
+    probatio.Required(ATTR_DURATION): probatio.All(
+        probatio.Coerce(int), probatio.Range(MIN_OVERRIDE_MINUTES, MAX_OVERRIDE_MINUTES)
     ),
-    vol.Optional(ATTR_POWER): vol.All(
-        vol.Coerce(float), vol.Range(min=0, max=MAX_POWER_LIMIT_KW, min_included=False)
+    probatio.Optional(ATTR_POWER): probatio.All(
+        probatio.Coerce(float), probatio.Range(min=0, max=MAX_POWER_LIMIT_KW, min_included=False)
     ),
 })
 
@@ -206,16 +209,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             # Retrying cannot help; the account needs more access.
             _raise_link_issue(hass, entry, NO_PERMISSION)
         raise
-    # Show entity names in the language chosen for the Modbus plant, so the
-    # entities of both integrations read the same on the shared device.
-    language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
-    coordinator.entity_name_language = language
+    # Entity names follow the language chosen under Reconfigure. By default
+    # that is the Modbus plant's choice, so the entities of both
+    # integrations read the same on the shared device.
+    choice = entry.options.get(CONF_ENTITY_NAME_LANGUAGE, ENTITY_NAME_LANGUAGE_PLANT)
+    plant_language = plant_entry.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
+    language = name_language(choice, plant_language)
+    coordinator.entity_name_language = plant_language
 
     async def plant_changed(hass: HomeAssistant, plant: ConfigEntry) -> None:
         """Reload when the plant's name language changes, so names match again."""
         if (
-            plant.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE)
-            != coordinator.entity_name_language
+            name_language(choice, plant.options.get(MODBUS_CONF_ENTITY_NAME_LANGUAGE))
+            != language
         ):
             hass.config_entries.async_schedule_reload(entry.entry_id)
 
@@ -339,7 +345,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     registry = dr.async_get(hass)
-    for device in list(registry.devices.values()):
+    # Iterate the devices; using them as a mapping is deprecated and stops
+    # working in Home Assistant 2027.9.
+    for device in list(registry.devices):
         if _module_identifiers(entry, device):
             registry.async_remove_device(device.id)
     for key in _ISSUES:

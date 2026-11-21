@@ -44,13 +44,15 @@
           "password": "Wachtwoord",
           "scan_interval": "Uitleesinterval",
           "allow_control": "Batterijbesturing toestaan",
-          "allow_grid_disconnect": "Loskoppelen van het net toestaan"
+          "allow_grid_disconnect": "Loskoppelen van het net toestaan",
+          "entity_name_language": "Taal voor entiteitsnamen"
         },
         "data_description": {
           "password": "Laat leeg om het huidige wachtwoord te behouden.",
           "scan_interval": "Tussen 15 en 60 seconden. Kortere intervallen sturen meer verzoeken naar mySigen.",
           "allow_control": "Laat Home Assistant batterij-overrides via mySigen starten en stoppen en instellingen van de installatie en de DC-lader wijzigen. Standaard uit. Het account heeft de machtiging View and Edit nodig.",
-          "allow_grid_disconnect": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit."
+          "allow_grid_disconnect": "Voegt een schakelaar toe die de installatie van het net loskoppelt, zodat het huis alleen op batterij en zonnestroom draait, en weer aansluit. Vereist Batterijbesturing toestaan en een Sigenergy Gateway. Standaard uit.",
+          "entity_name_language": "Zelfde als Sigenergy ESS volgt de taal die daar voor de installatie is gekozen. Automatisch gebruikt de servertaal van Home Assistant. Eigen namen, entiteits-ID’s en geschiedenis blijven behouden. Bij een taalwijziging wordt de integratie opnieuw geladen."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Batterij laden",
         "discharging": "Batterij ontladen",
         "self_consumption": "Eerst mijn eigen zonnestroom gebruiken (eigen verbruik)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Zelfde als Sigenergy ESS",
+        "auto": "Automatisch (servertaal van Home Assistant)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },
@@ -233,6 +252,15 @@
       },
       "battery_module_capacity": {
         "name": "Nominale capaciteit (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generatorvermogen fase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generatorvermogen fase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generatorvermogen fase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +278,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Minimale EV-lading voor V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Max. stroom van de netaansluiting (mySigen)"
       }
     },
     "select": {
@@ -332,7 +363,7 @@
         },
         "duration": {
           "name": "Duur",
-          "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (30 tot 120)."
+          "description": "Minuten totdat de installatie terugkeert naar haar normale strategie (1 tot 1440, hooguit 24 uur)."
         },
         "power_limit": {
           "name": "Vermogenslimiet",

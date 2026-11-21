@@ -435,6 +435,37 @@ async def async_set_peak_shaving(
     )
 
 
+async def async_set_grid_current_limit(
+    coordinator: Any,
+    *,
+    amps: float,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Change the max grid connection current. It stays until changed back."""
+    amps = round(float(amps), 1)
+    if amps <= 0:
+        raise CommandRefused("The max grid connection current must be above 0 A.")
+
+    def before(current: Any) -> None:
+        if current.installer is not None and amps > current.installer:
+            raise CommandRefused(
+                f"The installer allows at most {current.installer:g} A. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "grid_current_limit",
+        read=coordinator.session.async_grid_current_limit,
+        send=lambda _current: coordinator.session.async_set_grid_current_limit(amps),
+        expected=lambda current: current.enabled is not False
+        and current.effective is not None
+        and round(current.effective, 1) == amps,
+        publish=coordinator.publish_grid_current_limit,
+        sleep=sleep,
+        before=before,
+    )
+
+
 async def async_set_off_grid(
     coordinator: Any,
     *,

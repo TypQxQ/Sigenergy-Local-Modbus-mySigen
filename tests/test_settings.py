@@ -16,6 +16,12 @@ MODES = {"defaultWorkingModes": [
 ], "energyProfileItems": []}
 EXPORT = {"currentEnable": False, "ownerSetEnable": False, "installerSetEnable": None,
           "nearModify": False}
+# A plant with an installer limit and no owner limit (shape as in sigenergy2mqtt).
+GRID_CURRENT = {"enable": True, "currentLimitation": "25.0", "ownerSetLimitation": "",
+                "installerSetLimitation": "25.0"}
+# As the development plant answered: no limit set at all.
+NO_GRID_CURRENT = {"enable": False, "currentLimitation": "", "ownerSetLimitation": "",
+                   "installerSetLimitation": ""}
 PEAK = {"controlMode": 1, "shavingSOC": 15.0, "settingList": [
     {"whichDay": "1,2,3,4,5,6,7", "startTime": "00:00", "endTime": "24:00", "peakPower": 13.0}]}
 
@@ -33,6 +39,38 @@ class TestParsing(unittest.TestCase):
         self.assertEqual((export.owner, export.effective, export.installer), (False, False, None))
         for bad in (None, {}, {"ownerSetEnable": None}, {"ownerSetEnable": "true"}):
             self.assertIsNone(api.parse_battery_export(bad))
+
+    def test_grid_current_limit(self):
+        limit = api.parse_grid_current_limit(GRID_CURRENT)
+        self.assertEqual(
+            (limit.enabled, limit.effective, limit.owner, limit.installer),
+            (True, 25.0, None, 25.0),
+        )
+        owner = api.parse_grid_current_limit(
+            {**GRID_CURRENT, "currentLimitation": 16, "ownerSetLimitation": "16.0"})
+        self.assertEqual((owner.effective, owner.owner), (16.0, 16.0))
+        # The app's "no owner limit" value is no limit, not 2 million amperes.
+        none = api.parse_grid_current_limit({**GRID_CURRENT, "ownerSetLimitation": "2147483.647"})
+        self.assertIsNone(none.owner)
+        # No limit set is an answer too, not a missing one.
+        unset = api.parse_grid_current_limit(NO_GRID_CURRENT)
+        self.assertEqual(
+            (unset.enabled, unset.effective, unset.owner, unset.installer),
+            (False, None, None, None),
+        )
+        # Only a complete, readable answer counts; a missing or odd field
+        # must not pass for "no installer limit".
+        incomplete = {key: value for key, value in GRID_CURRENT.items()
+                      if key != "installerSetLimitation"}
+        for bad in (
+            None, {}, [], {"other": 1}, {"enable": True}, incomplete,
+            {**GRID_CURRENT, "enable": None},
+            {**GRID_CURRENT, "installerSetLimitation": "x"},
+            {**GRID_CURRENT, "installerSetLimitation": True},
+            {**GRID_CURRENT, "currentLimitation": -1},
+            {**GRID_CURRENT, "ownerSetLimitation": "0"},
+        ):
+            self.assertIsNone(api.parse_grid_current_limit(bad), bad)
 
     def test_peak_shaving(self):
         peak = api.parse_peak_shaving(PEAK)
@@ -62,7 +100,7 @@ class TestWrites(unittest.IsolatedAsyncioTestCase):
 
     async def test_bodies(self):
         ok = _Response(200, {"code": 0, "data": True})
-        http, client = self._client(ok, ok, ok)
+        http, client = self._client(ok, ok, ok, ok)
         await client.async_set_operating_mode(0)
         await client.async_set_battery_export(api.parse_battery_export(
             {**EXPORT, "installerSetEnable": True}), True)
@@ -76,6 +114,12 @@ class TestWrites(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((method, last, body["controlMode"], body["stationId"]),
                          ("POST", "shaving", 0, 42))
         self.assertEqual(body["settingList"], PEAK["settingList"])
+        # The installer's ceiling is never sent; the owner's value is, with
+        # one decimal, as the app does.
+        await client.async_set_grid_current_limit(16)
+        self.assertEqual(http.requests[4], ("PUT", "grid", {
+            "stationId": 42, "enable": True, "ownerSetLimitation": "16.0",
+            "installerSetLimitation": None}))
 
     async def test_remote_ems_and_custom_modes_cannot_be_sent(self):
         http, client = self._client()
@@ -103,6 +147,12 @@ class _Session:
 
     async def async_peak_shaving(self):
         return self._next("peak")
+
+    async def async_grid_current_limit(self):
+        return self._next("current")
+
+    async def async_set_grid_current_limit(self, amps):
+        await self._write("current", amps)
 
     async def _write(self, *entry):
         self.writes.append(entry)
@@ -134,6 +184,7 @@ class _Coordinator:
         self.published.append(value)
 
     publish_battery_export = publish_peak_shaving = publish_operating_mode
+    publish_grid_current_limit = publish_operating_mode
 
     def note_rate_limit(self, err):
         return 30.0
@@ -220,6 +271,56 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         coordinator = _Coordinator({"peak": [PEAK_ON, limited]})
         await control.async_set_peak_shaving(coordinator, limit_kw=9.5, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("peak", 1, 9.5)])
+
+    async def test_grid_current_limit(self):
+        at_25 = api.parse_grid_current_limit(GRID_CURRENT)
+        at_16 = api.parse_grid_current_limit(
+            {**GRID_CURRENT, "currentLimitation": "16.0", "ownerSetLimitation": "16.0"})
+        coordinator = _Coordinator({"current": [at_25, at_16]})
+        result = await control.async_set_grid_current_limit(coordinator, amps=16, sleep=_no_sleep)
+        self.assertEqual(result, "confirmed")
+        self.assertEqual(coordinator.session.writes, [("current", 16.0)])
+        self.assertEqual(coordinator.settings, [("grid_current_limit", "confirmed")])
+        # Already set: nothing is sent.
+        coordinator = _Coordinator({"current": [at_16]})
+        await control.async_set_grid_current_limit(coordinator, amps=16.0, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
+        # A limit that is switched off is not "already set".
+        off = api.parse_grid_current_limit(
+            {**GRID_CURRENT, "enable": False, "currentLimitation": "16.0"})
+        coordinator = _Coordinator({"current": [off, at_16]})
+        await control.async_set_grid_current_limit(coordinator, amps=16, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [("current", 16.0)])
+
+    async def test_grid_current_limit_on_a_plant_without_one(self):
+        # No installer limit: any value above 0 may be set, which switches it on.
+        unset = api.parse_grid_current_limit(NO_GRID_CURRENT)
+        at_20 = api.parse_grid_current_limit(
+            {"enable": True, "currentLimitation": "20.0", "ownerSetLimitation": "20.0",
+             "installerSetLimitation": ""})
+        coordinator = _Coordinator({"current": [unset, at_20]})
+        result = await control.async_set_grid_current_limit(coordinator, amps=20, sleep=_no_sleep)
+        self.assertEqual(result, "confirmed")
+        self.assertEqual(coordinator.session.writes, [("current", 20.0)])
+
+    async def test_an_incomplete_answer_sends_nothing(self):
+        incomplete = api.parse_grid_current_limit({"enable": True, "currentLimitation": "25.0"})
+        coordinator = _Coordinator({"current": [incomplete]})
+        with self.assertRaisesRegex(control.CommandRefused, "did not report"):
+            await control.async_set_grid_current_limit(coordinator, amps=32, sleep=_no_sleep)
+        self.assertEqual(coordinator.session.writes, [])
+
+    async def test_grid_current_limit_refusals(self):
+        at_25 = api.parse_grid_current_limit(GRID_CURRENT)
+        for amps, text in ((32, "at most 25 A"), (0, "above 0"), (-5, "above 0")):
+            coordinator = _Coordinator({"current": [at_25]})
+            with self.assertRaisesRegex(control.CommandRefused, text):
+                await control.async_set_grid_current_limit(
+                    coordinator, amps=amps, sleep=_no_sleep)
+            self.assertEqual(coordinator.session.writes, [])
+        coordinator = _Coordinator({"current": [at_25]}, allow=False)
+        with self.assertRaisesRegex(control.CommandRefused, "switched off"):
+            await control.async_set_grid_current_limit(coordinator, amps=16, sleep=_no_sleep)
 
     async def test_peak_shaving_refusals(self):
         two = api.parse_peak_shaving({**PEAK, "settingList": PEAK["settingList"] * 2})

@@ -44,13 +44,15 @@
           "password": "Mot de passe",
           "scan_interval": "Intervalle de lecture",
           "allow_control": "Autoriser le pilotage de la batterie",
-          "allow_grid_disconnect": "Autoriser la déconnexion du réseau"
+          "allow_grid_disconnect": "Autoriser la déconnexion du réseau",
+          "entity_name_language": "Langue des noms d’entités"
         },
         "data_description": {
           "password": "Laissez vide pour conserver le mot de passe actuel.",
           "scan_interval": "Entre 15 et 60 secondes. Des intervalles plus courts envoient davantage de requêtes à mySigen.",
           "allow_control": "Permet à Home Assistant de démarrer et d'arrêter des forçages de la batterie via mySigen, et de modifier les réglages de l'installation et du chargeur DC. Désactivé par défaut. Le compte doit disposer de l'autorisation View and Edit.",
-          "allow_grid_disconnect": "Ajoute un interrupteur qui déconnecte l'installation du réseau, pour que la maison fonctionne uniquement sur batterie et solaire, puis la reconnecte. Nécessite Autoriser le pilotage de la batterie et une Sigenergy Gateway. Désactivé par défaut."
+          "allow_grid_disconnect": "Ajoute un interrupteur qui déconnecte l'installation du réseau, pour que la maison fonctionne uniquement sur batterie et solaire, puis la reconnecte. Nécessite Autoriser le pilotage de la batterie et une Sigenergy Gateway. Désactivé par défaut.",
+          "entity_name_language": "Comme Sigenergy ESS suit la langue choisie pour l’installation dans Sigenergy ESS. Automatique utilise la langue du serveur Home Assistant. Les noms personnalisés, identifiants d’entités et historiques sont conservés. Un changement de langue recharge l’intégration."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Charger la batterie",
         "discharging": "Décharger la batterie",
         "self_consumption": "Utiliser d'abord ma propre énergie solaire (autoconsommation)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Comme Sigenergy ESS",
+        "auto": "Automatique (langue du serveur Home Assistant)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },
@@ -233,6 +252,15 @@
       },
       "battery_module_capacity": {
         "name": "Capacité nominale (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Puissance du générateur phase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Puissance du générateur phase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Puissance du générateur phase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +278,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Charge minimale du VE pour le V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Courant max. du raccordement réseau (mySigen)"
       }
     },
     "select": {
@@ -332,7 +363,7 @@
         },
         "duration": {
           "name": "Durée",
-          "description": "Minutes avant que l'installation ne revienne à sa stratégie normale (30 à 120)."
+          "description": "Minutes avant que l'installation ne revienne à sa stratégie normale (1 à 1440, 24 heures au plus)."
         },
         "power_limit": {
           "name": "Limite de puissance",

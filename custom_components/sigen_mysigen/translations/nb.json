@@ -44,13 +44,15 @@
           "password": "Passord",
           "scan_interval": "Avlesningsintervall",
           "allow_control": "Tillat batteristyring",
-          "allow_grid_disconnect": "Tillat frakobling fra strømnettet"
+          "allow_grid_disconnect": "Tillat frakobling fra strømnettet",
+          "entity_name_language": "Språk for entitetsnavn"
         },
         "data_description": {
           "password": "La feltet stå tomt for å beholde gjeldende passord.",
           "scan_interval": "Mellom 15 og 60 sekunder. Kortere intervaller sender flere forespørsler til mySigen.",
           "allow_control": "Lar Home Assistant starte og stoppe batterioverstyringer og endre innstillinger for anlegget og DC-laderen via mySigen. Av som standard. Kontoen trenger tilgangen View and Edit.",
-          "allow_grid_disconnect": "Legger til en bryter som kobler anlegget fra strømnettet, slik at hjemmet bare går på batteri og solstrøm, og kobler det til igjen. Krever Tillat batteristyring og en Sigenergy Gateway. Av som standard."
+          "allow_grid_disconnect": "Legger til en bryter som kobler anlegget fra strømnettet, slik at hjemmet bare går på batteri og solstrøm, og kobler det til igjen. Krever Tillat batteristyring og en Sigenergy Gateway. Av som standard.",
+          "entity_name_language": "Samme som Sigenergy ESS følger språket som er valgt for anlegget der. Automatisk bruker Home Assistants serverspråk. Egne navn, entitets-ID-er og historikk bevares. Endring av språket laster integrasjonen på nytt."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Lad batteriet",
         "discharging": "Lad ut batteriet",
         "self_consumption": "Bruk min egen solstrøm først (egetforbruk)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Samme som Sigenergy ESS",
+        "auto": "Automatisk (Home Assistants serverspråk)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },
@@ -233,6 +252,15 @@
       },
       "battery_module_capacity": {
         "name": "Nominell kapasitet (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generatoreffekt fase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generatoreffekt fase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generatoreffekt fase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +278,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Bilens laveste ladenivå for V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Maks strøm ved nettilkoblingen (mySigen)"
       }
     },
     "select": {
@@ -332,7 +363,7 @@
         },
         "duration": {
           "name": "Varighet",
-          "description": "Minutter til anlegget går tilbake til sin vanlige strategi (30 til 120)."
+          "description": "Minutter til anlegget går tilbake til sin vanlige strategi (1 til 1440, høyst ett døgn)."
         },
         "power_limit": {
           "name": "Effektgrense",

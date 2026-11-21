@@ -27,7 +27,8 @@ ANSWER = {
     "generatorRealTimeInfoVOList": [
         {"key": "voltage", "phaseA": "0.00 V", "phaseB": "0.00 V", "phaseC": "0.00 V"},
         {"key": "current", "phaseA": "0.00 A", "phaseB": "1.20 A", "phaseC": None},
-        {"key": "Active Power", "phaseA": "0.000 kW"},
+        {"key": "Active Power", "phaseA": "1.250 kW", "phaseB": "-0.400 kW", "phaseC": "x"},
+        {"key": "Reactive Power", "phaseA": "0.100 kvar"},
     ],
     "generatorSideInfoList": [
         {"paramKey": "Phase A Voltage", "paramValue": "0.00 V"},
@@ -65,6 +66,12 @@ class TestGateway(unittest.TestCase):
         }.items():
             self.assertEqual(gateway.values[key], value, key)
         self.assertNotIn("generator_current_c", gateway.values)
+        # Power per phase, from the same rows as voltage and current.
+        self.assertEqual(
+            (gateway.values["generator_power_a"], gateway.values["generator_power_b"]),
+            (1.25, -0.4),
+        )
+        self.assertNotIn("generator_power_c", gateway.values)
         self.assertEqual(gateway.texts, {
             "phase_sequence": "Positive Sequence", "generator_contactor": "open",
             "firmware": "V100R001C00", "model": "Sigen Gateway HomeMax TP",

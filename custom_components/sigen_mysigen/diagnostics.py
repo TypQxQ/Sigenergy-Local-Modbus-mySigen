@@ -110,6 +110,7 @@ async def async_get_config_entry_diagnostics(
 
     peak = coordinator.peak_shaving
     export = coordinator.battery_export
+    current = coordinator.grid_current_limit
     grid = coordinator.grid_connection
     result["settings"] = {
         "available_modes": sorted(coordinator.available_modes),
@@ -125,6 +126,10 @@ async def async_get_config_entry_diagnostics(
         "grid_connection": None if grid is None else {
             "state": grid.state, "offered": grid.offered,
             "status": grid.status, "manual": grid.manual,
+        },
+        "grid_current_limit": None if current is None else {
+            "in_effect": current.enabled, "effective_a": current.effective,
+            "owner_a": current.owner, "installer_a": current.installer,
         },
         "grid_disconnect_allowed": coordinator.allow_grid_disconnect,
         "last_setting": coordinator.last_setting,

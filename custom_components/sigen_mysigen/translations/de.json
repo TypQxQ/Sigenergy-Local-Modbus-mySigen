@@ -44,13 +44,15 @@
           "password": "Passwort",
           "scan_interval": "Abfrageintervall",
           "allow_control": "Batteriesteuerung erlauben",
-          "allow_grid_disconnect": "Trennen vom Stromnetz erlauben"
+          "allow_grid_disconnect": "Trennen vom Stromnetz erlauben",
+          "entity_name_language": "Sprache der Entitätsnamen"
         },
         "data_description": {
           "password": "Leer lassen, um das aktuelle Passwort zu behalten.",
           "scan_interval": "Zwischen 15 und 60 Sekunden. Kürzere Intervalle senden mehr Anfragen an mySigen.",
           "allow_control": "Erlaubt Home Assistant, Batterie-Übersteuerungen über mySigen zu starten und zu beenden sowie Einstellungen der Anlage und des DC-Laders zu ändern. Standardmäßig aus. Das Konto benötigt die Berechtigung View and Edit.",
-          "allow_grid_disconnect": "Fügt einen Schalter hinzu, der die Anlage vom Stromnetz trennt, sodass das Haus nur mit Batterie und Solarstrom läuft, und sie wieder verbindet. Erfordert Batteriesteuerung erlauben und ein Sigenergy Gateway. Standardmäßig aus."
+          "allow_grid_disconnect": "Fügt einen Schalter hinzu, der die Anlage vom Stromnetz trennt, sodass das Haus nur mit Batterie und Solarstrom läuft, und sie wieder verbindet. Erfordert Batteriesteuerung erlauben und ein Sigenergy Gateway. Standardmäßig aus.",
+          "entity_name_language": "Wie Sigenergy ESS folgt der dort für die Anlage gewählten Sprache. Automatisch verwendet die Home-Assistant-Serversprache. Eigene Namen, Entitäts-IDs und Verlauf bleiben erhalten. Bei einer Sprachänderung wird die Integration neu geladen."
         }
       }
     },
@@ -89,6 +91,23 @@
         "charging": "Batterie laden",
         "discharging": "Batterie entladen",
         "self_consumption": "Zuerst meinen eigenen Solarstrom nutzen (Eigenverbrauch)"
+      }
+    },
+    "entity_name_language": {
+      "options": {
+        "plant": "Wie Sigenergy ESS",
+        "auto": "Automatisch (Home-Assistant-Serversprache)",
+        "da": "Dansk",
+        "de": "Deutsch",
+        "en": "English",
+        "es": "Español",
+        "fi": "Suomi",
+        "fr": "Français",
+        "it": "Italiano",
+        "nb": "Norsk Bokmål",
+        "nl": "Nederlands",
+        "pl": "Polski",
+        "sv": "Svenska"
       }
     }
   },
@@ -233,6 +252,15 @@
       },
       "battery_module_capacity": {
         "name": "Nennkapazität (mySigen)"
+      },
+      "generator_power_a": {
+        "name": "Generatorleistung Phase A (mySigen)"
+      },
+      "generator_power_b": {
+        "name": "Generatorleistung Phase B (mySigen)"
+      },
+      "generator_power_c": {
+        "name": "Generatorleistung Phase C (mySigen)"
       }
     },
     "number": {
@@ -250,6 +278,9 @@
       },
       "dc_charger_discharge_floor": {
         "name": "Mindestladung des E-Autos für V2X (mySigen)"
+      },
+      "grid_current_limit": {
+        "name": "Max. Strom am Netzanschluss (mySigen)"
       }
     },
     "select": {
@@ -332,7 +363,7 @@
         },
         "duration": {
           "name": "Dauer",
-          "description": "Minuten, bis die Anlage zu ihrer normalen Strategie zurückkehrt (30 bis 120)."
+          "description": "Minuten, bis die Anlage zu ihrer normalen Strategie zurückkehrt (1 bis 1440, höchstens 24 Stunden)."
         },
         "power_limit": {
           "name": "Leistungsgrenze",
