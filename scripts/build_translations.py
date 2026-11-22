@@ -1532,6 +1532,32 @@ _AC_CHARGER: dict[str, dict[str, str]] = {
 for _language, _extra in _AC_CHARGER.items():
     LANGUAGES[_language].update(_extra)
 
+# Operating modes that can't be chosen but are shown while the plant runs in
+# them (issue 32). Remote EMS and VPP follow Sigenergy ESS's own wording.
+# Only English and Swedish have been checked by a native speaker.
+KEYS.update({
+    f"entity.select.operating_mode.state.{_mode}": f"om_{_mode}"
+    for _mode in ("force_charge", "vpp", "remote_ems", "nbi", "custom_profile")
+})
+_OTHER_MODES: dict[str, tuple[str, str, str, str]] = {
+    # force charge, VPP, Remote EMS, custom profile; NBI is the same everywhere.
+    "sv": ("Tvångsladdning", "VPP-schemaläggning", "Fjärrstyrd EMS", "Anpassad profil"),
+    "da": ("Tvungen opladning", "VPP-planlægning", "Fjernstyret EMS", "Brugerdefineret profil"),
+    "nb": ("Tvungen lading", "VPP-planlegging", "Fjernstyrt EMS", "Egendefinert profil"),
+    "de": ("Zwangsladung", "VPP-Steuerung", "EMS-Fernsteuerung", "Benutzerdefiniertes Profil"),
+    "nl": ("Geforceerd laden", "VPP-aansturing", "EMS-besturing op afstand", "Aangepast profiel"),
+    "fr": ("Charge forcée", "Pilotage VPP", "Pilotage EMS à distance", "Profil personnalisé"),
+    "es": ("Carga forzada", "Programación VPP", "Control EMS remoto", "Perfil personalizado"),
+    "it": ("Carica forzata", "Programmazione VPP", "EMS remoto", "Profilo personalizzato"),
+    "fi": ("Pakotettu lataus", "VPP-ohjaus", "EMS-etäohjaus", "Mukautettu profiili"),
+    "pl": ("Wymuszone ładowanie", "Harmonogram VPP", "Zdalne sterowanie EMS", "Profil niestandardowy"),
+}
+for _language, (_force, _vpp, _remote, _custom) in _OTHER_MODES.items():
+    LANGUAGES[_language].update({
+        "om_force_charge": _force, "om_vpp": _vpp, "om_remote_ems": _remote,
+        "om_nbi": "NBI", "om_custom_profile": _custom,
+    })
+
 
 def _flatten(node, prefix=""):
     if isinstance(node, dict):

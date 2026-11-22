@@ -232,7 +232,9 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
 
     async def test_mode_not_offered_or_not_allowed_sends_nothing(self):
         cases = [
-            (dict(), dict(mode="remote_ems"), "not available"),
+            (dict(), dict(mode="remote_ems"), "switched in Sigenergy ESS"),
+            (dict(), dict(mode="custom_profile"), "set in the mySigen app"),
+            (dict(), dict(mode="something_else"), "not available"),
             (dict(modes={0, 1}), dict(mode="time_of_use"), "not available"),
             (dict(modes=set()), dict(), "not available"),
             (dict(allow=False), dict(), "switched off"),
@@ -339,6 +341,8 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         empty = api.parse_peak_shaving({**PEAK, "controlMode": 0, "settingList": []})
         cases = [
             ({"peak": [two]}, dict(limit_kw=5.0), "more than one time slot"),
+            # Issue 34: a limit on an empty schedule says so.
+            ({"peak": [empty]}, dict(limit_kw=5.0), "has no time slot"),
             ({"peak": [empty]}, dict(enabled=True), "no time slot"),
             ({"peak": [PEAK_ON]}, dict(limit_kw=0.0), "above 0"),
             ({"peak": [PEAK_ON]}, dict(limit_kw=150.0), "at most"),
@@ -348,6 +352,34 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(control.CommandRefused, text):
                 await control.async_set_peak_shaving(coordinator, sleep=_no_sleep, **call_args)
             self.assertEqual(coordinator.session.writes, [])
+
+
+class TestOperatingModeNames(unittest.TestCase):
+    def test_every_code_the_app_names(self):
+        # Issue 32: the plant reports 7 (Remote EMS) on two test plants.
+        self.assertEqual(api.OPERATING_MODE_NAMES, {
+            "sigen_ai": 1, "max_self_consumption": 0, "time_of_use": 2,
+            "fully_fed_to_grid": 5, "force_charge": 3, "vpp": 6,
+            "remote_ems": 7, "nbi": 8, "custom_profile": 9,
+        })
+        # Only these four can be chosen.
+        self.assertEqual(set(api.OPERATING_MODES.values()), {0, 1, 2, 5})
+
+
+class TestReadBack(unittest.IsolatedAsyncioTestCase):
+    async def test_an_unconfirmed_change_is_read_again_soon(self):
+        coordinator = _Coordinator({"mode": [1, 1, 1]})
+        coordinator.soon = 0
+
+        def read_soon():
+            coordinator.soon += 1
+
+        coordinator.read_settings_soon = read_soon
+        with self.assertRaisesRegex(control.CommandNotConfirmed, "read again"):
+            await control.async_set_operating_mode(
+                coordinator, mode="max_self_consumption", remote_ems=lambda: "off",
+                sleep=_no_sleep)
+        self.assertEqual(coordinator.soon, 1)
 
 
 if __name__ == "__main__":

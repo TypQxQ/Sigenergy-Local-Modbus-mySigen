@@ -10,7 +10,7 @@
 ![Needs testers](https://img.shields.io/badge/needs_testers-9-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-0-0969da?style=for-the-badge)
 
-<sub>Updated 22 November 2026 · version 0.1.2b1</sub>
+<sub>Updated 22 November 2026 · version 0.1.2b2</sub>
 
 </div>
 

@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Utiliser d'abord ma propre énergie (autoconsommation maximale)",
           "time_of_use": "Selon les heures (TOU)",
-          "fully_fed_to_grid": "Injecter toute l'énergie solaire dans le réseau (injection totale)"
+          "fully_fed_to_grid": "Injecter toute l'énergie solaire dans le réseau (injection totale)",
+          "force_charge": "Charge forcée",
+          "vpp": "Pilotage VPP",
+          "remote_ems": "Pilotage EMS à distance",
+          "nbi": "NBI",
+          "custom_profile": "Profil personnalisé"
         }
       },
       "dc_charger_charging_mode": {

@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Använd min egen el först (maximal egenförbrukning)",
           "time_of_use": "Tidsstyrt (TOU)",
-          "fully_fed_to_grid": "Skicka all solel till nätet (full inmatning)"
+          "fully_fed_to_grid": "Skicka all solel till nätet (full inmatning)",
+          "force_charge": "Tvångsladdning",
+          "vpp": "VPP-schemaläggning",
+          "remote_ems": "Fjärrstyrd EMS",
+          "nbi": "NBI",
+          "custom_profile": "Anpassad profil"
         }
       },
       "dc_charger_charging_mode": {

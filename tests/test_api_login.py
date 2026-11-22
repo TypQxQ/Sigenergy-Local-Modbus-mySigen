@@ -72,6 +72,9 @@ class TestLogin(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(kwargs["data"], {
             "username": "user@example.invalid", "password": "ENC", "grant_type": "password",
         })
+        # Issue 36: the header is built directly, not with aiohttp.BasicAuth.
+        self.assertNotIn("auth", kwargs)
+        self.assertEqual(kwargs["headers"], {"Authorization": "Basic c2lnZW46c2lnZW4="})
 
     async def test_refusals_are_auth_errors(self):
         for response in (

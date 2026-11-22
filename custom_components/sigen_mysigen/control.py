@@ -30,6 +30,7 @@ from .api import (
     GRID_ON,
     GRID_RETURNING,
     MAX_PEAK_SHAVING_KW,
+    OPERATING_MODE_NAMES,
     OPERATING_MODES,
     MAX_OVERRIDE_MINUTES,
     MAX_POWER_LIMIT_KW,
@@ -276,13 +277,16 @@ async def _change_setting(
     sleep: Callable[[float], Awaitable[None]],
     before: Callable[[Any], None] | None = None,
     settle: bool = False,
+    readbacks: int = 2,
 ) -> str:
     """Change a setting that stays: read, send once, read back.
 
     Nothing is sent when the fresh read already shows the requested value.
     `before` may refuse after the read, with nothing awaited before the send.
     `settle` waits before the first read-back too, for a value the plant
-    reports with a short delay.
+    reports with a short delay, and `readbacks` is how many reads at most.
+    When the change is not confirmed, the settings are read again at the
+    next poll, so a late change still shows within one update.
     """
 
     async def change() -> str:
@@ -307,7 +311,7 @@ async def _change_setting(
             before(current)
         await _send(coordinator, lambda: send(current))
         latest = None
-        for attempt in range(2):
+        for attempt in range(readbacks):
             if attempt or settle:
                 await sleep(_READBACK_DELAY)
             try:
@@ -320,12 +324,18 @@ async def _change_setting(
             if latest is not None and expected(latest):
                 publish(latest)
                 return RESULT_CONFIRMED
+        read_soon = getattr(coordinator, "read_settings_soon", None)
+        if read_soon is not None:
+            read_soon()
         if latest is None:
             raise CommandUnknown(
                 "mySigen accepted the change, but the setting could not be read back."
             )
         publish(latest)
-        raise CommandNotConfirmed("mySigen accepted the change but does not show it.")
+        raise CommandNotConfirmed(
+            "mySigen accepted the change but does not show it yet. It is read "
+            "again at the next update."
+        )
 
     async with coordinator.command_lock:
         try:
@@ -346,6 +356,11 @@ async def async_set_operating_mode(
 ) -> str:
     """Choose the operating mode. It stays until changed back."""
     code = OPERATING_MODES.get(mode)
+    if code is None and mode in OPERATING_MODE_NAMES:
+        raise CommandRefused(
+            f"The operating mode {mode!r} can't be chosen from Home Assistant. Remote "
+            "EMS is switched in Sigenergy ESS; the other modes are set in the mySigen app."
+        )
     if code is None or code not in coordinator.available_modes:
         # Unknown until the plant has listed its modes.
         raise CommandRefused(f"Operating mode {mode!r} is not available on this plant.")
@@ -409,10 +424,15 @@ async def async_set_peak_shaving(
             raise CommandRefused(
                 "Peak shaving has no time slot. Set one up in the mySigen app first."
             )
+        if limit_kw is not None and not current.slots:
+            raise CommandRefused(
+                "The peak shaving schedule has no time slot. Set one up in the "
+                "mySigen app first. Nothing was sent."
+            )
         if limit_kw is not None and len(current.slots) != 1:
             raise CommandRefused(
                 "The peak shaving schedule has more than one time slot. "
-                "Change the limits in the mySigen app."
+                "Change the limits in the mySigen app. Nothing was sent."
             )
 
     def expected(current: Any) -> bool:
@@ -569,6 +589,9 @@ async def async_set_dc_charge_mode(
         expected=lambda current: current.mode == mode,
         publish=coordinator.publish_dc_charge_mode,
         sleep=sleep,
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
     )
 
 
@@ -592,6 +615,9 @@ async def async_set_dc_discharge_floor(
         sleep=sleep,
         # The charger's own limits, from the answer just read.
         before=lambda current: _check_level(level, current.floor_range),
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
     )
 
 
@@ -612,6 +638,9 @@ async def async_set_dc_stop_level(
         expected=lambda current: current.stop_level == level,
         publish=coordinator.publish_dc_charge_setting,
         sleep=sleep,
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
     )
 
 
@@ -631,6 +660,9 @@ async def async_set_v2x_enabled(
         expected=lambda current: current is enabled,
         publish=coordinator.publish_v2x_enabled,
         sleep=sleep,
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
     )
 
 
@@ -674,6 +706,9 @@ async def _change_ac(
         publish=coordinator.publish_ac_charge_mode,
         sleep=sleep,
         before=before,
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
     )
 
 
