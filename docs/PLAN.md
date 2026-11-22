@@ -6,8 +6,8 @@
 
 **What works today, what needs your help, and what comes next.**
 
-![Working and tested](https://img.shields.io/badge/working_%26_tested-7-2ea44f?style=for-the-badge)
-![Needs testers](https://img.shields.io/badge/needs_testers-9-f0a500?style=for-the-badge)
+![Working and tested](https://img.shields.io/badge/working_%26_tested-8-2ea44f?style=for-the-badge)
+![Needs testers](https://img.shields.io/badge/needs_testers-8-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-1-0969da?style=for-the-badge)
 
 <sub>Updated 22 November 2026 · version 0.1.1</sub>
@@ -26,16 +26,16 @@
 | 📉 | **Peak shaving** | On or off, and the grid limit to stay under |
 | 📈 | **Gateway readings** | Grid voltage and current per phase, peaks and dips, phase order |
 | 🔋 | **Battery modules** | Charge level, power, cell temperature and voltage, lifetime discharge, model and rated capacity per module |
+| 🔌 | **Disconnect from the grid** | Off the grid and back on again, with a Gateway |
 | 🌍 | **Eleven languages** | Following the plant's entity name language |
 
-<sub>Tested on one system: a European account, one inverter with four battery modules, a Gateway, no charger.</sub>
+<sub>Tested on a few plants in Europe and Australia, all with a Gateway, one with a DC charger.</sub>
 
 ## 🧪 Working, needs testers
 
 | | Feature | What is missing |
 | :-: | --- | --- |
-| 🔌 | **Disconnect from the grid** | The status reads correctly, but no disconnect has been sent yet |
-| 🚗 | **DC charger** | Charging mode, stop level, reserve and V2X have never met a real charger |
+| 🚗 | **DC charger** | Charging mode is confirmed on one charger and V2X reads correctly; the charge limit, V2X minimum and V2X switch still need a charger |
 | 💡 | **Smart loads** | On/off switches for SigenStor and Gateway ports; switched on one plant only |
 | 🎯 | **Sigen AI strategy preference** | Profit Max, Balanced Energy or Self-use First; tried on one plant only |
 | 🏖️ | **Sigen AI vacation mode** | A switch, as in the app; switched on one plant only |
@@ -45,7 +45,7 @@
 | 🗣️ | **Translations** | Nine of the eleven languages need a native speaker |
 
 > [!TIP]
-> **Have one of these?** [Join the test →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) Even a diagnostics file helps, before you change anything.
+> **Have one of these?** [Join the test →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38) Even a diagnostics file helps, before you change anything.
 
 ## 📋 Planned
 
@@ -74,6 +74,6 @@ Ideas that need more information about how mySigen handles them:
 
 <div align="center">
 
-[Install](../README.md#install) · [Full guide](USAGE.md) · [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
+[Install](../README.md#install) · [Full guide](USAGE.md) · [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38) · [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
 
 </div>
