@@ -1453,6 +1453,53 @@ _SMART_LOADS: dict[str, str] = {
 for _language, _name in _SMART_LOADS.items():
     LANGUAGES[_language]["n_smart_load"] = _name
 
+# Storm Watch and vacation mode, as the mySigen app calls them. "Storm
+# Watch" is the feature's name and stays in English. Only English and
+# Swedish have been checked by a native speaker.
+KEYS["entity.binary_sensor.storm_watch.name"] = "n_storm_watch"
+KEYS["entity.switch.vacation_mode.name"] = "n_vacation_mode"
+_STEP_B5: dict[str, dict[str, str]] = {
+    "sv": {"n_storm_watch": "Storm Watch-varning", "n_vacation_mode": "Sigen AI semesterläge"},
+    "da": {"n_storm_watch": "Storm Watch-varsel", "n_vacation_mode": "Sigen AI ferietilstand"},
+    "nb": {"n_storm_watch": "Storm Watch-varsel", "n_vacation_mode": "Sigen AI feriemodus"},
+    "de": {"n_storm_watch": "Storm-Watch-Warnung", "n_vacation_mode": "Sigen AI Urlaubsmodus"},
+    "nl": {"n_storm_watch": "Storm Watch-waarschuwing", "n_vacation_mode": "Sigen AI vakantiemodus"},
+    "fr": {"n_storm_watch": "Alerte Storm Watch", "n_vacation_mode": "Mode vacances Sigen AI"},
+    "es": {"n_storm_watch": "Alerta de Storm Watch", "n_vacation_mode": "Modo vacaciones de Sigen AI"},
+    "it": {"n_storm_watch": "Allerta Storm Watch", "n_vacation_mode": "Modalità vacanza Sigen AI"},
+    "fi": {"n_storm_watch": "Storm Watch -varoitus", "n_vacation_mode": "Sigen AI -lomatila"},
+    "pl": {"n_storm_watch": "Alert Storm Watch", "n_vacation_mode": "Tryb urlopowy Sigen AI"},
+}
+for _language, _extra in _STEP_B5.items():
+    LANGUAGES[_language].update(_extra)
+
+# Sigen AI's strategy preference. English follows the app's names (Profit
+# Max, Balanced Energy, Self-use First). Only English and Swedish have been
+# checked by a native speaker.
+KEYS.update({
+    "entity.select.ai_strategy.name": "n_ai_strategy",
+    "entity.select.ai_strategy.state.profit_max": "s_profit",
+    "entity.select.ai_strategy.state.balanced_energy": "s_balanced",
+    "entity.select.ai_strategy.state.self_use_first": "s_self_use",
+})
+_AI_STRATEGY: dict[str, tuple[str, str, str, str]] = {
+    "sv": ("Sigen AI strategipreferens", "Maximal vinst", "Balanserad energi", "Egenanvändning först"),
+    "da": ("Sigen AI strategipræference", "Maksimal fortjeneste", "Balanceret energi", "Eget forbrug først"),
+    "nb": ("Sigen AI strategipreferanse", "Maksimal fortjeneste", "Balansert energi", "Eget forbruk først"),
+    "de": ("Sigen AI Strategiepräferenz", "Maximaler Gewinn", "Ausgewogene Energie", "Eigenverbrauch zuerst"),
+    "nl": ("Sigen AI strategievoorkeur", "Maximale winst", "Gebalanceerde energie", "Eigen verbruik eerst"),
+    "fr": ("Préférence de stratégie Sigen AI", "Profit maximal", "Énergie équilibrée", "Autoconsommation d’abord"),
+    "es": ("Preferencia de estrategia de Sigen AI", "Máximo beneficio", "Energía equilibrada", "Autoconsumo primero"),
+    "it": ("Preferenza di strategia Sigen AI", "Massimo profitto", "Energia bilanciata", "Prima l’autoconsumo"),
+    "fi": ("Sigen AI -strategia", "Suurin tuotto", "Tasapainoinen energia", "Oma käyttö ensin"),
+    "pl": ("Preferencja strategii Sigen AI", "Maksymalny zysk", "Zrównoważona energia", "Najpierw autokonsumpcja"),
+}
+for _language, (_name, _profit, _balanced, _self_use) in _AI_STRATEGY.items():
+    LANGUAGES[_language].update({
+        "n_ai_strategy": _name, "s_profit": _profit,
+        "s_balanced": _balanced, "s_self_use": _self_use,
+    })
+
 
 def _flatten(node, prefix=""):
     if isinstance(node, dict):

@@ -41,15 +41,20 @@ from .api import (
     OverrideStatus,
     SmartLoad,
     SmartLoadState,
+    StormWatch,
+    AiSettings,
+    normalize_serial,
     single_send_trace_config,
 )
 from .modules import INFO, ModuleReader
+from .pv_names import PvNameStore, async_apply_pv_names, find_pv_string_devices
 from .const import (
     CONF_ALLOW_CONTROL,
     CONF_ALLOW_GRID_DISCONNECT,
     CONF_OVERRIDE_MINUTES,
     CONF_OVERRIDE_MODE,
     CONF_OVERRIDE_POWER,
+    CONF_PLANT_ENTRY_ID,
     DEFAULT_OVERRIDE_MINUTES,
     DEFAULT_OVERRIDE_MODE,
     CONF_REGION,
@@ -58,6 +63,7 @@ from .const import (
     DOMAIN,
     MAX_SCAN_INTERVAL,
     MIN_SCAN_INTERVAL,
+    MODBUS_DOMAIN,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,6 +145,8 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.battery_export: BatteryExport | None = None
         self.peak_shaving: PeakShaving | None = None
         self.grid_current_limit: GridCurrentLimit | None = None
+        # Sigen AI vacation mode and strategy preference.
+        self.ai_settings: AiSettings | None = None
         self.last_setting: dict[str, str] | None = None
         # Grid connection (step D); only read while disconnecting is allowed.
         self.grid_connection: GridConnection | None = None
@@ -163,6 +171,14 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # Loads whose switch is enabled in Home Assistant. The states are
         # read at every poll only while there is one.
         self.watched_smart_loads: set[int] = set()
+        # Storm Watch; read only where mySigen shows it for the station. None
+        # until read and after a failed read.
+        self.storm_watch: StormWatch | None = None
+        self._storm_read_at = float("-inf")
+        # PV string names from the app: what the add-on set is kept here.
+        self.pv_name_store = PvNameStore(hass, entry.entry_id, DOMAIN)
+        # Inverters whose names were read the last time, with how many names.
+        self.pv_name_counts: dict[str, int] = {}
         # Battery modules; set up once the device tree has been read.
         self.modules = ModuleReader(())
         # Serial -> the module's device, registered to the Modbus plant entry.
@@ -286,6 +302,49 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.v2x_enabled = value
         self.async_update_listeners()
 
+    def publish_ai_settings(self, value: AiSettings) -> None:
+        self.ai_settings = value
+        self.async_update_listeners()
+
+    async def _async_read_storm_watch(self) -> None:
+        """Read Storm Watch. A failing read clears it and is retried soon."""
+        async with self.command_lock:
+            if self.rate_limit_wait:
+                return
+            now = time.monotonic()
+            self._storm_read_at = now
+            try:
+                self.storm_watch = await self.session.async_storm_watch()
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                # An old "no alert" must not stay on show.
+                _LOGGER.debug("mySigen Storm Watch read failed: %s", err)
+                self.storm_watch = None
+                self._storm_read_at = now - _SETTINGS_INTERVAL + _CHARGER_RETRY
+
+    async def async_update_pv_names(self) -> None:
+        """Name the plant's PV string devices as in the app, where allowed.
+
+        Sign-in and rate-limit errors are raised; an inverter whose names
+        cannot be read is left as it is.
+        """
+        registry = dr.async_get(self.hass)
+        devices = find_pv_string_devices(
+            registry, self.config_entry.data[CONF_PLANT_ENTRY_ID], MODBUS_DOMAIN,
+            normalize_serial,
+        )
+        names: dict[str, dict[int, str]] = {}
+        for serial in sorted({device.serial for device in devices}):
+            try:
+                found = await self.session.async_pv_names(serial)
+            except (MySigenConnectionError, MySigenPermissionError) as err:
+                _LOGGER.debug("mySigen PV string name read failed: %s", err)
+                continue
+            if found is not None:
+                names[serial] = found
+        self.pv_name_counts = {serial: len(found) for serial, found in names.items()}
+        if names:
+            await async_apply_pv_names(self.hass, self.pv_name_store, devices, names)
+
     def publish_smart_load(self, load_id: int, state: SmartLoadState) -> None:
         self.smart_load_states = {**self.smart_load_states, load_id: state}
         self.async_update_listeners()
@@ -343,6 +402,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 return
             self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
             before = self.session.dc_serial
+            storm_before = self.session.storm_watch_shown
             try:
                 same_station = await self.session.async_read_station()
             except (MySigenConnectionError, MySigenPermissionError) as err:
@@ -359,6 +419,12 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 _LOGGER.info("mySigen lists a different DC charger now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
                 return
+            if self.session.storm_watch_shown != storm_before:
+                _LOGGER.info("mySigen shows Storm Watch differently now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            # Names set in the app since the last check.
+            await self.async_update_pv_names()
             try:
                 modules = await self.session.async_read_battery_modules()
             except (MySigenConnectionError, MySigenPermissionError) as err:
@@ -457,6 +523,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             ("battery_export", self.session.async_battery_export),
             ("peak_shaving", self.session.async_peak_shaving),
             ("grid_current_limit", self.session.async_grid_current_limit),
+            ("ai_settings", self.session.async_ai_settings),
         ):
             try:
                 setattr(self, name, await read())
@@ -545,6 +612,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_charger()
+            if (
+                self.session.storm_watch_shown
+                and time.monotonic() - self._storm_read_at >= _SETTINGS_INTERVAL
+            ):
+                await self._async_read_storm_watch()
             if self.allow_control and self.smart_loads and self.watched_smart_loads:
                 await self._async_read_smart_loads()
             if self.modules.modules:

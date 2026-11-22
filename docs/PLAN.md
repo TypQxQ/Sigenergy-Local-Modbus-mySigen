@@ -7,10 +7,10 @@
 **What works today, what needs your help, and what comes next.**
 
 ![Working and tested](https://img.shields.io/badge/working_%26_tested-7-2ea44f?style=for-the-badge)
-![Needs testers](https://img.shields.io/badge/needs_testers-5-f0a500?style=for-the-badge)
+![Needs testers](https://img.shields.io/badge/needs_testers-9-f0a500?style=for-the-badge)
 ![Planned](https://img.shields.io/badge/planned-1-0969da?style=for-the-badge)
 
-<sub>Updated 21 November 2026 · version 0.1.1b4</sub>
+<sub>Updated 22 November 2026 · version 0.1.1</sub>
 
 </div>
 
@@ -37,6 +37,10 @@
 | 🔌 | **Disconnect from the grid** | The status reads correctly, but no disconnect has been sent yet |
 | 🚗 | **DC charger** | Charging mode, stop level, reserve and V2X have never met a real charger |
 | 💡 | **Smart loads** | On/off switches for SigenStor and Gateway ports; switched on one plant only |
+| 🎯 | **Sigen AI strategy preference** | Profit Max, Balanced Energy or Self-use First; tried on one plant only |
+| 🏖️ | **Sigen AI vacation mode** | A switch, as in the app; switched on one plant only |
+| 🌪️ | **Storm Watch** | An alert sensor; no plant with Storm Watch has been read yet |
+| ☀️ | **PV string names** | The app's names on the PV string devices; tried on one plant only |
 | 🗺️ | **Other systems** | Other regions, models, firmware, and systems without a Gateway |
 | 🗣️ | **Translations** | Nine of the eleven languages need a native speaker |
 

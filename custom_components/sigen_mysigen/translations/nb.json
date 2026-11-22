@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Strøm fra elbilen tillatt (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Storm Watch-varsel (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Lad bare med soloverskudd",
           "bidirectional": "Lad og la bilen levere strøm (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Sigen AI strategipreferanse (mySigen)",
+        "state": {
+          "profit_max": "Maksimal fortjeneste",
+          "balanced_energy": "Balansert energi",
+          "self_use_first": "Eget forbruk først"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Smartlast {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Sigen AI feriemodus (mySigen)"
       }
     }
   },

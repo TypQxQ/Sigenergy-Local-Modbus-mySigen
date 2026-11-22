@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Power from EV allowed (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Storm Watch alert (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Charge on solar surplus only",
           "bidirectional": "Charge and let the car supply power (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Sigen AI strategy preference (mySigen)",
+        "state": {
+          "profit_max": "Profit Max",
+          "balanced_energy": "Balanced Energy",
+          "self_use_first": "Self-use First"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Smart load {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Sigen AI vacation mode (mySigen)"
       }
     }
   },

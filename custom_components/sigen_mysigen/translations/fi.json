@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Sähkö autosta sallittu (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Storm Watch -varoitus (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Lataa vain aurinkoylijäämällä",
           "bidirectional": "Lataa ja anna auton syöttää sähköä (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Sigen AI -strategia (mySigen)",
+        "state": {
+          "profit_max": "Suurin tuotto",
+          "balanced_energy": "Tasapainoinen energia",
+          "self_use_first": "Oma käyttö ensin"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Älykäs kuorma {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Sigen AI -lomatila (mySigen)"
       }
     }
   },

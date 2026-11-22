@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Stroom uit EV toegestaan (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Storm Watch-waarschuwing (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Alleen laden met zonne-overschot",
           "bidirectional": "Laden en de auto stroom laten leveren (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Sigen AI strategievoorkeur (mySigen)",
+        "state": {
+          "profit_max": "Maximale winst",
+          "balanced_energy": "Gebalanceerde energie",
+          "self_use_first": "Eigen verbruik eerst"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Slimme verbruiker {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Sigen AI vakantiemodus (mySigen)"
       }
     }
   },

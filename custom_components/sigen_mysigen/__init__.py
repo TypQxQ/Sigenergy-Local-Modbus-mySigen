@@ -2,6 +2,8 @@
 
 Reads mySigen for a plant that the Sigenergy Local Modbus integration
 already provides. Changes are sent only while the user has allowed control.
+The one thing it changes in Home Assistant itself is the name of a PV
+string device, as set in the app, where the user has not renamed it.
 """
 from __future__ import annotations
 
@@ -53,6 +55,7 @@ from .commands import async_run_command
 from .coordinator import MySigenCoordinator
 from .link import STATION_MISMATCH, async_link_problem
 from .modules import INFO, ModuleReader, module_identifier
+from .pv_names import PvNameStore, async_restore_pv_names
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -275,6 +278,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, coordinator.platforms)
+
+    # PV string names from the app. Not needed for anything else, so a
+    # failure only waits for the hourly check.
+    try:
+        await coordinator.async_update_pv_names()
+    except MySigenRateLimitError as err:
+        coordinator.note_rate_limit(err)
+        _LOGGER.debug("mySigen PV string names not read: %s", err)
+    except MySigenError as err:
+        _LOGGER.debug("mySigen PV string names not read: %s", err)
     return True
 
 
@@ -375,6 +388,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     for device in list(registry.devices):
         if _module_identifiers(entry, device):
             registry.async_remove_device(device.id)
+    # PV string devices belong to Sigenergy ESS: give back their default
+    # names where the name is still the one this add-on set.
+    await async_restore_pv_names(hass, PvNameStore(hass, entry.entry_id, DOMAIN))
     for key in _ISSUES:
         ir.async_delete_issue(hass, DOMAIN, _issue_id(key, entry))
 

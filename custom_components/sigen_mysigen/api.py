@@ -102,6 +102,17 @@ _SOC_RANGE_PATH = "device/charge/mode/soc/range"
 _SMART_LOAD_LIST_PATH = "third-party-device/tp-device/manage/card/static-info"
 _SMART_LOAD_STATE_PATH = "third-party-device/tp-device/manage/card/dynamic-info"
 _SMART_LOAD_SWITCH_PATH = "third-party-device/tp-device/smart-loads/control-mode/manual/switch"
+# Sigen AI settings: vacation mode and the strategy preference. Read from a
+# real plant. Both changes were captured from the mySigen web app: vacation
+# mode on and off, and each strategy in turn. Each left the other, and the
+# operating mode, as it was.
+_AI_SETTINGS_PATH = "simulation/strategy/get/aiSettingsInfo"
+_AI_SETTINGS_WRITE_PATH = "simulation/strategy/modify/strategyMode"
+# Storm Watch's switch and current alerts. Read from a real plant; alert
+# fields are from the mySigen web app's code.
+_STORM_WATCH_PATH = "device/storm_watch/alert/status/query"
+# PV string names set in the app, per inverter. Read from a real plant.
+_PV_NAMES_PATH = "device/pvPanel/get/pv-name/{station_id}"
 # AC charger, read for diagnostics only. Paths and parameters from the
 # mySigen web app's code; no AC charger answer has been seen yet.
 AC_CHARGER_DEVICE_TYPE = 6
@@ -691,6 +702,141 @@ def parse_smart_load_states(data: Any) -> dict[int, SmartLoadState]:
     return states
 
 
+# Sigen AI's strategy preference, by the code mySigen uses. The keys follow
+# the app's English names: Profit Max, Balanced Energy, Self-use First.
+AI_STRATEGIES: dict[str, int] = {
+    "profit_max": 2,
+    "balanced_energy": 1,
+    "self_use_first": 0,
+}
+
+
+@dataclass(frozen=True)
+class AiSettings:
+    """Sigen AI's vacation mode and strategy preference.
+
+    `vacation` is None when the answer does not say. `vacation_shown` is
+    False only when mySigen says the plant does not offer vacation mode.
+    `strategy` is None unless it is one of AI_STRATEGIES.
+    """
+
+    vacation: bool | None
+    vacation_shown: bool
+    strategy: int | None
+
+
+def parse_ai_settings(data: Any) -> AiSettings | None:
+    """The settings from `simulation/strategy/get/aiSettingsInfo`."""
+    if not isinstance(data, dict):
+        return None
+    vacation = data.get("holidayModeEnable")
+    strategy = _int_or_none(data.get("strategyMode"))
+    return AiSettings(
+        vacation if isinstance(vacation, bool) else None,
+        data.get("showHolidayMode") is not False,
+        strategy if strategy in AI_STRATEGIES.values() else None,
+    )
+
+
+@dataclass(frozen=True)
+class StormAlert:
+    """One weather alert Storm Watch acts on. Times are None when not given."""
+
+    event_type: int | None
+    # mySigen's name for the weather, or None when it gives none.
+    weather: str | None
+    # When the battery starts charging to full for it.
+    charging_start: datetime | None
+    # When the weather is expected and when the alert ends.
+    onset: datetime | None
+    end: datetime | None
+
+
+@dataclass(frozen=True)
+class StormWatch:
+    """Storm Watch's switch and the alerts it currently lists."""
+
+    enabled: bool | None
+    alerts: tuple[StormAlert, ...]
+    # True when mySigen reports the battery charged full for an alert.
+    charged_full: bool | None
+
+    def current(self, now: datetime) -> tuple[StormAlert, ...]:
+        """The listed alerts that have not ended. One without an end counts."""
+        return tuple(alert for alert in self.alerts if alert.end is None or alert.end > now)
+
+
+def _epoch_seconds(value: Any) -> datetime | None:
+    """A time mySigen gives in seconds since 1970; 0 or nothing means none."""
+    seconds = _int_or_none(value)
+    if seconds is None or seconds <= 0:
+        return None
+    try:
+        return datetime.fromtimestamp(seconds, timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def parse_storm_watch(data: Any) -> StormWatch | None:
+    """Storm Watch from `device/storm_watch/alert/status/query`."""
+    if not isinstance(data, dict):
+        return None
+    names: dict[int, str] = {}
+    weather_types = data.get("extremeWeatherEnumTypeVOList")
+    for row in weather_types if isinstance(weather_types, list) else ():
+        if not isinstance(row, dict):
+            continue
+        code, name = _int_or_none(row.get("code")), row.get("weatherName")
+        if code is not None and isinstance(name, str) and name.strip():
+            names[code] = name.strip()
+    alerts: list[StormAlert] = []
+    events = data.get("alertEvents")
+    for row in events if isinstance(events, list) else ():
+        if not isinstance(row, dict):
+            continue
+        event_type = _int_or_none(row.get("eventType"))
+        alerts.append(StormAlert(
+            event_type,
+            names.get(event_type) if event_type is not None else None,
+            _epoch_seconds(row.get("chargingStartTime")),
+            _epoch_seconds(row.get("onsetTime")),
+            _epoch_seconds(row.get("endTime")),
+        ))
+    switch = _int_or_none(data.get("weatherAlertSwitch"))
+    full = data.get("chargeFull")
+    return StormWatch(
+        {0: False, 1: True}.get(switch) if switch is not None else None,
+        tuple(alerts),
+        full if isinstance(full, bool) else None,
+    )
+
+
+# The app lets a PV string name be at most 20 characters.
+_PV_NAME_MAX = 20
+_PV_NAME_KEY = re.compile(r"pv(\d+)Name")
+
+
+def parse_pv_names(data: Any) -> dict[int, str] | None:
+    """String number -> the name set in the app; unnamed strings are left out.
+
+    None when the answer is not one. Names past `mpptNumber` are ignored.
+    """
+    if not isinstance(data, dict):
+        return None
+    count = _int_or_none(data.get("mpptNumber"))
+    names: dict[int, str] = {}
+    for key, value in data.items():
+        match = _PV_NAME_KEY.fullmatch(key) if isinstance(key, str) else None
+        if match is None or not isinstance(value, str):
+            continue
+        number, name = int(match.group(1)), " ".join(value.split())
+        if number < 1 or (count is not None and count > 0 and number > count):
+            continue
+        if name:
+            names[number] = name[:_PV_NAME_MAX]
+    return names
+
+
 GRID_ON = "on_grid"
 GRID_GOING_OFF = "going_off_grid"
 GRID_OFF = "off_grid"
@@ -1111,6 +1257,8 @@ class MySigenSession:
         self.ac_serials: tuple[str, ...] = ()
         # What the station answer says about AC chargers, for diagnostics.
         self.ac_station_fields: dict[str, Any] = {}
+        # True when mySigen shows Storm Watch for the station.
+        self.storm_watch_shown = False
         # Battery modules from the last device tree read; None until read.
         self.battery_modules: tuple[BatteryModule, ...] | None = None
         # Serial number -> device type, from the last device tree read.
@@ -1245,6 +1393,7 @@ class MySigenSession:
             key: data.get(key) for key in ("hasAcCharger", "acNum")
             if data.get(key) is None or isinstance(data.get(key), (bool, int))
         }
+        self.storm_watch_shown = data.get("displayStormWatch") is True
         return True
 
     @property
@@ -1626,6 +1775,54 @@ class MySigenSession:
                 "manualSwitch": "1" if on else "0",
             },
         )
+
+    async def async_ai_settings(self) -> AiSettings | None:
+        """Sigen AI's vacation mode and strategy preference."""
+        return parse_ai_settings(await self._async_get(
+            "AI settings", _AI_SETTINGS_PATH, {"stationId": await self.async_station_id()}
+        ))
+
+    async def async_set_vacation_mode(self, enabled: bool) -> None:
+        """Switch Sigen AI's vacation mode on or off. Sent once.
+
+        Exactly as the app's own switch sends it: the strategy and AI peak
+        shaving are null, and mySigen keeps them as they are.
+        """
+        await self._async_put("set vacation mode", _AI_SETTINGS_WRITE_PATH, {
+            "stationId": await self._async_station_number(),
+            "strategyMode": None,
+            "enableAiPeakShaving": None,
+            "enableHolidayMode": enabled,
+        }, method="POST")
+
+    async def async_set_ai_strategy(self, code: int) -> None:
+        """Choose Sigen AI's strategy preference. Sent once.
+
+        Exactly as the app sends it: vacation mode and AI peak shaving are
+        null, and mySigen keeps them as they are.
+        """
+        if code not in AI_STRATEGIES.values():
+            raise ValueError(f"Strategy {code!r} is not available")
+        await self._async_put("set AI strategy", _AI_SETTINGS_WRITE_PATH, {
+            "stationId": await self._async_station_number(),
+            "strategyMode": code,
+            "enableAiPeakShaving": None,
+            "enableHolidayMode": None,
+        }, method="POST")
+
+    async def async_storm_watch(self) -> StormWatch | None:
+        """Storm Watch's switch and the alerts it lists now."""
+        return parse_storm_watch(await self._async_get(
+            "Storm Watch", _STORM_WATCH_PATH, {"stationId": await self.async_station_id()}
+        ))
+
+    async def async_pv_names(self, serial: str) -> dict[int, str] | None:
+        """The PV string names set in the app for one inverter."""
+        return parse_pv_names(await self._async_get(
+            "PV string names",
+            _PV_NAMES_PATH.format(station_id=await self.async_station_id()),
+            {"snCode": serial},
+        ))
 
     async def async_gateway(self) -> Any:
         """Read the Gateway's own readings as mySigen returns them."""

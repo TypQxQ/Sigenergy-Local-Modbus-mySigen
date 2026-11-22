@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Strom vom E-Auto erlaubt (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Storm-Watch-Warnung (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Nur mit Solarüberschuss laden",
           "bidirectional": "Laden und das Auto Strom liefern lassen (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Sigen AI Strategiepräferenz (mySigen)",
+        "state": {
+          "profit_max": "Maximaler Gewinn",
+          "balanced_energy": "Ausgewogene Energie",
+          "self_use_first": "Eigenverbrauch zuerst"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Smarte Last {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Sigen AI Urlaubsmodus (mySigen)"
       }
     }
   },
