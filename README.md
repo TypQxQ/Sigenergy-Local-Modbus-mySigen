@@ -23,6 +23,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | ⚙️ | **Plant settings** | Operating mode, Sigen AI strategy and vacation mode, battery export, peak shaving and max grid connection current. |
 | 🔌 | **Off-grid** | Run the home on battery and solar alone. |
 | 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
+| 🔋 | **AC charger** | Charging mode, battery boost and its cut-off level, and the energy of each charging session. |
 | 💡 | **Smart loads** | Switch each smart load on the SigenStor or Gateway on or off. |
 | 🌪️ | **Storm Watch** | Know when Storm Watch is charging the battery full for a weather alert. |
 | ☀️ | **PV string names** | Your PV strings get the names you gave them in the app. |

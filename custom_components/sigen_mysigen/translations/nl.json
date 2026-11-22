@@ -121,6 +121,9 @@
       },
       "storm_watch": {
         "name": "Storm Watch-waarschuwing (mySigen)"
+      },
+      "ac_charger_battery_boost": {
+        "name": "Batterijboost AC-lader (mySigen)"
       }
     },
     "sensor": {
@@ -264,6 +267,20 @@
       },
       "generator_power_c": {
         "name": "Generatorvermogen fase C (mySigen)"
+      },
+      "ac_charger_mode": {
+        "name": "Huidige laadmodus AC-lader (mySigen)",
+        "state": {
+          "fast_charging": "Nu laden op vol vermogen",
+          "solar_surplus": "Alleen laden met zonne-overschot",
+          "sigen_ai": "Sigen AI laten beslissen"
+        }
+      },
+      "ac_charger_session_energy": {
+        "name": "Energie van de laadsessie AC-lader (mySigen)"
+      },
+      "ac_charger_boost_cutoff": {
+        "name": "Huidige batterijboostgrens AC-lader (mySigen)"
       }
     },
     "number": {
@@ -284,6 +301,9 @@
       },
       "grid_current_limit": {
         "name": "Max. stroom van de netaansluiting (mySigen)"
+      },
+      "ac_charger_boost_cutoff_level": {
+        "name": "Batterijboostgrens AC-lader (mySigen)"
       }
     },
     "select": {
@@ -320,6 +340,14 @@
           "balanced_energy": "Gebalanceerde energie",
           "self_use_first": "Eigen verbruik eerst"
         }
+      },
+      "ac_charger_charging_mode": {
+        "name": "Laadmodus AC-lader (mySigen)",
+        "state": {
+          "fast_charging": "Nu laden op vol vermogen",
+          "solar_surplus": "Alleen laden met zonne-overschot",
+          "sigen_ai": "Sigen AI laten beslissen"
+        }
       }
     },
     "button": {
@@ -348,6 +376,9 @@
       },
       "vacation_mode": {
         "name": "Sigen AI vakantiemodus (mySigen)"
+      },
+      "ac_charger_allow_battery_boost": {
+        "name": "Batterijboost AC-lader toestaan (mySigen)"
       }
     }
   },

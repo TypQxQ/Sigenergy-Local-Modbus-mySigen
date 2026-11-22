@@ -22,6 +22,8 @@ from .api import (
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER
 from .control import (
+    ac_cutoff_range,
+    async_set_ac_boost_cutoff,
     async_set_dc_discharge_floor,
     async_set_dc_stop_level,
     async_set_grid_current_limit,
@@ -50,6 +52,8 @@ async def async_setup_entry(
             DcStopChargingAt(coordinator, "dc_charger_stop_charging_at"),
             DcDischargeFloor(coordinator, "dc_charger_discharge_floor"),
         ]
+    if coordinator.has_ac_charger:
+        entities.append(AcBoostCutoffLevel(coordinator, "ac_charger_boost_cutoff_level"))
     async_add_entities(entities)
 
 
@@ -232,5 +236,22 @@ class DcDischargeFloor(_DcLevel):
 
     async def async_set_native_value(self, value: float) -> None:
         await async_run_setting(self.coordinator, async_set_dc_discharge_floor(
+            self.coordinator, level=int(round(value)),
+        ))
+
+
+class AcBoostCutoffLevel(_DcLevel):
+    """Battery boost stops when the home battery reaches this level."""
+
+    def _range(self) -> tuple[int, int]:
+        return ac_cutoff_range(self.coordinator)
+
+    @property
+    def native_value(self) -> int | None:
+        mode = self.coordinator.ac_charge_mode
+        return mode.boost_cutoff if mode is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        await async_run_setting(self.coordinator, async_set_ac_boost_cutoff(
             self.coordinator, level=int(round(value)),
         ))

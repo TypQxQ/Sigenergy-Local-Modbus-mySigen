@@ -1500,6 +1500,38 @@ for _language, (_name, _profit, _balanced, _self_use) in _AI_STRATEGY.items():
         "s_balanced": _balanced, "s_self_use": _self_use,
     })
 
+# AC charger. Fast charging and solar surplus reuse the DC charger's words.
+# Only English and Swedish have been checked by a native speaker.
+for _platform in ("sensor.ac_charger_mode", "select.ac_charger_charging_mode"):
+    KEYS.update({
+        f"entity.{_platform}.state.fast_charging": "dcm_fast_charging",
+        f"entity.{_platform}.state.solar_surplus": "dcm_solar_surplus",
+        f"entity.{_platform}.state.sigen_ai": "acm_sigen_ai",
+    })
+KEYS.update({
+    "entity.sensor.ac_charger_mode.name": "n_ac_mode",
+    "entity.sensor.ac_charger_session_energy.name": "n_ac_session",
+    "entity.sensor.ac_charger_boost_cutoff.name": "n_ac_cutoff_now",
+    "entity.binary_sensor.ac_charger_battery_boost.name": "n_ac_boost",
+    "entity.select.ac_charger_charging_mode.name": "n_ac_mode_sel",
+    "entity.switch.ac_charger_allow_battery_boost.name": "n_ac_allow_boost",
+    "entity.number.ac_charger_boost_cutoff_level.name": "n_ac_cutoff",
+})
+_AC_CHARGER: dict[str, dict[str, str]] = {
+    "sv": {"n_ac_mode": "AC-laddarens aktuella laddläge", "n_ac_session": "AC-laddarens energi denna laddning", "n_ac_cutoff_now": "AC-laddarens aktuella gräns för batteriboost", "n_ac_boost": "AC-laddarens batteriboost", "n_ac_mode_sel": "AC-laddarens laddläge", "n_ac_allow_boost": "Tillåt batteriboost för AC-laddaren", "n_ac_cutoff": "AC-laddarens gräns för batteriboost", "acm_sigen_ai": "Låt Sigen AI bestämma"},
+    "da": {"n_ac_mode": "AC-laderens aktuelle ladetilstand", "n_ac_session": "AC-laderens energi i denne opladning", "n_ac_cutoff_now": "AC-laderens aktuelle grænse for batteriboost", "n_ac_boost": "AC-laderens batteriboost", "n_ac_mode_sel": "AC-laderens ladetilstand", "n_ac_allow_boost": "Tillad batteriboost for AC-laderen", "n_ac_cutoff": "AC-laderens grænse for batteriboost", "acm_sigen_ai": "Lad Sigen AI bestemme"},
+    "nb": {"n_ac_mode": "AC-laderens nåværende lademodus", "n_ac_session": "AC-laderens energi i denne ladingen", "n_ac_cutoff_now": "AC-laderens nåværende grense for batteriboost", "n_ac_boost": "AC-laderens batteriboost", "n_ac_mode_sel": "AC-laderens lademodus", "n_ac_allow_boost": "Tillat batteriboost for AC-laderen", "n_ac_cutoff": "AC-laderens grense for batteriboost", "acm_sigen_ai": "La Sigen AI bestemme"},
+    "de": {"n_ac_mode": "Aktueller Lademodus der AC-Wallbox", "n_ac_session": "Energie des Ladevorgangs der AC-Wallbox", "n_ac_cutoff_now": "Aktuelle Batterie-Boost-Grenze der AC-Wallbox", "n_ac_boost": "Batterie-Boost der AC-Wallbox", "n_ac_mode_sel": "Lademodus der AC-Wallbox", "n_ac_allow_boost": "Batterie-Boost der AC-Wallbox erlauben", "n_ac_cutoff": "Batterie-Boost-Grenze der AC-Wallbox", "acm_sigen_ai": "Sigen AI entscheiden lassen"},
+    "nl": {"n_ac_mode": "Huidige laadmodus AC-lader", "n_ac_session": "Energie van de laadsessie AC-lader", "n_ac_cutoff_now": "Huidige batterijboostgrens AC-lader", "n_ac_boost": "Batterijboost AC-lader", "n_ac_mode_sel": "Laadmodus AC-lader", "n_ac_allow_boost": "Batterijboost AC-lader toestaan", "n_ac_cutoff": "Batterijboostgrens AC-lader", "acm_sigen_ai": "Sigen AI laten beslissen"},
+    "fr": {"n_ac_mode": "Mode de charge actuel de la borne AC", "n_ac_session": "Énergie de la session de la borne AC", "n_ac_cutoff_now": "Seuil actuel du boost batterie de la borne AC", "n_ac_boost": "Boost batterie de la borne AC", "n_ac_mode_sel": "Mode de charge de la borne AC", "n_ac_allow_boost": "Autoriser le boost batterie de la borne AC", "n_ac_cutoff": "Seuil du boost batterie de la borne AC", "acm_sigen_ai": "Laisser Sigen AI décider"},
+    "es": {"n_ac_mode": "Modo de carga actual del cargador AC", "n_ac_session": "Energía de la sesión del cargador AC", "n_ac_cutoff_now": "Límite actual de impulso de batería, cargador AC", "n_ac_boost": "Impulso de batería del cargador AC", "n_ac_mode_sel": "Modo de carga del cargador AC", "n_ac_allow_boost": "Permitir impulso de batería del cargador AC", "n_ac_cutoff": "Límite del impulso de batería del cargador AC", "acm_sigen_ai": "Dejar que decida Sigen AI"},
+    "it": {"n_ac_mode": "Modalità di ricarica attuale del caricatore AC", "n_ac_session": "Energia della sessione del caricatore AC", "n_ac_cutoff_now": "Limite attuale boost batteria del caricatore AC", "n_ac_boost": "Boost batteria del caricatore AC", "n_ac_mode_sel": "Modalità di ricarica del caricatore AC", "n_ac_allow_boost": "Consenti boost batteria del caricatore AC", "n_ac_cutoff": "Limite del boost batteria del caricatore AC", "acm_sigen_ai": "Lascia decidere a Sigen AI"},
+    "fi": {"n_ac_mode": "AC-laturin nykyinen lataustila", "n_ac_session": "AC-laturin latauskerran energia", "n_ac_cutoff_now": "AC-laturin nykyinen akkuboostin raja", "n_ac_boost": "AC-laturin akkuboost", "n_ac_mode_sel": "AC-laturin lataustila", "n_ac_allow_boost": "Salli AC-laturin akkuboost", "n_ac_cutoff": "AC-laturin akkuboostin raja", "acm_sigen_ai": "Anna Sigen AI:n päättää"},
+    "pl": {"n_ac_mode": "Bieżący tryb ładowania ładowarki AC", "n_ac_session": "Energia sesji ładowarki AC", "n_ac_cutoff_now": "Bieżący próg wspomagania z baterii ładowarki AC", "n_ac_boost": "Wspomaganie z baterii ładowarki AC", "n_ac_mode_sel": "Tryb ładowania ładowarki AC", "n_ac_allow_boost": "Zezwól na wspomaganie z baterii ładowarki AC", "n_ac_cutoff": "Próg wspomagania z baterii ładowarki AC", "acm_sigen_ai": "Niech decyduje Sigen AI"},
+}
+for _language, _extra in _AC_CHARGER.items():
+    LANGUAGES[_language].update(_extra)
+
 
 def _flatten(node, prefix=""):
     if isinstance(node, dict):

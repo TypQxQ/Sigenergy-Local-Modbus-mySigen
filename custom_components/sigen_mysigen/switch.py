@@ -12,6 +12,7 @@ from .commands import async_run_setting
 from .const import CONF_PLANT_ENTRY_ID
 from .api import OPERATING_MODES, SmartLoad
 from .control import (
+    async_set_ac_battery_boost,
     async_set_battery_export,
     async_set_off_grid,
     async_set_peak_shaving,
@@ -38,6 +39,8 @@ async def async_setup_entry(
         entities.append(GridDisconnect(coordinator, "grid_disconnect"))
     if coordinator.has_dc_charger:
         entities.append(AllowV2x(coordinator, "dc_charger_allow_v2x"))
+    if coordinator.has_ac_charger:
+        entities.append(AllowAcBatteryBoost(coordinator, "ac_charger_allow_battery_boost"))
     settings = coordinator.ai_settings
     if settings is None or settings.vacation_shown:
         # Unknown after a failed read: shown as unavailable until read.
@@ -164,6 +167,33 @@ class AllowV2x(MySigenEntity, SwitchEntity):
     async def _async_set(self, enabled: bool) -> None:
         await async_run_setting(
             self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)
+
+
+class AllowAcBatteryBoost(MySigenEntity, SwitchEntity):
+    """On: the home battery helps charge the car, down to the cut-off level."""
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def available(self) -> bool:
+        mode = self.coordinator.ac_charge_mode
+        return super().available and mode is not None and mode.boost is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        mode = self.coordinator.ac_charge_mode
+        return mode.boost if mode is not None else None
+
+    async def _async_set(self, enabled: bool) -> None:
+        await async_run_setting(
+            self.coordinator, async_set_ac_battery_boost(self.coordinator, enabled=enabled)
         )
 
     async def async_turn_on(self, **kwargs: Any) -> None:

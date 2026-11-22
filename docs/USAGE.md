@@ -7,7 +7,7 @@
 **Every entity and control, and how each change is checked.**<br>
 New here? Start with the [README](../README.md).
 
-📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 💡 [Smart loads](#-smart-loads) · ☀️ [PV names](#️-pv-string-names) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
+📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 🔋 [AC charger](#-ac-charger) · 💡 [Smart loads](#-smart-loads) · ☀️ [PV names](#️-pv-string-names) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
 
 </div>
 
@@ -42,6 +42,11 @@ Names follow the **Entity name language** of Sigenergy ESS, so both read the sam
 | ✅ | Current DC charging mode | The charging mode in use: how the charger decides when to charge |
 | ✅ | Current DC charge limit | The car's charge level where charging stops |
 | ✅ | Power from EV allowed (V2X) | Whether the car may power the home |
+| | **AC charger** | <sub>only when mySigen lists one</sub> |
+| ✅ | Current AC charging mode | Charge now at full power, on solar surplus only, or let Sigen AI decide |
+| ✅ | AC battery boost | Whether the home battery helps charge the car |
+| ✅ | Current AC battery boost cut-off | The home battery level where battery boost stops |
+| ✅ | AC charging session energy | kWh charged in the current session, or the last one after it ends; starts again at 0 with the next session |
 | | **Storm Watch** | <sub>only where mySigen shows Storm Watch for your plant</sub> |
 | ✅ | Storm Watch alert | On while Storm Watch lists a weather alert that hasn't ended. Storm Watch then charges the battery full and holds it there. The attributes show the `weather`, when charging starts (`charging_start`), the weather's `onset` and the alert's `end`, whether the battery is `charged_full`, and whether Storm Watch is switched on (`storm_watch_enabled`). Read every ten minutes. |
 
@@ -166,6 +171,21 @@ Start and stop charging and the power limits stay in Sigenergy ESS. These settin
 
 > [!NOTE]
 > **Tried on two chargers so far.** Changing the charging mode is confirmed on a real charger, and the V2X state reads correctly. The charge limit, V2X minimum and V2X switch have not been confirmed yet. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
+
+## 🔋 AC charger
+
+When mySigen lists an AC charger, its sensors appear by themselves. With **Allow battery control** on, you also get these, disabled until you enable them:
+
+| | Control | Type | What it does |
+| :-: | --- | --- | --- |
+| 🔀 | AC charging mode | Dropdown | Charge now at full power, charge on solar surplus only, or let Sigen AI decide, as far as the charger offers them |
+| 🔋 | Allow AC battery boost | Switch | The home battery helps charge the car, down to the cut-off level |
+| 🔒 | AC battery boost cut-off | Number, % | Battery boost stops when the home battery reaches this level |
+
+Start and stop charging, the power limits and the charger's own readings stay in Sigenergy ESS. Charging mode and battery boost exist only in mySigen, so they also work while Remote EMS is on. The cut-off takes 0 to 100 % unless the charger reports narrower limits. Everything is read every ten minutes, so a change made in the app, and the session energy, can take that long to show.
+
+> [!NOTE]
+> **Built from two chargers' readings, not tried yet.** The modes and battery boost read correctly on two plants with a Sigen AC Charger. A change is sent the way the app sends it, but no change from Home Assistant has been tried on a real charger. Have an AC charger? Change one thing, check the app, and [tell us →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
 
 ## 💡 Smart loads
 

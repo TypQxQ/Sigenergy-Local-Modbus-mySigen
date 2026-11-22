@@ -7,10 +7,17 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import AI_STRATEGIES, CONTROL_MODES, DC_CHARGE_MODES, OPERATING_MODES
+from .api import (
+    AC_CHARGE_MODES,
+    AI_STRATEGIES,
+    CONTROL_MODES,
+    DC_CHARGE_MODES,
+    OPERATING_MODES,
+)
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MODE, CONF_PLANT_ENTRY_ID
 from .control import (
+    async_set_ac_charge_mode,
     async_set_ai_strategy,
     async_set_dc_charge_mode,
     async_set_operating_mode,
@@ -33,6 +40,8 @@ async def async_setup_entry(
     ]
     if coordinator.has_dc_charger:
         entities.append(DcChargingMode(coordinator, "dc_charger_charging_mode"))
+    if coordinator.has_ac_charger:
+        entities.append(AcChargingMode(coordinator, "ac_charger_charging_mode"))
     async_add_entities(entities)
 
 
@@ -149,4 +158,33 @@ class AiStrategy(MySigenEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         await async_run_setting(
             self.coordinator, async_set_ai_strategy(self.coordinator, strategy=option)
+        )
+
+
+class AcChargingMode(MySigenEntity, SelectEntity):
+    """Chooses how the AC charger charges. It stays until changed back.
+
+    Offers the modes the charger lists; all three until it has.
+    """
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def options(self) -> list[str]:
+        offered = self.coordinator.ac_supported_modes
+        return [key for key, code in AC_CHARGE_MODES.items() if not offered or code in offered]
+
+    @property
+    def available(self) -> bool:
+        mode = self.coordinator.ac_charge_mode
+        return super().available and mode is not None and mode.mode is not None
+
+    @property
+    def current_option(self) -> str | None:
+        mode = self.coordinator.ac_charge_mode
+        return mode.mode if mode is not None else None
+
+    async def async_select_option(self, option: str) -> None:
+        await async_run_setting(
+            self.coordinator, async_set_ac_charge_mode(self.coordinator, mode=option)
         )

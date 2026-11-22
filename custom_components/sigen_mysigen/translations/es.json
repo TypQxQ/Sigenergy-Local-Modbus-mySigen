@@ -121,6 +121,9 @@
       },
       "storm_watch": {
         "name": "Alerta de Storm Watch (mySigen)"
+      },
+      "ac_charger_battery_boost": {
+        "name": "Impulso de batería del cargador AC (mySigen)"
       }
     },
     "sensor": {
@@ -264,6 +267,20 @@
       },
       "generator_power_c": {
         "name": "Potencia del generador fase C (mySigen)"
+      },
+      "ac_charger_mode": {
+        "name": "Modo de carga actual del cargador AC (mySigen)",
+        "state": {
+          "fast_charging": "Cargar ahora a plena potencia",
+          "solar_surplus": "Cargar solo con excedente solar",
+          "sigen_ai": "Dejar que decida Sigen AI"
+        }
+      },
+      "ac_charger_session_energy": {
+        "name": "Energía de la sesión del cargador AC (mySigen)"
+      },
+      "ac_charger_boost_cutoff": {
+        "name": "Límite actual de impulso de batería, cargador AC (mySigen)"
       }
     },
     "number": {
@@ -284,6 +301,9 @@
       },
       "grid_current_limit": {
         "name": "Corriente máx. de la conexión a red (mySigen)"
+      },
+      "ac_charger_boost_cutoff_level": {
+        "name": "Límite del impulso de batería del cargador AC (mySigen)"
       }
     },
     "select": {
@@ -320,6 +340,14 @@
           "balanced_energy": "Energía equilibrada",
           "self_use_first": "Autoconsumo primero"
         }
+      },
+      "ac_charger_charging_mode": {
+        "name": "Modo de carga del cargador AC (mySigen)",
+        "state": {
+          "fast_charging": "Cargar ahora a plena potencia",
+          "solar_surplus": "Cargar solo con excedente solar",
+          "sigen_ai": "Dejar que decida Sigen AI"
+        }
       }
     },
     "button": {
@@ -348,6 +376,9 @@
       },
       "vacation_mode": {
         "name": "Modo vacaciones de Sigen AI (mySigen)"
+      },
+      "ac_charger_allow_battery_boost": {
+        "name": "Permitir impulso de batería del cargador AC (mySigen)"
       }
     }
   },
