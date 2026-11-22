@@ -416,55 +416,74 @@ def device(device_id, number=1, name=None, serial="AIO-1"):
     return pv_names.PvStringDevice(device_id, serial, number, name)
 
 
+def memory(applied=None, offered=None):
+    return pv_names.PvNameMemory(dict(applied or {}), dict(offered or {}))
+
+
 class TestPvNameRules(unittest.TestCase):
-    def plan(self, devices, names, applied=None):
-        return pv_names.plan_pv_names(devices, names, applied or {})
+    def plan(self, devices, names, before=None):
+        return pv_names.plan_pv_names(devices, names, before or memory())
 
     def test_a_default_name_takes_the_app_name(self):
-        updates, applied = self.plan([device("d1"), device("d2", 2)], {"AIO-1": {1: "Rear roof"}})
+        updates, after = self.plan([device("d1"), device("d2", 2)], {"AIO-1": {1: "Rear roof"}})
         self.assertEqual(updates, {"d1": "Rear roof"})
-        self.assertEqual(applied, {"d1": "Rear roof"})
+        self.assertEqual(after, memory({"d1": "Rear roof"}, {"d1": "Rear roof"}))
 
     def test_a_name_the_user_gave_is_never_changed(self):
-        updates, applied = self.plan([device("d1", name="Garage")], {"AIO-1": {1: "Rear roof"}})
+        updates, after = self.plan([device("d1", name="Garage")], {"AIO-1": {1: "Rear roof"}})
         self.assertEqual(updates, {})
-        # Remembered, so it is not offered again until the app name changes.
-        self.assertEqual(applied, {"d1": "Rear roof"})
-        updates, _ = self.plan(
-            [device("d1", name="Garage")], {"AIO-1": {1: "Back"}}, {"d1": "Rear roof"})
-        self.assertEqual(updates, {})
+        # Offered, not applied: it is not offered again until it changes.
+        self.assertEqual(after, memory({}, {"d1": "Rear roof"}))
+        updates, after = self.plan([device("d1", name="Garage")], {"AIO-1": {1: "Back"}}, after)
+        self.assertEqual((updates, after.applied), ({}, {}))
+        # Removing the app name leaves it too.
+        updates, after = self.plan([device("d1", name="Garage")], {"AIO-1": {}}, after)
+        self.assertEqual((updates, after), ({}, memory()))
+
+    def test_a_user_name_equal_to_the_app_name_stays_the_users(self):
+        # Review finding: it was counted as the add-on's, then overwritten
+        # when the app name changed or cleared when it was removed.
+        devices = [device("d1", name="Rear roof")]
+        updates, after = self.plan(devices, {"AIO-1": {1: "Rear roof"}})
+        self.assertEqual((updates, after), ({}, memory({}, {"d1": "Rear roof"})))
+        updates, changed = self.plan(devices, {"AIO-1": {1: "Back roof"}}, after)
+        self.assertEqual((updates, changed.applied), ({}, {}))
+        updates, removed = self.plan(devices, {"AIO-1": {}}, after)
+        self.assertEqual((updates, removed), ({}, memory()))
 
     def test_the_add_on_follows_a_changed_app_name(self):
-        updates, applied = self.plan(
-            [device("d1", name="Rear roof")], {"AIO-1": {1: "Back roof"}}, {"d1": "Rear roof"})
+        before = memory({"d1": "Rear roof"}, {"d1": "Rear roof"})
+        updates, after = self.plan(
+            [device("d1", name="Rear roof")], {"AIO-1": {1: "Back roof"}}, before)
         self.assertEqual(updates, {"d1": "Back roof"})
-        self.assertEqual(applied, {"d1": "Back roof"})
+        self.assertEqual(after, memory({"d1": "Back roof"}, {"d1": "Back roof"}))
 
     def test_a_cleared_name_stays_default_until_the_app_name_changes(self):
         devices = [device("d1", name=None)]
-        updates, applied = self.plan(devices, {"AIO-1": {1: "Rear roof"}}, {"d1": "Rear roof"})
-        self.assertEqual((updates, applied), ({}, {"d1": "Rear roof"}))
-        updates, _ = self.plan(devices, {"AIO-1": {1: "Back roof"}}, {"d1": "Rear roof"})
+        before = memory({"d1": "Rear roof"}, {"d1": "Rear roof"})
+        updates, after = self.plan(devices, {"AIO-1": {1: "Rear roof"}}, before)
+        self.assertEqual((updates, after), ({}, memory({}, {"d1": "Rear roof"})))
+        updates, after = self.plan(devices, {"AIO-1": {1: "Back roof"}}, after)
         self.assertEqual(updates, {"d1": "Back roof"})
+        self.assertEqual(after.applied, {"d1": "Back roof"})
+
+    def test_a_name_the_user_changed_from_ours_is_theirs(self):
+        before = memory({"d1": "Rear roof"}, {"d1": "Rear roof"})
+        devices = [device("d1", name="Garage")]
+        updates, after = self.plan(devices, {"AIO-1": {1: "Back roof"}}, before)
+        self.assertEqual((updates, after.applied), ({}, {}))
+        updates, after = self.plan(devices, {"AIO-1": {}}, before)
+        self.assertEqual((updates, after), ({}, memory()))
 
     def test_a_name_removed_in_the_app_restores_the_default(self):
-        updates, applied = self.plan(
-            [device("d1", name="Rear roof")], {"AIO-1": {}}, {"d1": "Rear roof"})
-        self.assertEqual((updates, applied), ({"d1": None}, {}))
-        # Not when the user has renamed it since.
-        updates, applied = self.plan(
-            [device("d1", name="Garage")], {"AIO-1": {}}, {"d1": "Rear roof"})
-        self.assertEqual((updates, applied), ({}, {}))
+        before = memory({"d1": "Rear roof"}, {"d1": "Rear roof"})
+        updates, after = self.plan([device("d1", name="Rear roof")], {"AIO-1": {}}, before)
+        self.assertEqual((updates, after), ({"d1": None}, memory()))
 
     def test_an_inverter_that_was_not_read_is_left_alone(self):
-        updates, applied = self.plan(
-            [device("d1", name="Rear roof")], {}, {"d1": "Rear roof"})
-        self.assertEqual((updates, applied), ({}, {"d1": "Rear roof"}))
-
-    def test_an_already_matching_name_is_only_remembered(self):
-        # For example after the store was lost.
-        updates, applied = self.plan([device("d1", name="Rear roof")], {"AIO-1": {1: "Rear roof"}})
-        self.assertEqual((updates, applied), ({}, {"d1": "Rear roof"}))
+        before = memory({"d1": "Rear roof"}, {"d1": "Rear roof"})
+        updates, after = self.plan([device("d1", name="Rear roof")], {}, before)
+        self.assertEqual((updates, after), ({}, before))
 
     def test_strings_are_matched_by_inverter_and_number(self):
         devices = [device("a1", 1, serial="A"), device("b1", 1, serial="B"), device("b2", 2, serial="B")]
@@ -472,8 +491,9 @@ class TestPvNameRules(unittest.TestCase):
         self.assertEqual(updates, {"a1": "East", "b2": "West"})
 
     def test_devices_that_are_gone_are_forgotten(self):
-        _, applied = self.plan([device("d1")], {"AIO-1": {1: "Rear roof"}}, {"old": "Front"})
-        self.assertEqual(applied, {"d1": "Rear roof"})
+        before = memory({"old": "Front"}, {"old": "Front", "d1": "x"})
+        _, after = self.plan([device("d1")], {"AIO-1": {1: "Rear roof"}}, before)
+        self.assertEqual(after, memory({"d1": "Rear roof"}, {"d1": "Rear roof"}))
 
     def test_string_number_from_the_identifier(self):
         number = pv_names.pv_string_number
@@ -482,6 +502,32 @@ class TestPvNameRules(unittest.TestCase):
         self.assertIsNone(number("E2_sigen_inverter_pv2", "E1"))
         self.assertIsNone(number("E1_sigen_inverter", "E1"))
         self.assertIsNone(number("E1_sigen_inverter_dc_charger", "E1"))
+
+
+class _Entry:
+    def __init__(self, name_by_user):
+        self.name_by_user = name_by_user
+
+
+class _Registry:
+    def __init__(self, names):
+        self.names = names
+
+    def async_get(self, device_id):
+        return _Entry(self.names[device_id]) if device_id in self.names else None
+
+
+class TestFreshNames(unittest.TestCase):
+    def test_names_are_read_again_before_planning(self):
+        # Review finding: a rename made while mySigen was being read was
+        # planned from the old name and overwritten.
+        read_earlier = [device("d1"), device("d2", 2), device("gone", 3)]
+        registry = _Registry({"d1": "Garage", "d2": None})
+        fresh = pv_names.current_names(registry, read_earlier)
+        self.assertEqual(fresh, [device("d1", name="Garage"), device("d2", 2)])
+        updates, _ = pv_names.plan_pv_names(
+            fresh, {"AIO-1": {1: "Rear roof", 2: "Front"}}, memory())
+        self.assertEqual(updates, {"d2": "Front"})
 
 
 if __name__ == "__main__":

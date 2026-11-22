@@ -220,10 +220,10 @@ async def async_get_config_entry_diagnostics(
         ],
     }
     # Counts only: the names themselves and the serial numbers stay out.
-    applied = coordinator.pv_name_store.applied
+    memory = coordinator.pv_name_store.memory
     result["pv_string_names"] = {
         "names_per_inverter": sorted(coordinator.pv_name_counts.values()),
-        "devices_remembered": None if applied is None else len(applied),
+        "devices_named_by_addon": None if memory is None else len(memory.applied),
     }
     dc_mode = coordinator.dc_charge_mode
     dc_setting = coordinator.dc_charge_setting

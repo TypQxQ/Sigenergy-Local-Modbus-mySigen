@@ -10,13 +10,16 @@ the user has not:
   default name stays until the name in the app changes.
 * When a name is removed in the app, the name the add-on set is cleared.
 
-Entity IDs, unique IDs and the device's identity never change. What the
-add-on set is kept in a small store, so it can tell its names from the
-user's. `plan_pv_names` holds the rules and does not import Home Assistant.
+Entity IDs, unique IDs and the device's identity never change. A small
+store keeps two things apart: the names the add-on actually set, the only
+ones it ever changes or clears, and the app names it has already offered.
+A name the user gave, also one that happens to match the app's, is never
+counted as the add-on's. `plan_pv_names` holds the rules and does not
+import Home Assistant.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 import logging
 import re
 from typing import Any
@@ -38,49 +41,65 @@ class PvStringDevice:
     name_by_user: str | None
 
 
+@dataclass
+class PvNameMemory:
+    """What the add-on knows from earlier runs, per device ID.
+
+    `applied`: the name the add-on set and the device still had last time.
+    `offered`: the app name last considered for the device, set or not.
+    """
+
+    applied: dict[str, str] = field(default_factory=dict)
+    offered: dict[str, str] = field(default_factory=dict)
+
+
 def plan_pv_names(
     devices: list[PvStringDevice],
     names: dict[str, dict[int, str]],
-    applied: dict[str, str],
-) -> tuple[dict[str, str | None], dict[str, str]]:
+    memory: PvNameMemory,
+) -> tuple[dict[str, str | None], PvNameMemory]:
     """Which device names to set, and what to remember afterwards.
 
     `names` holds, per inverter serial, the names set in the app. An
     inverter missing from it was not read this time: its devices are left
-    as they are. `applied` maps a device ID to the app name the add-on last
-    set or offered. Returns the new `name_by_user` per device to change
-    (None restores the default name) and the new `applied`.
+    as they are. Returns the new `name_by_user` per device to change (None
+    restores the default name) and the new memory.
     """
     updates: dict[str, str | None] = {}
-    remembered = dict(applied)
+    applied, offered = dict(memory.applied), dict(memory.offered)
     for device in devices:
         if device.serial not in names:
             continue
+        key, current = device.device_id, device.name_by_user
         wanted = names[device.serial].get(device.number)
-        ours = remembered.get(device.device_id)
-        current = device.name_by_user
+        ours = applied.get(key)
+        if ours is not None and current != ours:
+            # The user renamed or cleared it since: no longer the add-on's.
+            del applied[key]
+            ours = None
         if wanted is None:
             # Removed in the app, or never set: take back only our own name.
             if ours is not None:
-                if current == ours:
-                    updates[device.device_id] = None
-                del remembered[device.device_id]
+                updates[key] = None
+                del applied[key]
+            offered.pop(key, None)
             continue
-        if wanted == ours:
-            # Already applied once. A name the user changed or cleared stays.
+        if wanted == offered.get(key):
+            # Offered once already. A name the user changed or cleared stays.
             continue
-        if current is None or current == ours:
+        offered[key] = wanted
+        if current is None or ours is not None:
             if current != wanted:
-                updates[device.device_id] = wanted
-            remembered[device.device_id] = wanted
-        else:
-            # The user named the device; never overwrite that. Remember the
-            # app name so it is not offered again until it changes.
-            remembered[device.device_id] = wanted
+                updates[key] = wanted
+            applied[key] = wanted
+        # Otherwise the user named the device, perhaps the same as the app
+        # does: it stays the user's and is never changed or cleared.
     # Forget devices that no longer exist.
     known = {device.device_id for device in devices}
-    remembered = {key: value for key, value in remembered.items() if key in known}
-    return updates, remembered
+    return updates, PvNameMemory(
+        {key: value for key, value in applied.items() if key in known},
+        {key: value for key, value in offered.items() if key in known},
+    )
 
 
 def pv_string_number(identifier: str, plant_entry_id: str) -> int | None:
@@ -123,31 +142,52 @@ def find_pv_string_devices(
 
 
 class PvNameStore:
-    """What the add-on set, per device ID, kept across restarts."""
+    """The add-on's PV name memory, kept across restarts."""
 
     def __init__(self, hass: Any, entry_id: str, domain: str) -> None:
         from homeassistant.helpers.storage import Store
 
         self._store = Store(hass, STORE_VERSION, f"{domain}.pv_names.{entry_id}")
-        self.applied: dict[str, str] | None = None
+        self.memory: PvNameMemory | None = None
 
-    async def async_load(self) -> dict[str, str]:
-        if self.applied is None:
+    async def async_load(self) -> PvNameMemory:
+        if self.memory is None:
             data = await self._store.async_load()
-            applied = data.get("applied") if isinstance(data, dict) else None
-            self.applied = {
-                str(key): value for key, value in (applied or {}).items()
-                if isinstance(value, str)
-            } if isinstance(applied, dict) else {}
-        return self.applied
+            data = data if isinstance(data, dict) else {}
 
-    async def async_save(self, applied: dict[str, str]) -> None:
-        if applied != self.applied:
-            self.applied = dict(applied)
-            await self._store.async_save({"applied": self.applied})
+            def names(key: str) -> dict[str, str]:
+                value = data.get(key)
+                return {
+                    str(device): name for device, name in value.items()
+                    if isinstance(name, str)
+                } if isinstance(value, dict) else {}
+
+            self.memory = PvNameMemory(names("applied"), names("offered"))
+        return self.memory
+
+    async def async_save(self, memory: PvNameMemory) -> None:
+        if memory != self.memory:
+            self.memory = PvNameMemory(dict(memory.applied), dict(memory.offered))
+            await self._store.async_save(
+                {"applied": self.memory.applied, "offered": self.memory.offered}
+            )
 
     async def async_remove(self) -> None:
         await self._store.async_remove()
+
+
+def current_names(registry: Any, devices: list[PvStringDevice]) -> list[PvStringDevice]:
+    """The devices with their names as the registry has them now.
+
+    A device that is gone is left out. Called after every await, right
+    before planning, so a rename made meanwhile is never overwritten.
+    """
+    fresh: list[PvStringDevice] = []
+    for device in devices:
+        entry = registry.async_get(device.device_id)
+        if entry is not None:
+            fresh.append(replace(device, name_by_user=entry.name_by_user))
+    return fresh
 
 
 async def async_apply_pv_names(
@@ -159,27 +199,25 @@ async def async_apply_pv_names(
     """Set the planned device names and remember them."""
     from homeassistant.helpers import device_registry as dr
 
-    applied = await store.async_load()
-    updates, remembered = plan_pv_names(devices, names, applied)
+    memory = await store.async_load()
     registry = dr.async_get(hass)
+    # Nothing is awaited from here until the names are set.
+    updates, memory = plan_pv_names(current_names(registry, devices), names, memory)
     for device_id, name in updates.items():
-        if registry.async_get(device_id) is None:
-            remembered.pop(device_id, None)
-            continue
         registry.async_update_device(device_id, name_by_user=name)
         _LOGGER.info(
             "PV string device %s: %s", device_id,
             f"named {name!r} as in the mySigen app" if name else "default name restored",
         )
-    await store.async_save(remembered)
+    await store.async_save(memory)
 
 
 async def async_restore_pv_names(hass: Any, store: PvNameStore) -> None:
-    """Clear the names the add-on set and the user kept; forget the rest."""
+    """Clear the names the add-on set that the devices still have."""
     from homeassistant.helpers import device_registry as dr
 
     registry = dr.async_get(hass)
-    for device_id, name in (await store.async_load()).items():
+    for device_id, name in (await store.async_load()).applied.items():
         device = registry.async_get(device_id)
         if device is not None and device.name_by_user == name:
             registry.async_update_device(device_id, name_by_user=None)
