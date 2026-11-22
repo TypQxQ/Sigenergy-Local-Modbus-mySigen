@@ -192,7 +192,38 @@ async def async_get_config_entry_diagnostics(
             "owner_a": current.owner, "installer_a": current.installer,
         },
         "grid_disconnect_allowed": coordinator.allow_grid_disconnect,
+        "sigen_ai": None if coordinator.ai_settings is None else {
+            "vacation_mode": coordinator.ai_settings.vacation,
+            "vacation_mode_shown": coordinator.ai_settings.vacation_shown,
+            "strategy": coordinator.ai_settings.strategy,
+        },
         "last_setting": coordinator.last_setting,
+    }
+    watch = coordinator.storm_watch
+
+    def when(value: Any) -> str | None:
+        return value.isoformat() if value is not None else None
+
+    result["storm_watch"] = {
+        "shown_for_station": coordinator.session.storm_watch_shown,
+        "enabled": None if watch is None else watch.enabled,
+        "charged_full": None if watch is None else watch.charged_full,
+        "alerts": None if watch is None else [
+            {
+                "event_type": alert.event_type,
+                "weather": alert.weather,
+                "charging_start": when(alert.charging_start),
+                "onset": when(alert.onset),
+                "end": when(alert.end),
+            }
+            for alert in watch.alerts
+        ],
+    }
+    # Counts only: the names themselves and the serial numbers stay out.
+    applied = coordinator.pv_name_store.applied
+    result["pv_string_names"] = {
+        "names_per_inverter": sorted(coordinator.pv_name_counts.values()),
+        "devices_remembered": None if applied is None else len(applied),
     }
     dc_mode = coordinator.dc_charge_mode
     dc_setting = coordinator.dc_charge_setting

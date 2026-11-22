@@ -19,6 +19,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from .api import (
+    AI_STRATEGIES,
     DEFAULT_FLOOR_RANGE,
     DEFAULT_LEVEL_RANGE,
     CONTROL_MODES,
@@ -629,6 +630,100 @@ async def async_set_v2x_enabled(
         expected=lambda current: current is enabled,
         publish=coordinator.publish_v2x_enabled,
         sleep=sleep,
+    )
+
+
+def _sigen_ai_settings_read(coordinator: Any, what: str) -> Callable[[], Awaitable[Any]]:
+    """Read the Sigen AI settings, refusing unless the plant runs in Sigen AI.
+
+    The operating mode is read fresh once, before the settings; read-backs
+    skip it. A plant in any other mode, Remote EMS included, is refused,
+    also when the setting already shows the requested value.
+    """
+    checked = False
+
+    async def read() -> Any:
+        nonlocal checked
+        if not checked:
+            mode = await coordinator.session.async_operating_mode()
+            if mode is not None:
+                coordinator.publish_operating_mode(mode)
+            if mode != OPERATING_MODES["sigen_ai"]:
+                raise CommandRefused(
+                    f"{what} is only available in Sigen AI mode"
+                    + ("" if mode is None else f" (the plant runs in mode {mode})")
+                    + ". Nothing was sent."
+                )
+            checked = True
+        return await coordinator.session.async_ai_settings()
+
+    return read
+
+
+async def async_set_vacation_mode(
+    coordinator: Any,
+    *,
+    enabled: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Switch Sigen AI's vacation mode on or off. It stays until changed back.
+
+    Only in Sigen AI mode. Neither the operating mode nor the strategy is
+    changed.
+    """
+
+    def before(current: Any) -> None:
+        if not current.vacation_shown:
+            raise CommandRefused(
+                "mySigen does not offer vacation mode for this plant. Nothing was sent."
+            )
+        if current.vacation is None:
+            raise CommandRefused(
+                "mySigen did not report whether vacation mode is on. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "vacation_mode",
+        read=_sigen_ai_settings_read(coordinator, "Vacation mode"),
+        send=lambda _current: coordinator.session.async_set_vacation_mode(enabled),
+        expected=lambda current: current.vacation_shown and current.vacation is enabled,
+        publish=coordinator.publish_ai_settings,
+        sleep=sleep,
+        before=before,
+    )
+
+
+async def async_set_ai_strategy(
+    coordinator: Any,
+    *,
+    strategy: str,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Choose Sigen AI's strategy preference. It stays until changed back.
+
+    Only in Sigen AI mode. Neither the operating mode nor vacation mode is
+    changed.
+    """
+    code = AI_STRATEGIES.get(strategy)
+    if code is None:
+        raise CommandRefused(f"Strategy {strategy!r} is not available.")
+
+    def before(current: Any) -> None:
+        if current.strategy is None:
+            raise CommandRefused(
+                "mySigen did not report the current strategy. Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "ai_strategy",
+        read=_sigen_ai_settings_read(coordinator, "The strategy preference"),
+        send=lambda _current: coordinator.session.async_set_ai_strategy(code),
+        expected=lambda current: current.strategy == code,
+        publish=coordinator.publish_ai_settings,
+        sleep=sleep,
+        before=before,
     )
 
 

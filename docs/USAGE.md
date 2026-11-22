@@ -7,7 +7,7 @@
 **Every entity and control, and how each change is checked.**<br>
 New here? Start with the [README](../README.md).
 
-📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 💡 [Smart loads](#-smart-loads) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
+📊 [Entities](#-entities) · 🔋 [Modules](#-battery-modules) · 🔋 [Overrides](#-battery-overrides) · ⚙️ [Settings](#️-settings-that-stay) · 🔌 [Off-grid](#-disconnecting-from-the-grid) · 🚗 [DC charger](#-dc-charger) · 💡 [Smart loads](#-smart-loads) · ☀️ [PV names](#️-pv-string-names) · 🛡️ [Safety](#️-how-changes-are-checked) · 🩺 [Help](#-troubleshooting)
 
 </div>
 
@@ -42,6 +42,8 @@ Names follow the **Entity name language** of Sigenergy ESS, so both read the sam
 | ✅ | Current DC charging mode | The charging mode in use: how the charger decides when to charge |
 | ✅ | Current DC charge limit | The car's charge level where charging stops |
 | ✅ | Power from EV allowed (V2X) | Whether the car may power the home |
+| | **Storm Watch** | <sub>only where mySigen shows Storm Watch for your plant</sub> |
+| ✅ | Storm Watch alert | On while Storm Watch lists a weather alert that hasn't ended. Storm Watch then charges the battery full and holds it there. The attributes show the `weather`, when charging starts (`charging_start`), the weather's `onset` and the alert's `end`, whether the battery is `charged_full`, and whether Storm Watch is switched on (`storm_watch_enabled`). Read every ten minutes. |
 
 > [!NOTE]
 > Grid frequency, grid connection state, power, energy, smart load readings and the charger's own readings are left out on purpose: Sigenergy ESS already has them.
@@ -128,6 +130,8 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 | ↗️ | Allow battery export to grid | Switch | On: the battery may export to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
 | 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
 | 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
+| 🎯 | Sigen AI strategy preference | Dropdown | Profit Max, Balanced Energy or Self-use First, as in the app. Only in Sigen AI mode: in any other mode, Remote EMS included, it is unavailable and a change is refused. It never changes the operating mode or vacation mode. |
+| 🏖️ | Sigen AI vacation mode | Switch | Tells Sigen AI you are away, like the vacation mode switch in the app. Only where the app offers it, and only in Sigen AI mode: in any other mode, Remote EMS included, it is unavailable and a change is refused. It never changes the operating mode. |
 | 🔌 | Max grid connection current | Number, A | The most current per phase the plant draws from the grid, as in the app's *Grid Settings*. Unknown while no limit is set. Setting it also switches the limit on; switch it off in the app. It can't go above the installer's limit, shown in the `installer_limit` attribute. |
 
 <sub>Read every ten minutes, so a change made in the app can take that long to appear here.</sub>
@@ -178,6 +182,17 @@ While a switch is enabled, the states are read at every update, so a change made
 > [!NOTE]
 > **Tried on one plant so far.** Have a smart load? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
 
+## ☀️ PV string names
+
+Names you give your PV strings in the mySigen app, such as *Rear roof*, become the names of the PV string devices in Sigenergy ESS. Their entities follow, so *Sigen Inverter PV1 Voltage* reads *Rear roof Voltage*. No control is needed for this.
+
+- **Your own names win.** A PV string device you renamed in Home Assistant is never changed.
+- **Each name is applied once.** Clear it in Home Assistant and the default name stays, until you change the name in the app.
+- **Nothing else changes.** Entity IDs, history and the devices themselves stay as they are.
+- **Removing a name** in the app, or removing this add-on, gives the device back its default name, unless you renamed it in the meantime.
+
+Names are read when the connection starts and once an hour. The app has names for up to four strings per inverter.
+
 ## 🛡️ How changes are checked
 
 Every change, from every control, follows the same four rules:
@@ -207,6 +222,8 @@ When mySigen asks for fewer requests, the add-on pauses and refuses changes unti
 | Repair: *belongs to a different system* | The inverter, sharing or account changed. Reconfigure with an account that has access. |
 | Repair: *not allowed to read* | Share the system with the account with **View and Edit** in the mySigen app. |
 | A change was refused | The message says why. Nothing was sent. |
+| A confirmed change doesn't show in the app | An app page that was already open shows what it loaded. Leave the page and open it again. |
+| No Storm Watch alert sensor | mySigen shows Storm Watch only in some regions. The sensor appears when it does for your plant. |
 
 Reporting a problem? Download the diagnostics from the connection's menu first; they contain no password, email, token, station ID or serial numbers. To remove the add-on, delete the connection; your Modbus plant is untouched.
 

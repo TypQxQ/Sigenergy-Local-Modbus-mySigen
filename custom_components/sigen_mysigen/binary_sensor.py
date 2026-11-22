@@ -5,6 +5,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .entity import MySigenEntity
 
@@ -19,6 +20,8 @@ async def async_setup_entry(
     entities: list[BinarySensorEntity] = [BatteryOverrideActive(coordinator, "battery_override")]
     if coordinator.has_dc_charger:
         entities.append(V2xAllowed(coordinator, "dc_charger_v2x"))
+    if coordinator.session.storm_watch_shown:
+        entities.append(StormWatchActive(coordinator, "storm_watch"))
     async_add_entities(entities)
 
 
@@ -36,3 +39,46 @@ class V2xAllowed(MySigenEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         return self.coordinator.v2x_enabled
+
+
+class StormWatchActive(MySigenEntity, BinarySensorEntity):
+    """On while Storm Watch lists a weather alert that has not ended.
+
+    Storm Watch then charges the battery to full and holds it there. Only
+    added where mySigen shows Storm Watch for the plant.
+    """
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.coordinator.storm_watch is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        watch = self.coordinator.storm_watch
+        return bool(watch.current(dt_util.utcnow())) if watch is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        watch = self.coordinator.storm_watch
+        if watch is None:
+            return None
+        alerts = watch.current(dt_util.utcnow())
+        # The alert that started first; the others are counted.
+        first = min(
+            alerts,
+            key=lambda alert: alert.charging_start or alert.onset or dt_util.utcnow(),
+            default=None,
+        )
+
+        def when(value):
+            return value.isoformat() if value is not None else None
+
+        return {
+            "storm_watch_enabled": watch.enabled,
+            "alerts": len(alerts),
+            "weather": first.weather if first else None,
+            "charging_start": when(first.charging_start) if first else None,
+            "onset": when(first.onset) if first else None,
+            "end": when(first.end) if first else None,
+            "charged_full": watch.charged_full,
+        }

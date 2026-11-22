@@ -20,10 +20,12 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | | Feature | What you get |
 | :-: | --- | --- |
 | 🔋 | **Battery overrides** | Hold, charge or discharge for 1 minute to 24 hours. They end by themselves, even if Home Assistant is down. |
-| ⚙️ | **Plant settings** | Operating mode, battery export, peak shaving and max grid connection current. |
+| ⚙️ | **Plant settings** | Operating mode, Sigen AI strategy and vacation mode, battery export, peak shaving and max grid connection current. |
 | 🔌 | **Off-grid** | Run the home on battery and solar alone. |
 | 🚗 | **DC charger** | Charging mode, stop level, and letting the car power the home (V2X). |
 | 💡 | **Smart loads** | Switch each smart load on the SigenStor or Gateway on or off. |
+| 🌪️ | **Storm Watch** | Know when Storm Watch is charging the battery full for a weather alert. |
+| ☀️ | **PV string names** | Your PV strings get the names you gave them in the app. |
 | 📈 | **Gateway** | Grid voltage and current on every phase. |
 | 🔋 | **Battery modules** | Charge level, cell temperature and voltage, lifetime discharge, model and rated capacity for each module. |
 

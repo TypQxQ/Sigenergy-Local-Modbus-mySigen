@@ -10,13 +10,14 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .commands import async_run_setting
 from .const import CONF_PLANT_ENTRY_ID
-from .api import SmartLoad
+from .api import OPERATING_MODES, SmartLoad
 from .control import (
     async_set_battery_export,
     async_set_off_grid,
     async_set_peak_shaving,
     async_set_smart_load,
     async_set_v2x_enabled,
+    async_set_vacation_mode,
 )
 from .entity import MySigenEntity
 from .link import plant_grid_state
@@ -37,6 +38,10 @@ async def async_setup_entry(
         entities.append(GridDisconnect(coordinator, "grid_disconnect"))
     if coordinator.has_dc_charger:
         entities.append(AllowV2x(coordinator, "dc_charger_allow_v2x"))
+    settings = coordinator.ai_settings
+    if settings is None or settings.vacation_shown:
+        # Unknown after a failed read: shown as unavailable until read.
+        entities.append(VacationMode(coordinator, "vacation_mode"))
     entities.extend(SmartLoadSwitch(coordinator, load) for load in coordinator.smart_loads)
     async_add_entities(entities)
 
@@ -159,6 +164,41 @@ class AllowV2x(MySigenEntity, SwitchEntity):
     async def _async_set(self, enabled: bool) -> None:
         await async_run_setting(
             self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)
+
+
+class VacationMode(MySigenEntity, SwitchEntity):
+    """On: Sigen AI knows nobody is home, as with the app's vacation mode.
+
+    Unavailable unless the plant runs in Sigen AI mode.
+    """
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def available(self) -> bool:
+        settings = self.coordinator.ai_settings
+        return (
+            super().available
+            and self.coordinator.operating_mode == OPERATING_MODES["sigen_ai"]
+            and settings is not None
+            and settings.vacation_shown and settings.vacation is not None
+        )
+
+    @property
+    def is_on(self) -> bool | None:
+        settings = self.coordinator.ai_settings
+        return settings.vacation if settings is not None else None
+
+    async def _async_set(self, enabled: bool) -> None:
+        await async_run_setting(
+            self.coordinator, async_set_vacation_mode(self.coordinator, enabled=enabled)
         )
 
     async def async_turn_on(self, **kwargs: Any) -> None:

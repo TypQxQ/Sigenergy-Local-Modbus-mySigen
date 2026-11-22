@@ -118,6 +118,9 @@
       },
       "dc_charger_v2x": {
         "name": "Energia z auta dozwolona (V2X) (mySigen)"
+      },
+      "storm_watch": {
+        "name": "Alert Storm Watch (mySigen)"
       }
     },
     "sensor": {
@@ -309,6 +312,14 @@
           "solar_surplus": "Ładuj tylko nadwyżką słoneczną",
           "bidirectional": "Ładuj i pozwól autu oddawać energię (V2X)"
         }
+      },
+      "ai_strategy": {
+        "name": "Preferencja strategii Sigen AI (mySigen)",
+        "state": {
+          "profit_max": "Maksymalny zysk",
+          "balanced_energy": "Zrównoważona energia",
+          "self_use_first": "Najpierw autokonsumpcja"
+        }
       }
     },
     "button": {
@@ -334,6 +345,9 @@
       },
       "smart_load": {
         "name": "Inteligentne obciążenie {load} (mySigen)"
+      },
+      "vacation_mode": {
+        "name": "Tryb urlopowy Sigen AI (mySigen)"
       }
     }
   },

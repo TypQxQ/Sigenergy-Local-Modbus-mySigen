@@ -7,10 +7,14 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import CONTROL_MODES, DC_CHARGE_MODES, OPERATING_MODES
+from .api import AI_STRATEGIES, CONTROL_MODES, DC_CHARGE_MODES, OPERATING_MODES
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MODE, CONF_PLANT_ENTRY_ID
-from .control import async_set_dc_charge_mode, async_set_operating_mode
+from .control import (
+    async_set_ai_strategy,
+    async_set_dc_charge_mode,
+    async_set_operating_mode,
+)
 from .link import remote_ems_state
 from .entity import MySigenEntity
 
@@ -25,6 +29,7 @@ async def async_setup_entry(
     entities: list[SelectEntity] = [
         OverrideToStart(coordinator, "battery_override_to_start"),
         OperatingMode(coordinator, "operating_mode"),
+        AiStrategy(coordinator, "ai_strategy"),
     ]
     if coordinator.has_dc_charger:
         entities.append(DcChargingMode(coordinator, "dc_charger_charging_mode"))
@@ -113,4 +118,35 @@ class DcChargingMode(MySigenEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         await async_run_setting(
             self.coordinator, async_set_dc_charge_mode(self.coordinator, mode=option)
+        )
+
+
+class AiStrategy(MySigenEntity, SelectEntity):
+    """Sigen AI's strategy preference. It stays until changed back.
+
+    Unavailable unless the plant runs in Sigen AI mode.
+    """
+
+    _attr_entity_registry_enabled_default = False
+    _attr_options = list(AI_STRATEGIES)
+
+    @property
+    def available(self) -> bool:
+        settings = self.coordinator.ai_settings
+        return (
+            super().available
+            and self.coordinator.operating_mode == OPERATING_MODES["sigen_ai"]
+            and settings is not None
+            and settings.strategy is not None
+        )
+
+    @property
+    def current_option(self) -> str | None:
+        settings = self.coordinator.ai_settings
+        code = settings.strategy if settings is not None else None
+        return next((key for key, value in AI_STRATEGIES.items() if value == code), None)
+
+    async def async_select_option(self, option: str) -> None:
+        await async_run_setting(
+            self.coordinator, async_set_ai_strategy(self.coordinator, strategy=option)
         )
