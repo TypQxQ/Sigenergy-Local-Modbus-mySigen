@@ -12,6 +12,7 @@ from .api import (
     AI_STRATEGIES,
     CONTROL_MODES,
     DC_CHARGE_MODES,
+    OPERATING_MODE_NAMES,
     OPERATING_MODES,
 )
 from .commands import async_run_setting
@@ -71,8 +72,10 @@ class OverrideToStart(MySigenEntity, SelectEntity):
 class OperatingMode(MySigenEntity, SelectEntity):
     """How the plant runs day to day. It stays until changed back.
 
-    Shows no option while the plant runs in a mode not offered here, such as
-    Remote EMS or a custom profile.
+    A mode that cannot be chosen here, such as Remote EMS or a custom
+    profile, is still shown while the plant runs in it; choosing it is
+    refused. The `mode_code` attribute has mySigen's code, also for a mode
+    the add-on has no name for.
     """
 
     _attr_entity_registry_enabled_default = False
@@ -80,7 +83,11 @@ class OperatingMode(MySigenEntity, SelectEntity):
     @property
     def options(self) -> list[str]:
         offered = self.coordinator.available_modes
-        return [key for key, code in OPERATING_MODES.items() if code in offered]
+        options = [key for key, code in OPERATING_MODES.items() if code in offered]
+        current = self.current_option
+        if current is not None and current not in options:
+            options.append(current)
+        return options
 
     @property
     def available(self) -> bool:
@@ -94,7 +101,11 @@ class OperatingMode(MySigenEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         code = self.coordinator.operating_mode
-        return next((key for key, value in OPERATING_MODES.items() if value == code), None)
+        return next((key for key, value in OPERATING_MODE_NAMES.items() if value == code), None)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int | None]:
+        return {"mode_code": self.coordinator.operating_mode}
 
     async def async_select_option(self, option: str) -> None:
         plant_entry_id = self.coordinator.config_entry.data[CONF_PLANT_ENTRY_ID]

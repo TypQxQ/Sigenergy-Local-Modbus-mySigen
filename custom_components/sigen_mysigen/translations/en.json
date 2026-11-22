@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Use my own power first (maximum self-consumption)",
           "time_of_use": "Time of use (TOU)",
-          "fully_fed_to_grid": "Send all solar to the grid (fully fed to grid)"
+          "fully_fed_to_grid": "Send all solar to the grid (fully fed to grid)",
+          "force_charge": "Force charge",
+          "vpp": "VPP scheduling",
+          "remote_ems": "Remote EMS",
+          "nbi": "NBI",
+          "custom_profile": "Custom profile"
         }
       },
       "dc_charger_charging_mode": {

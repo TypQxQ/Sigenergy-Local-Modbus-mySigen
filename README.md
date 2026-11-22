@@ -40,7 +40,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 <a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=TypQxQ&repository=Sigenergy-Local-Modbus-mySigen&category=integration"><img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open in Marketplace" /></a>
 
 1. Click the button to add the add-on to the Marketplace. Until it is listed in the catalog, it is added as a custom repository, which needs a GitHub connection.
-2. Install **Sigenergy ESS – mySigen cloud**. To try a beta, enable prereleases for this repository and pick the beta version.
+2. Install **Sigenergy ESS – mySigen cloud**. To try a beta, enable prereleases for this repository and pick the beta version. Turning prereleases off again offers the latest stable version as an update, which can be older than your beta.
 3. Restart if Home Assistant asks.
 
 You need Home Assistant 2026.11+ and [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 2.0.3+ with a plant set up.

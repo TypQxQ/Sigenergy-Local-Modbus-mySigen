@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Bruk min egen strøm først (maksimalt egetforbruk)",
           "time_of_use": "Tidsstyrt (TOU)",
-          "fully_fed_to_grid": "Send all solstrøm til nettet (full innmating)"
+          "fully_fed_to_grid": "Send all solstrøm til nettet (full innmating)",
+          "force_charge": "Tvungen lading",
+          "vpp": "VPP-planlegging",
+          "remote_ems": "Fjernstyrt EMS",
+          "nbi": "NBI",
+          "custom_profile": "Egendefinert profil"
         }
       },
       "dc_charger_charging_mode": {

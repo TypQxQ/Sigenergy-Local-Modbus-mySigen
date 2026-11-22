@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Usar primero mi propia energía (autoconsumo máximo)",
           "time_of_use": "Por franjas horarias (TOU)",
-          "fully_fed_to_grid": "Verter toda la energía solar a la red (vertido total)"
+          "fully_fed_to_grid": "Verter toda la energía solar a la red (vertido total)",
+          "force_charge": "Carga forzada",
+          "vpp": "Programación VPP",
+          "remote_ems": "Control EMS remoto",
+          "nbi": "NBI",
+          "custom_profile": "Perfil personalizado"
         }
       },
       "dc_charger_charging_mode": {

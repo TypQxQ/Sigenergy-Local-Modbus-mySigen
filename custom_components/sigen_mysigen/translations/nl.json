@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Eerst mijn eigen stroom gebruiken (maximaal eigen verbruik)",
           "time_of_use": "Tijdafhankelijk tarief (TOU)",
-          "fully_fed_to_grid": "Alle zonnestroom aan het net leveren (volledige teruglevering)"
+          "fully_fed_to_grid": "Alle zonnestroom aan het net leveren (volledige teruglevering)",
+          "force_charge": "Geforceerd laden",
+          "vpp": "VPP-aansturing",
+          "remote_ems": "EMS-besturing op afstand",
+          "nbi": "NBI",
+          "custom_profile": "Aangepast profiel"
         }
       },
       "dc_charger_charging_mode": {

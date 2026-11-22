@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Zuerst meinen eigenen Strom nutzen (maximaler Eigenverbrauch)",
           "time_of_use": "Zeitabhängiger Tarif (TOU)",
-          "fully_fed_to_grid": "Gesamten Solarstrom ins Netz einspeisen (Volleinspeisung)"
+          "fully_fed_to_grid": "Gesamten Solarstrom ins Netz einspeisen (Volleinspeisung)",
+          "force_charge": "Zwangsladung",
+          "vpp": "VPP-Steuerung",
+          "remote_ems": "EMS-Fernsteuerung",
+          "nbi": "NBI",
+          "custom_profile": "Benutzerdefiniertes Profil"
         }
       },
       "dc_charger_charging_mode": {

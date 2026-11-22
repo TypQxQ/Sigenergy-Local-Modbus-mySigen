@@ -50,6 +50,16 @@ OPERATING_MODES: dict[str, int] = {
     "time_of_use": 2,
     "fully_fed_to_grid": 5,
 }
+# Every operating mode mySigen reports, by the app's names for them. Only
+# OPERATING_MODES can be chosen; the others are shown as they are.
+OPERATING_MODE_NAMES: dict[str, int] = {
+    **OPERATING_MODES,
+    "force_charge": 3,
+    "vpp": 6,
+    "remote_ems": 7,
+    "nbi": 8,
+    "custom_profile": 9,
+}
 MAX_PEAK_SHAVING_KW = 100.0
 # Modes where a power limit applies.
 POWER_MODES: tuple[str, ...] = ("charging", "discharging")
@@ -177,6 +187,10 @@ _PHASE_SEQUENCE = "voltage phase sequence"
 _MEASUREMENT = re.compile(r"-?[\d.,]+\s*[A-Za-z%°/]{0,6}")
 _CLIENT_ID = "sigen"
 _CLIENT_SECRET = "sigen"
+# The app's client credentials, sent as a Basic Authorization header.
+_CLIENT_AUTH = "Basic " + base64.b64encode(
+    f"{_CLIENT_ID}:{_CLIENT_SECRET}".encode()
+).decode()
 _PASSWORD_KEY = b"sigensigensigenp"
 _REQUEST_TIMEOUT = 20
 _TOKEN_MARGIN = 60
@@ -1307,7 +1321,7 @@ async def _async_request_token(
         async with session.post(
             f"{REGIONS[region]}{_TOKEN_PATH}",
             data=form,
-            auth=aiohttp.BasicAuth(_CLIENT_ID, _CLIENT_SECRET),
+            headers={"Authorization": _CLIENT_AUTH},
             timeout=aiohttp.ClientTimeout(total=_REQUEST_TIMEOUT),
         ) as response:
             status = response.status

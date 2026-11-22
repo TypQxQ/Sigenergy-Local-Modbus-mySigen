@@ -131,10 +131,10 @@ Unlike overrides, these **stay until you change them back**. Need **Allow batter
 
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
-| 🧠 | Operating mode | Dropdown | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. Refused while Remote EMS is on. |
+| 🧠 | Operating mode | Dropdown | Sigen AI, self-consumption, time of use or full feed-in, as far as your plant offers them. While the plant runs in a mode you can't choose here, such as Remote EMS or a custom profile, that mode is shown; the `mode_code` attribute has mySigen's number for it. Refused while Remote EMS is on. |
 | ↗️ | Allow battery export to grid | Switch | On: the battery may export to the grid. Off: only solar is exported. The `in_effect` attribute shows what applies, as an installer setting can override it. |
 | 📉 | Peak shaving | Switch | The battery helps keep grid power under the limit. Needs a time slot in the schedule. |
-| 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has one time slot. Several slots? Change them in the app. |
+| 🎚️ | Peak shaving grid limit | Number, kW | The limit, when the schedule has exactly one time slot. With none or several it shows unknown, and the `time_slots` attribute says how many there are: set up one slot, or change several, in the app. |
 | 🎯 | Sigen AI strategy preference | Dropdown | Profit Max, Balanced Energy or Self-use First, as in the app. Only in Sigen AI mode: in any other mode, Remote EMS included, it is unavailable and a change is refused. It never changes the operating mode or vacation mode. |
 | 🏖️ | Sigen AI vacation mode | Switch | Tells Sigen AI you are away, like the vacation mode switch in the app. Only where the app offers it, and only in Sigen AI mode: in any other mode, Remote EMS included, it is unavailable and a change is refused. It never changes the operating mode. |
 | 🔌 | Max grid connection current | Number, A | The most current per phase the plant draws from the grid, as in the app's *Grid Settings*. Unknown while no limit is set. Setting it also switches the limit on; switch it off in the app. It can't go above the installer's limit, shown in the `installer_limit` attribute. |
@@ -167,7 +167,7 @@ When mySigen lists a DC charger, its sensors appear by themselves. With **Allow 
 | 🔒 | Minimum EV charge for V2X | Number, % | The car stops supplying power at this level, so at least this much stays in the car |
 | 🏠 | Allow power from EV (V2X) | Switch | Allow or block the car powering the home, no Remote EMS needed |
 
-Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. A charge level outside what the charger allows is refused; where mySigen gives no limits, 0 to 100 % applies to the charge limit and 20 to 100 % to the V2X minimum, as in the mySigen app.
+Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. They are read every ten minutes, so a change made in the app can take that long to show. A charger confirms a change a few seconds later than the plant, so a change waits up to about ten seconds for it. A charge level outside what the charger allows is refused; where mySigen gives no limits, 0 to 100 % applies to the charge limit and 20 to 100 % to the V2X minimum, as in the mySigen app.
 
 > [!NOTE]
 > **Tried on two chargers so far.** Changing the charging mode is confirmed on a real charger, and the V2X state reads correctly. The charge limit, V2X minimum and V2X switch have not been confirmed yet. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
@@ -224,7 +224,15 @@ Every change, from every control, follows the same four rules:
 | 3️⃣ | **Once** | Sent exactly once, never repeated, not even after a lost answer. |
 | 4️⃣ | **Confirmed** | Read back; it only counts when the plant shows it. |
 
-When mySigen asks for fewer requests, the add-on pauses and refuses changes until the pause is over.
+When mySigen asks for fewer requests, the add-on pauses and refuses changes until the pause is over. If mySigen accepts a change but doesn't show it yet, the result says so and the setting is read again at the next update.
+
+### Remote EMS
+
+While Remote EMS is on in Sigenergy ESS, an external controller is in charge of the battery. What the add-on does then:
+
+| Refused | Still works |
+| --- | --- |
+| Battery overrides, operating mode, Sigen AI strategy and vacation mode (these need Sigen AI mode) | Battery export, peak shaving and max grid connection current: mySigen-only settings that Modbus can't change. Also disconnecting from the grid (with its own checks), the DC and AC charger settings, and smart loads |
 
 ## ⚠️ Limitations
 

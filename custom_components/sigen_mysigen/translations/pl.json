@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Najpierw używaj własnej energii (maksymalna autokonsumpcja)",
           "time_of_use": "Taryfa strefowa (TOU)",
-          "fully_fed_to_grid": "Oddawaj całą energię słoneczną do sieci (pełne oddawanie)"
+          "fully_fed_to_grid": "Oddawaj całą energię słoneczną do sieci (pełne oddawanie)",
+          "force_charge": "Wymuszone ładowanie",
+          "vpp": "Harmonogram VPP",
+          "remote_ems": "Zdalne sterowanie EMS",
+          "nbi": "NBI",
+          "custom_profile": "Profil niestandardowy"
         }
       },
       "dc_charger_charging_mode": {

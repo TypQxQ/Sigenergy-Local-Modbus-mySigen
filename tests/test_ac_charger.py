@@ -227,9 +227,23 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.settings, [("ac_charge_mode", "unknown")])
 
     async def test_only_counts_when_mysigen_shows_it(self):
-        coordinator = _AcCoordinator([mode_answer(2)] * 3)
+        # The fresh read, then three read-backs: a charger confirms late.
+        coordinator = _AcCoordinator([mode_answer(2)] * 4)
         with self.assertRaises(control.CommandNotConfirmed):
             await control.async_set_ac_charge_mode(coordinator, mode="fast_charging", sleep=_no_sleep)
+        self.assertEqual(coordinator.session.reads["ac"], [])
+
+    async def test_a_late_charger_is_still_confirmed(self):
+        waits = []
+
+        async def sleep(seconds):
+            waits.append(seconds)
+
+        coordinator = _AcCoordinator([mode_answer(2), mode_answer(2), mode_answer(2), mode_answer(0)])
+        result = await control.async_set_ac_charge_mode(coordinator, mode="fast_charging", sleep=sleep)
+        self.assertEqual(result, "confirmed")
+        # Waits before every read-back, the first included.
+        self.assertEqual(waits, [3.0, 3.0, 3.0])
 
     async def test_refused_without_control_or_charger(self):
         coordinator = _AcCoordinator([mode_answer(2)], allow=False)

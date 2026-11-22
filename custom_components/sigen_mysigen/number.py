@@ -111,8 +111,9 @@ class OverridePowerLimit(MySigenEntity, NumberEntity):
 class PeakShavingLimit(MySigenEntity, NumberEntity):
     """The grid power the plant tries to stay under while peak shaving is on.
 
-    Only available when the schedule has a single time slot; a schedule with
-    several slots is changed in the mySigen app.
+    The value shows when the schedule has a single time slot, and only then
+    can it be changed. With no slot or several, it shows unknown, the
+    `time_slots` attribute says why, and a change is refused with the reason.
     """
 
     _attr_entity_registry_enabled_default = False
@@ -124,13 +125,17 @@ class PeakShavingLimit(MySigenEntity, NumberEntity):
 
     @property
     def available(self) -> bool:
-        peak = self.coordinator.peak_shaving
-        return super().available and peak is not None and peak.single_limit is not None
+        return super().available and self.coordinator.peak_shaving is not None
 
     @property
     def native_value(self) -> float | None:
         peak = self.coordinator.peak_shaving
         return peak.single_limit if peak is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int] | None:
+        peak = self.coordinator.peak_shaving
+        return {"time_slots": len(peak.slots)} if peak is not None else None
 
     async def async_set_native_value(self, value: float) -> None:
         await async_run_setting(

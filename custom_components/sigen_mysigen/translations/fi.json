@@ -322,7 +322,12 @@
           "sigen_ai": "Sigen AI",
           "max_self_consumption": "Käytä ensin omaa sähköä (maksimaalinen omakäyttö)",
           "time_of_use": "Aikaperusteinen (TOU)",
-          "fully_fed_to_grid": "Syötä kaikki aurinkosähkö verkkoon (täysi syöttö)"
+          "fully_fed_to_grid": "Syötä kaikki aurinkosähkö verkkoon (täysi syöttö)",
+          "force_charge": "Pakotettu lataus",
+          "vpp": "VPP-ohjaus",
+          "remote_ems": "EMS-etäohjaus",
+          "nbi": "NBI",
+          "custom_profile": "Mukautettu profiili"
         }
       },
       "dc_charger_charging_mode": {

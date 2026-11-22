@@ -155,6 +155,13 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
             coordinator, level=45, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("mode", 1, 45)])
 
+        # Reported in discussion 38: the floor showed only on a later read.
+        coordinator = _ChargerCoordinator({"mode": [mode(1), mode(1), mode(1), mode(1, 45)]})
+        result = await control.async_set_dc_discharge_floor(
+            coordinator, level=45, sleep=_no_sleep)
+        self.assertEqual(result, "confirmed")
+        self.assertEqual(coordinator.session.writes, [("mode", 1, 45)])
+
         coordinator = _ChargerCoordinator({"setting": [setting(80), setting(90)]})
         await control.async_set_dc_stop_level(
             coordinator, level=90, sleep=_no_sleep)
