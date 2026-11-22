@@ -8,7 +8,7 @@
 Sigen AI stays in charge. Modbus can stay read-only.
 
 [![Release](https://img.shields.io/github/v/release/TypQxQ/Sigenergy-Local-Modbus-mySigen?style=for-the-badge&label=release)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/releases)
-[![Testers wanted](https://img.shields.io/badge/testers-wanted-f0a500?style=for-the-badge)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+[![Testers wanted](https://img.shields.io/badge/testers-wanted-f0a500?style=for-the-badge)](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
 [![Home Assistant](https://img.shields.io/badge/Home_Assistant-2026.11+-18bcf2?style=for-the-badge&logo=homeassistant&logoColor=white)](https://www.home-assistant.io/)
 
 </div>
@@ -30,7 +30,7 @@ An add-on for [Sigenergy ESS](https://github.com/TypQxQ/Sigenergy-Local-Modbus) 
 | 🔋 | **Battery modules** | Charge level, cell temperature and voltage, lifetime discharge, model and rated capacity for each module. |
 
 > [!TIP]
-> **Tested on one system so far.** [Tell us how it runs on yours →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+> **Tested on a few systems so far.** [Tell us how it runs on yours →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
 
 <a name="install"></a>
 
@@ -66,7 +66,7 @@ Every change is checked first, sent once, and only counts when the plant shows i
 
 <div align="center">
 
-📖 [Full guide](docs/USAGE.md) · 🗺️ [Roadmap](docs/PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
+📖 [Full guide](docs/USAGE.md) · 🗺️ [Roadmap](docs/PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
 
 <sub>Unofficial and not affiliated with Sigenergy. It uses mySigen's private interface, which can change at any time.<br>
 MIT licensed · request formats follow <a href="https://github.com/solidfox/sigenergy-cloud">solidfox/sigenergy-cloud</a></sub>

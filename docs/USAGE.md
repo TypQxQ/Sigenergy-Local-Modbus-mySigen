@@ -165,7 +165,7 @@ When mySigen lists a DC charger, its sensors appear by themselves. With **Allow 
 Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. A charge level outside what the charger allows is refused; where mySigen gives no limits, 0 to 100 % applies to the charge limit and 20 to 100 % to the V2X minimum, as in the mySigen app.
 
 > [!NOTE]
-> **Not yet tried on a real charger.** These were built from other mySigen clients. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+> **Tried on two chargers so far.** Changing the charging mode is confirmed on a real charger, and the V2X state reads correctly. The charge limit, V2X minimum and V2X switch have not been confirmed yet. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
 
 ## 💡 Smart loads
 
@@ -180,7 +180,7 @@ The switch works while the load is under manual control in mySigen, which is whe
 While a switch is enabled, the states are read at every update, so a change made in the app shows within one update interval. A load you add or remove in the app appears or goes within an hour. Power and energy of each smart load stay in Sigenergy ESS. Loads on third-party devices, such as a Shelly relay, are left out: control those directly.
 
 > [!NOTE]
-> **Tried on one plant so far.** Have a smart load? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20)
+> **Tried on one plant so far.** Have a smart load? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
 
 ## ☀️ PV string names
 
@@ -209,7 +209,7 @@ When mySigen asks for fewer requests, the add-on pauses and refuses changes unti
 ## ⚠️ Limitations
 
 - **Unofficial interface.** Sigenergy hasn't approved it, and a mySigen update could stop sign-in.
-- **Tested on one system:** a European account, one inverter with four battery modules, a Gateway, no charger.
+- **Tested on a few plants** in Europe and Australia, all with a Gateway and one with a DC charger. Systems without a Gateway and other regions and models are untested.
 - **One system per account.** If the account starts opening a different system, the connection reloads and checks it against your plant again.
 - **Nine of eleven languages** still need a native speaker's review.
 - **Your password is stored** in Home Assistant so it can sign in again.
@@ -231,6 +231,6 @@ Reporting a problem? Download the diagnostics from the connection's menu first; 
 
 <div align="center">
 
-🏠 [README](../README.md) · 🗺️ [Roadmap](PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/20) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
+🏠 [README](../README.md) · 🗺️ [Roadmap](PLAN.md) · 🧪 [Join the test](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38) · 🐛 [Report a problem](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/issues)
 
 </div>
