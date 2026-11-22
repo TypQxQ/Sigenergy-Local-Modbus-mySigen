@@ -121,6 +121,9 @@
       },
       "storm_watch": {
         "name": "Storm Watch -varoitus (mySigen)"
+      },
+      "ac_charger_battery_boost": {
+        "name": "AC-laturin akkuboost (mySigen)"
       }
     },
     "sensor": {
@@ -264,6 +267,20 @@
       },
       "generator_power_c": {
         "name": "Generaattorin teho vaihe C (mySigen)"
+      },
+      "ac_charger_mode": {
+        "name": "AC-laturin nykyinen lataustila (mySigen)",
+        "state": {
+          "fast_charging": "Lataa nyt täydellä teholla",
+          "solar_surplus": "Lataa vain aurinkoylijäämällä",
+          "sigen_ai": "Anna Sigen AI:n päättää"
+        }
+      },
+      "ac_charger_session_energy": {
+        "name": "AC-laturin latauskerran energia (mySigen)"
+      },
+      "ac_charger_boost_cutoff": {
+        "name": "AC-laturin nykyinen akkuboostin raja (mySigen)"
       }
     },
     "number": {
@@ -284,6 +301,9 @@
       },
       "grid_current_limit": {
         "name": "Verkkoliitännän enimmäisvirta (mySigen)"
+      },
+      "ac_charger_boost_cutoff_level": {
+        "name": "AC-laturin akkuboostin raja (mySigen)"
       }
     },
     "select": {
@@ -320,6 +340,14 @@
           "balanced_energy": "Tasapainoinen energia",
           "self_use_first": "Oma käyttö ensin"
         }
+      },
+      "ac_charger_charging_mode": {
+        "name": "AC-laturin lataustila (mySigen)",
+        "state": {
+          "fast_charging": "Lataa nyt täydellä teholla",
+          "solar_surplus": "Lataa vain aurinkoylijäämällä",
+          "sigen_ai": "Anna Sigen AI:n päättää"
+        }
       }
     },
     "button": {
@@ -348,6 +376,9 @@
       },
       "vacation_mode": {
         "name": "Sigen AI -lomatila (mySigen)"
+      },
+      "ac_charger_allow_battery_boost": {
+        "name": "Salli AC-laturin akkuboost (mySigen)"
       }
     }
   },

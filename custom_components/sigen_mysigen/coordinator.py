@@ -21,6 +21,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    AcChargeMode,
     BatteryExport,
     GridCurrentLimit,
     DcChargeMode,
@@ -158,6 +159,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         self.dc_charge_setting: DcChargeSetting | None = None
         self.v2x_enabled: bool | None = None
         self.soc_range: tuple[int, int] | None = None
+        # AC charger; read with the DC charger whenever mySigen lists one.
+        self.ac_charge_mode: AcChargeMode | None = None
+        # The mode codes the charger offers; read once, empty until then.
+        self.ac_supported_modes: frozenset[int] = frozenset()
+        self.ac_session_energy: float | None = None
         self._charger_read_at = float("-inf")
         self._charger_retrying = False
         # The charger list is read again this often; a change reloads the entry.
@@ -290,6 +296,14 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
     def has_dc_charger(self) -> bool:
         return self.session.dc_serial is not None
 
+    @property
+    def has_ac_charger(self) -> bool:
+        return self.session.ac_serial is not None
+
+    def publish_ac_charge_mode(self, value: AcChargeMode) -> None:
+        self.ac_charge_mode = value
+        self.async_update_listeners()
+
     def publish_dc_charge_mode(self, value: DcChargeMode) -> None:
         self.dc_charge_mode = value
         self.async_update_listeners()
@@ -363,19 +377,28 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 self.smart_load_states = {}
 
     async def _async_read_charger(self) -> None:
-        """Read the DC charger's settings. A failing read clears its value."""
+        """Read the chargers' settings. A failing read clears its value."""
         async with self.command_lock:
             if self.rate_limit_wait:
                 return
             now = time.monotonic()
             self._charger_read_at = now
-            reads = [
-                ("dc_charge_mode", self.session.async_dc_charge_mode),
-                ("dc_charge_setting", self.session.async_dc_charge_setting),
-                ("v2x_enabled", self.session.async_v2x_enabled),
-            ]
-            if self.soc_range is None:
-                reads.append(("soc_range", self.session.async_soc_range))
+            reads = []
+            if self.has_dc_charger:
+                reads += [
+                    ("dc_charge_mode", self.session.async_dc_charge_mode),
+                    ("dc_charge_setting", self.session.async_dc_charge_setting),
+                    ("v2x_enabled", self.session.async_v2x_enabled),
+                ]
+                if self.soc_range is None:
+                    reads.append(("soc_range", self.session.async_soc_range))
+            if self.has_ac_charger:
+                reads += [
+                    ("ac_charge_mode", self.session.async_ac_charge_mode),
+                    ("ac_session_energy", self.session.async_ac_session_energy),
+                ]
+                if not self.ac_supported_modes:
+                    reads.append(("ac_supported_modes", self.session.async_ac_supported_modes))
             failed = False
             for name, read in reads:
                 try:
@@ -384,7 +407,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                     # mySigen no longer confirms the old value: show it as
                     # unavailable rather than as current.
                     _LOGGER.debug("mySigen %s read failed: %s", name, err)
-                    setattr(self, name, None)
+                    setattr(self, name, frozenset() if name == "ac_supported_modes" else None)
                     failed = True
             if failed and not self._charger_retrying:
                 # One early retry, a minute later; then the normal interval.
@@ -402,6 +425,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 return
             self._station_reread_at = time.monotonic() + _CHARGER_RECHECK
             before = self.session.dc_serial
+            ac_before = self.session.ac_serial
             storm_before = self.session.storm_watch_shown
             try:
                 same_station = await self.session.async_read_station()
@@ -417,6 +441,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 return
             if self.session.dc_serial != before:
                 _LOGGER.info("mySigen lists a different DC charger now; reloading")
+                self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+                return
+            if self.session.ac_serial != ac_before:
+                _LOGGER.info("mySigen lists a different AC charger now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
                 return
             if self.session.storm_watch_shown != storm_before:
@@ -608,7 +636,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
             elif self._grid_changing:
                 await self._async_read_grid()
             if (
-                self.has_dc_charger
+                (self.has_dc_charger or self.has_ac_charger)
                 and time.monotonic() - self._charger_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_charger()

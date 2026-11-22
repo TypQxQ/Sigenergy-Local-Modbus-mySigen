@@ -24,7 +24,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule
+from .api import AC_CHARGE_MODES, DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule
 from .const import DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
@@ -174,6 +174,12 @@ async def async_setup_entry(
         entities += [
             DcChargeModeInUse(coordinator, "dc_charger_mode"),
             DcStopLevel(coordinator, "dc_charger_stop_level"),
+        ]
+    if coordinator.has_ac_charger:
+        entities += [
+            AcChargeModeInUse(coordinator, "ac_charger_mode"),
+            AcSessionEnergy(coordinator, "ac_charger_session_energy"),
+            AcBoostCutoff(coordinator, "ac_charger_boost_cutoff"),
         ]
     for module in coordinator.modules.modules:
         device = coordinator.module_devices.get(module.serial)
@@ -334,6 +340,47 @@ class DcStopLevel(MySigenEntity, SensorEntity):
     def native_value(self) -> int | None:
         setting = self.coordinator.dc_charge_setting
         return setting.stop_level if setting is not None else None
+
+
+class AcChargeModeInUse(MySigenEntity, SensorEntity):
+    """How the AC charger decides when to charge."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(AC_CHARGE_MODES)
+
+    @property
+    def native_value(self) -> str | None:
+        mode = self.coordinator.ac_charge_mode
+        return mode.mode if mode is not None else None
+
+
+class AcSessionEnergy(MySigenEntity, SensorEntity):
+    """Energy of the current or last charging session; it starts again at 0.
+
+    No state class: read every ten minutes without a session identifier, a
+    new session can start between two reads and its reset would be missed,
+    so it must not feed long-term statistics. Sigenergy ESS has the
+    charger's total energy for that.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 2
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.ac_session_energy
+
+
+class AcBoostCutoff(MySigenEntity, SensorEntity):
+    """The home battery level at which battery boost stops."""
+
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    @property
+    def native_value(self) -> int | None:
+        mode = self.coordinator.ac_charge_mode
+        return mode.boost_cutoff if mode is not None else None
 
 
 class BatteryModuleSensor(MySigenEntity, SensorEntity):

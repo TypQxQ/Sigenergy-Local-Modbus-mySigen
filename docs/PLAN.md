@@ -7,10 +7,10 @@
 **What works today, what needs your help, and what comes next.**
 
 ![Working and tested](https://img.shields.io/badge/working_%26_tested-8-2ea44f?style=for-the-badge)
-![Needs testers](https://img.shields.io/badge/needs_testers-8-f0a500?style=for-the-badge)
-![Planned](https://img.shields.io/badge/planned-1-0969da?style=for-the-badge)
+![Needs testers](https://img.shields.io/badge/needs_testers-9-f0a500?style=for-the-badge)
+![Planned](https://img.shields.io/badge/planned-0-0969da?style=for-the-badge)
 
-<sub>Updated 22 November 2026 · version 0.1.1</sub>
+<sub>Updated 22 November 2026 · version 0.1.2b1</sub>
 
 </div>
 
@@ -36,6 +36,7 @@
 | | Feature | What is missing |
 | :-: | --- | --- |
 | 🚗 | **DC charger** | Charging mode is confirmed on one charger and V2X reads correctly; the charge limit, V2X minimum and V2X switch still need a charger |
+| 🔋 | **AC charger** | Charging mode, battery boost, cut-off and session energy read correctly on two chargers; no change has been sent from Home Assistant yet |
 | 💡 | **Smart loads** | On/off switches for SigenStor and Gateway ports; switched on one plant only |
 | 🎯 | **Sigen AI strategy preference** | Profit Max, Balanced Energy or Self-use First; tried on one plant only |
 | 🏖️ | **Sigen AI vacation mode** | A switch, as in the app; switched on one plant only |
@@ -49,11 +50,7 @@
 
 ## 📋 Planned
 
-Waiting for someone with the equipment to share diagnostics. Since 0.1.1b4 the diagnostics read an AC charger's settings, so one file is enough.
-
-| | Feature | What it will do |
-| :-: | --- | --- |
-| 🔋 | **AC charger** | Charging mode, battery boost and its cut-off level, session energy and duration |
+Nothing right now. The AC charger moved to testing in 0.1.2b1. Session duration and per-phase charger values are not in mySigen's answers.
 
 ## 💭 Not planned yet
 

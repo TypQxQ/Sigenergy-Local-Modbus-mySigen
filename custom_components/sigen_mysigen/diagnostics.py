@@ -253,7 +253,16 @@ async def async_get_config_entry_diagnostics(
             for state in (coordinator.smart_load_states.get(load.load_id),)
         ],
     }
-    result["ac_charger"] = await _ac_charger_probe(coordinator)
+    ac_mode = coordinator.ac_charge_mode
+    result["ac_charger"] = {
+        "mode": None if ac_mode is None else ac_mode.mode,
+        "mode_fields": None if ac_mode is None else sorted(ac_mode.raw),
+        "battery_boost": None if ac_mode is None else ac_mode.boost,
+        "boost_cutoff": None if ac_mode is None else ac_mode.boost_cutoff,
+        "supported_modes": sorted(coordinator.ac_supported_modes),
+        "session_energy_kwh": coordinator.ac_session_energy,
+        **await _ac_charger_probe(coordinator),
+    }
 
     # Positions and which readings arrived; the serial numbers stay out.
     reader = coordinator.modules

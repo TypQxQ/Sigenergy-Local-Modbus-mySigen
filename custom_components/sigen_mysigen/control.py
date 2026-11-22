@@ -19,6 +19,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from .api import (
+    AC_CHARGE_MODES,
     AI_STRATEGIES,
     DEFAULT_FLOOR_RANGE,
     DEFAULT_LEVEL_RANGE,
@@ -630,6 +631,108 @@ async def async_set_v2x_enabled(
         expected=lambda current: current is enabled,
         publish=coordinator.publish_v2x_enabled,
         sleep=sleep,
+    )
+
+
+def _check_ac_charger(coordinator: Any) -> None:
+    if not coordinator.has_ac_charger:
+        raise CommandRefused("mySigen lists no AC charger for this plant.")
+
+
+def ac_cutoff_range(coordinator: Any) -> tuple[int, int]:
+    """The levels the battery boost cut-off may take, from the last answer."""
+    mode = coordinator.ac_charge_mode
+    return mode.cutoff_range if mode is not None else DEFAULT_LEVEL_RANGE
+
+
+async def _change_ac(
+    coordinator: Any,
+    action: str,
+    *,
+    expected: Callable[[Any], bool],
+    sleep: Callable[[float], Awaitable[None]],
+    mode: str | None = None,
+    boost: bool | None = None,
+    boost_cutoff: int | None = None,
+    before: Callable[[Any], None] | None = None,
+) -> str:
+    """Change one AC charger setting, sending the others as read.
+
+    Charging mode and battery boost exist only in mySigen: Remote EMS and
+    Modbus only start, stop and limit the charger, so Remote EMS is not
+    checked, as for the DC charger.
+    """
+    _check_ac_charger(coordinator)
+    return await _change_setting(
+        coordinator,
+        action,
+        read=coordinator.session.async_ac_charge_mode,
+        send=lambda current: coordinator.session.async_set_ac_charge_mode(
+            current.body(mode=mode, boost=boost, boost_cutoff=boost_cutoff)
+        ),
+        expected=expected,
+        publish=coordinator.publish_ac_charge_mode,
+        sleep=sleep,
+        before=before,
+    )
+
+
+async def async_set_ac_charge_mode(
+    coordinator: Any,
+    *,
+    mode: str,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Choose how the AC charger charges. It stays until changed back."""
+    _check_ac_charger(coordinator)
+    code = AC_CHARGE_MODES.get(mode)
+    offered = coordinator.ac_supported_modes
+    if code is None or (offered and code not in offered):
+        raise CommandRefused(f"Charging mode {mode!r} is not available on this charger.")
+    return await _change_ac(
+        coordinator, "ac_charge_mode",
+        mode=mode, expected=lambda current: current.mode == mode, sleep=sleep,
+    )
+
+
+async def async_set_ac_battery_boost(
+    coordinator: Any,
+    *,
+    enabled: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Switch battery boost on or off: the home battery helps charge the car."""
+
+    def before(current: Any) -> None:
+        if current.boost is None:
+            raise CommandRefused(
+                "mySigen did not report whether battery boost is on. Nothing was sent."
+            )
+
+    return await _change_ac(
+        coordinator, "ac_battery_boost",
+        boost=enabled, expected=lambda current: current.boost is enabled,
+        sleep=sleep, before=before,
+    )
+
+
+async def async_set_ac_boost_cutoff(
+    coordinator: Any,
+    *,
+    level: int,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Set the home battery level at which battery boost stops."""
+
+    def before(current: Any) -> None:
+        low, high = current.cutoff_range
+        if not low <= level <= high:
+            raise CommandRefused(f"The battery boost cut-off must be {low} to {high} %.")
+
+    return await _change_ac(
+        coordinator, "ac_boost_cutoff",
+        boost_cutoff=level, expected=lambda current: current.boost_cutoff == level,
+        sleep=sleep, before=before,
     )
 
 

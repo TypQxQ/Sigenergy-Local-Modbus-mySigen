@@ -94,6 +94,14 @@ _GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
 # system with a charger.
 _DC_MODE_PATH = "device/charge/mode/dc"
 _DC_SETTING_PATH = "device/dcevse/charge/setting"
+# AC charger. The mode answer and its codes were read on two plants with a
+# generation 1 Sigen AC charger, each mode set in the app in turn. The write
+# is the app's own: the same request and settings object as the DC charger
+# (`POST device/charge/mode/ac`), which the app builds in one function for
+# both; no AC change has been captured yet.
+_AC_MODE_PATH = "device/charge/mode/ac"
+_AC_SUPPORT_PATH = "device/charge/mode/support/mode"
+_AC_LIVE_PATH = "device/acevse/charge/realtime"
 _DC_V2X_PATH = "device/station-v2x/select"
 _DC_V2X_WRITE_PATH = "device/station-v2x/open-close"
 _SOC_RANGE_PATH = "device/charge/mode/soc/range"
@@ -592,6 +600,121 @@ def parse_v2x_enabled(data: Any) -> bool | None:
     if isinstance(value, bool):
         return value
     return {0: False, 1: True}.get(_int_or_none(value))
+
+
+# AC charging modes by the code in `device/charge/mode/ac`, the same on both
+# plants read: Fast charging, PV surplus charging, Sigen AI.
+AC_CHARGE_MODES = {"fast_charging": 0, "solar_surplus": 1, "sigen_ai": 2}
+# The fields of the app's charging settings object, sent back with a change.
+_AC_MODE_FIELDS = (
+    "chargeMode", "enableFromPack", "maxPowerFromGrid", "cutoffSocFromPack",
+    "socLowerLimit", "socUpperLimit", "enableFromGrid", "elecUsePriority",
+    "allowsDischargePower", "vehicleDischargeCutoffSoc",
+    "minimumDischargeCutoffSoc", "maximumDischargeCutoffSoc",
+)
+
+
+def _flag(value: Any) -> bool | None:
+    """A switch mySigen gives as true/false or 1/0; None for anything else."""
+    if isinstance(value, bool):
+        return value
+    return {0: False, 1: True}.get(_int_or_none(value))
+
+
+@dataclass(frozen=True)
+class AcChargeMode:
+    """The AC charger's mode and battery boost, from `device/charge/mode/ac`."""
+
+    raw: dict[str, Any]
+
+    @property
+    def mode(self) -> str | None:
+        code = _int_or_none(self.raw.get("chargeMode"))
+        return next((name for name, value in AC_CHARGE_MODES.items() if value == code), None)
+
+    @property
+    def boost(self) -> bool | None:
+        """Battery boost: the home battery helps charge the car."""
+        return _flag(self.raw.get("enableFromPack"))
+
+    @property
+    def boost_cutoff(self) -> int | None:
+        """The home battery level at which battery boost stops."""
+        value = self.raw.get("cutoffSocFromPack")
+        if isinstance(value, bool):
+            return None
+        try:
+            level = round(float(value))
+        except (TypeError, ValueError):
+            return None
+        return level if 0 <= level <= 100 else None
+
+    @property
+    def cutoff_range(self) -> tuple[int, int]:
+        """The levels the cut-off may take; 0 to 100 % when not reported."""
+        return _level_range(
+            self.raw.get("socLowerLimit"), self.raw.get("socUpperLimit"), DEFAULT_LEVEL_RANGE
+        )
+
+    def body(
+        self,
+        mode: str | None = None,
+        boost: bool | None = None,
+        boost_cutoff: int | None = None,
+    ) -> dict[str, Any]:
+        """A change: the settings as read, one of them changed."""
+        body = {key: self.raw[key] for key in _AC_MODE_FIELDS if key in self.raw}
+        if mode is not None:
+            body["chargeMode"] = AC_CHARGE_MODES[mode]
+        if boost is not None:
+            # In the form mySigen gave it.
+            body["enableFromPack"] = (
+                int(boost) if isinstance(self.raw.get("enableFromPack"), int)
+                and not isinstance(self.raw.get("enableFromPack"), bool) else boost
+            )
+        if boost_cutoff is not None:
+            body["cutoffSocFromPack"] = float(boost_cutoff)
+        return body
+
+
+def parse_ac_charge_mode(data: Any) -> AcChargeMode | None:
+    if not isinstance(data, dict) or _int_or_none(data.get("chargeMode")) is None:
+        return None
+    return AcChargeMode(dict(data))
+
+
+def parse_ac_supported_modes(data: Any) -> frozenset[int]:
+    """The mode codes the AC charger offers; empty when not a list of codes."""
+    if not isinstance(data, list):
+        return frozenset()
+    return frozenset(
+        code for item in data
+        if (code := _int_or_none(item)) is not None and code in AC_CHARGE_MODES.values()
+    )
+
+
+def parse_ac_session_energy(data: Any) -> float | None:
+    """Energy of the current or last charging session, in kWh.
+
+    mySigen calls it `singleChargingPower`, but on both plants read it rose
+    with the energy charged and kept its value after the session ended.
+    Both plants gave it at the top level; the app also reads a copy inside
+    `acChargeRealTimeVO`, used when the top level has none.
+    """
+    if not isinstance(data, dict):
+        return None
+    nested = data.get("acChargeRealTimeVO")
+    for source in (data, nested if isinstance(nested, dict) else {}):
+        value = source.get("singleChargingPower")
+        if isinstance(value, bool):
+            continue
+        try:
+            energy = float(value)
+        except (TypeError, ValueError):
+            continue
+        if energy >= 0:
+            return energy
+    return None
 
 
 def parse_soc_range(data: Any) -> tuple[int, int] | None:
@@ -1395,6 +1518,39 @@ class MySigenSession:
         }
         self.storm_watch_shown = data.get("displayStormWatch") is True
         return True
+
+    @property
+    def ac_serial(self) -> str | None:
+        """The first AC charger mySigen lists for the station; None without one."""
+        return self.ac_serials[0] if self.ac_serials else None
+
+    async def _async_ac_get(self, what: str, path: str, **extra: str) -> Any:
+        if self.ac_serial is None:
+            raise MySigenConnectionError(f"{what}: no AC charger")
+        return await self._async_get(what, path, {
+            "stationId": await self.async_station_id(), "snCode": self.ac_serial, **extra,
+        })
+
+    async def async_ac_charge_mode(self) -> AcChargeMode | None:
+        return parse_ac_charge_mode(await self._async_ac_get("AC charging mode", _AC_MODE_PATH))
+
+    async def async_ac_supported_modes(self) -> frozenset[int]:
+        return parse_ac_supported_modes(await self._async_ac_get(
+            "AC charging modes", _AC_SUPPORT_PATH, deviceType=str(AC_CHARGER_DEVICE_TYPE),
+        ))
+
+    async def async_ac_session_energy(self) -> float | None:
+        return parse_ac_session_energy(
+            await self._async_ac_get("AC charging session", _AC_LIVE_PATH)
+        )
+
+    async def async_set_ac_charge_mode(self, body: dict[str, Any]) -> None:
+        """Change the AC charger's mode or battery boost. Sent once."""
+        if self.ac_serial is None:
+            raise MySigenRejectedError("set AC charging mode: not sent, no AC charger")
+        await self._async_put("set AC charging mode", _AC_MODE_PATH, {
+            "stationId": await self._async_station_number(), "snCode": self.ac_serial, **body,
+        }, method="POST")
 
     @property
     def dc_serial(self) -> str | None:
