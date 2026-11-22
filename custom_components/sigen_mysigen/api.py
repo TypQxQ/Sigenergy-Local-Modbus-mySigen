@@ -698,15 +698,23 @@ def parse_ac_session_energy(data: Any) -> float | None:
 
     mySigen calls it `singleChargingPower`, but on both plants read it rose
     with the energy charged and kept its value after the session ended.
+    Both plants gave it at the top level; the app also reads a copy inside
+    `acChargeRealTimeVO`, used when the top level has none.
     """
-    value = data.get("singleChargingPower") if isinstance(data, dict) else None
-    if isinstance(value, bool):
+    if not isinstance(data, dict):
         return None
-    try:
-        energy = float(value)
-    except (TypeError, ValueError):
-        return None
-    return energy if energy >= 0 else None
+    nested = data.get("acChargeRealTimeVO")
+    for source in (data, nested if isinstance(nested, dict) else {}):
+        value = source.get("singleChargingPower")
+        if isinstance(value, bool):
+            continue
+        try:
+            energy = float(value)
+        except (TypeError, ValueError):
+            continue
+        if energy >= 0:
+            return energy
+    return None
 
 
 def parse_soc_range(data: Any) -> tuple[int, int] | None:

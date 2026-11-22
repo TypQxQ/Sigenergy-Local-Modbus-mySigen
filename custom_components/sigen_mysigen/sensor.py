@@ -355,10 +355,15 @@ class AcChargeModeInUse(MySigenEntity, SensorEntity):
 
 
 class AcSessionEnergy(MySigenEntity, SensorEntity):
-    """Energy of the current or last charging session; it starts again at 0."""
+    """Energy of the current or last charging session; it starts again at 0.
+
+    No state class: read every ten minutes without a session identifier, a
+    new session can start between two reads and its reset would be missed,
+    so it must not feed long-term statistics. Sigenergy ESS has the
+    charger's total energy for that.
+    """
 
     _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_suggested_display_precision = 2
 

@@ -46,7 +46,7 @@ Names follow the **Entity name language** of Sigenergy ESS, so both read the sam
 | ✅ | Current AC charging mode | Charge now at full power, on solar surplus only, or let Sigen AI decide |
 | ✅ | AC battery boost | Whether the home battery helps charge the car |
 | ✅ | Current AC battery boost cut-off | The home battery level where battery boost stops |
-| ✅ | AC charging session energy | kWh charged in the current session, or the last one after it ends; starts again at 0 with the next session |
+| ✅ | AC charging session energy | kWh charged in the current session, or the last one after it ends; starts again at 0 with the next session. Not for the Energy dashboard: use the charger's total energy from Sigenergy ESS for that |
 | | **Storm Watch** | <sub>only where mySigen shows Storm Watch for your plant</sub> |
 | ✅ | Storm Watch alert | On while Storm Watch lists a weather alert that hasn't ended. Storm Watch then charges the battery full and holds it there. The attributes show the `weather`, when charging starts (`charging_start`), the weather's `onset` and the alert's `end`, whether the battery is `charged_full`, and whether Storm Watch is switched on (`storm_watch_enabled`). Read every ten minutes. |
 

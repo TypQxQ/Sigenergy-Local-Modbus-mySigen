@@ -72,6 +72,14 @@ class TestParsing(unittest.TestCase):
         # Named a power, but kWh: it rose with the energy charged.
         self.assertEqual(api.parse_ac_session_energy({"singleChargingPower": 0.36}), 0.36)
         self.assertEqual(api.parse_ac_session_energy({"singleChargingPower": "35.4"}), 35.4)
+        # Review finding: the app also reads a copy inside acChargeRealTimeVO.
+        nested = {"chargingPower": 0.0, "acChargeRealTimeVO": {"singleChargingPower": 3.2}}
+        self.assertEqual(api.parse_ac_session_energy(nested), 3.2)
+        both = {"singleChargingPower": 0.22, "acChargeRealTimeVO": {"singleChargingPower": 9.9}}
+        self.assertEqual(api.parse_ac_session_energy(both), 0.22)
+        missing_top = {"singleChargingPower": None, "acChargeRealTimeVO": {"singleChargingPower": 1.5}}
+        self.assertEqual(api.parse_ac_session_energy(missing_top), 1.5)
+        self.assertIsNone(api.parse_ac_session_energy({"acChargeRealTimeVO": "x"}))
         for bad in (None, {}, {"singleChargingPower": None}, {"singleChargingPower": True},
                     {"singleChargingPower": -1}, {"singleChargingPower": "x"}):
             self.assertIsNone(api.parse_ac_session_energy(bad))
