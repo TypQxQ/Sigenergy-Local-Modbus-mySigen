@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Batterij-override actief (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Piekbegrenzing (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Stroom uit EV toegestaan (V2X) (mySigen)"
       },

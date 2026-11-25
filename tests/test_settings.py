@@ -93,6 +93,26 @@ class TestParsing(unittest.TestCase):
         for bad in (None, {}, {"controlMode": 3}):
             self.assertIsNone(api.parse_peak_shaving(bad))
 
+    def test_peak_shaving_schedule_as_shown(self):
+        # Two slots around midnight, as the app saves an overnight schedule.
+        overnight = api.parse_peak_shaving({"controlMode": 1, "shavingSOC": "0.0", "settingList": [
+            {"whichDay": "1,2,3,4,5,6,7", "startTime": "20:05", "endTime": "24:00", "peakPower": 0.0},
+            {"whichDay": "1, 3", "startTime": "00:00", "endTime": "11:00", "peakPower": "2.5"},
+        ]})
+        self.assertEqual(overnight.reserved_soc, 0.0)
+        self.assertEqual(overnight.slot_summaries(), [
+            {"days": [1, 2, 3, 4, 5, 6, 7], "start": "20:05", "end": "24:00", "limit_kw": 0.0},
+            {"days": [1, 3], "start": "00:00", "end": "11:00", "limit_kw": 2.5},
+        ])
+        self.assertIsNone(overnight.single_limit)
+        # Odd values are shown as unknown, never guessed.
+        odd = api.parse_peak_shaving({"controlMode": 0, "shavingSOC": True, "settingList": [
+            {"whichDay": None, "startTime": 800, "peakPower": "x"}, "not a slot"]})
+        self.assertIsNone(odd.reserved_soc)
+        self.assertEqual(odd.slot_summaries(),
+                         [{"days": [], "start": None, "end": None, "limit_kw": None}])
+        self.assertEqual(api.parse_peak_shaving({"controlMode": 1}).slot_summaries(), [])
+
 
 class TestWrites(unittest.IsolatedAsyncioTestCase):
     def setUp(self):

@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Batterie-Übersteuerung aktiv (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Lastspitzenkappung (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Strom vom E-Auto erlaubt (V2X) (mySigen)"
       },

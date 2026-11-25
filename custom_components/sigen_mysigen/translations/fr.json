@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Forçage de la batterie actif (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Écrêtage des pointes (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Énergie du VE autorisée (V2X) (mySigen)"
       },

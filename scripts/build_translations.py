@@ -947,6 +947,7 @@ KEYS.update({
     "entity.select.operating_mode.state.fully_fed_to_grid": "m_feed",
     "entity.switch.battery_export.name": "n_export",
     "entity.switch.peak_shaving.name": "n_peak",
+    "entity.binary_sensor.peak_shaving.name": "n_peak",
     "entity.number.peak_shaving_limit.name": "n_peak_limit",
 })
 _STEP_C: dict[str, dict[str, str]] = {
