@@ -17,7 +17,10 @@ async def async_setup_entry(
 ) -> None:
     """Add the override state."""
     coordinator = entry.runtime_data
-    entities: list[BinarySensorEntity] = [BatteryOverrideActive(coordinator, "battery_override")]
+    entities: list[BinarySensorEntity] = [
+        BatteryOverrideActive(coordinator, "battery_override"),
+        PeakShavingOn(coordinator, "peak_shaving"),
+    ]
     if coordinator.has_dc_charger:
         entities.append(V2xAllowed(coordinator, "dc_charger_v2x"))
     if coordinator.has_ac_charger:
@@ -33,6 +36,36 @@ class BatteryOverrideActive(MySigenEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.override.enabled
+
+
+class PeakShavingOn(MySigenEntity, BinarySensorEntity):
+    """On when peak shaving is switched on in mySigen. Read-only.
+
+    Shown with control off too, so a schedule set in the app can be seen.
+    The attributes give the reserved battery level and each time slot.
+    """
+
+    @property
+    def available(self) -> bool:
+        peak = self.coordinator.peak_shaving
+        return super().available and peak is not None and peak.enabled is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        peak = self.coordinator.peak_shaving
+        return peak.enabled if peak is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object] | None:
+        peak = self.coordinator.peak_shaving
+        if peak is None:
+            return None
+        slots = peak.slot_summaries()
+        return {
+            "reserved_soc": peak.reserved_soc,
+            "time_slots": len(slots),
+            "slots": slots,
+        }
 
 
 class V2xAllowed(MySigenEntity, BinarySensorEntity):

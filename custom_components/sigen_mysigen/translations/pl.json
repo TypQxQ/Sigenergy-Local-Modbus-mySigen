@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Wymuszenie baterii aktywne (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Ograniczanie szczytów mocy (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Energia z auta dozwolona (V2X) (mySigen)"
       },

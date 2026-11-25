@@ -49,6 +49,8 @@ Names follow the **Entity name language** of Sigenergy ESS, so both read the sam
 | ✅ | AC charging session energy | kWh charged in the current session, or the last one after it ends; starts again at 0 with the next session. Not for the Energy dashboard: use the charger's total energy from Sigenergy ESS for that |
 | | **Storm Watch** | <sub>only where mySigen shows Storm Watch for your plant</sub> |
 | ✅ | Storm Watch alert | On while Storm Watch lists a weather alert that hasn't ended. Storm Watch then charges the battery full and holds it there. The attributes show the `weather`, when charging starts (`charging_start`), the weather's `onset` and the alert's `end`, whether the battery is `charged_full`, and whether Storm Watch is switched on (`storm_watch_enabled`). Read every ten minutes. |
+| | **Peak shaving** | <sub>read-only, also with control off</sub> |
+| ✅ | Peak shaving | On when peak shaving is switched on in the app. The attributes show the `reserved_soc` (%), how many `time_slots` there are, and each slot in `slots`: its `days` (mySigen's day numbers 1 to 7), `start`, `end` and grid limit `limit_kw`. Read every ten minutes. To change it, see [Settings that stay](#️-settings-that-stay). |
 
 > [!NOTE]
 > Grid frequency, grid connection state, power, energy, smart load readings and the charger's own readings are left out on purpose: Sigenergy ESS already has them.

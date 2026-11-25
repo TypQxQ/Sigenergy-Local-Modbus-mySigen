@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Batterioverstyring aktiv (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Effekttoppbegrensning (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Strøm fra elbilen tillatt (V2X) (mySigen)"
       },

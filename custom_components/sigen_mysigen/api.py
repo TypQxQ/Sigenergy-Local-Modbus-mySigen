@@ -358,6 +358,15 @@ def _int_or_none(value: Any) -> int | None:
         return None
 
 
+def _float_or_none(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def parse_available_modes(data: Any) -> frozenset[int]:
     rows = data.get("defaultWorkingModes") if isinstance(data, dict) else None
     if not isinstance(rows, list):
@@ -433,10 +442,32 @@ class PeakShaving:
         """The limit when the schedule has exactly one time slot."""
         if len(self.slots) != 1:
             return None
-        try:
-            return float(self.slots[0].get("peakPower"))
-        except (TypeError, ValueError):
-            return None
+        return _float_or_none(self.slots[0].get("peakPower"))
+
+    @property
+    def reserved_soc(self) -> float | None:
+        """The battery level kept for peak shaving, in %, as the app shows it."""
+        return _float_or_none(self.raw.get("shavingSOC"))
+
+    def slot_summaries(self) -> list[dict[str, Any]]:
+        """Each time slot as the app shows it: days, start, end and limit.
+
+        Days are mySigen's own numbers as listed in the slot ("1,2,...,7").
+        """
+        summaries = []
+        for row in self.slots:
+            days = [
+                day for part in str(row.get("whichDay") or "").split(",")
+                if (day := _int_or_none(part)) is not None
+            ]
+            start, end = row.get("startTime"), row.get("endTime")
+            summaries.append({
+                "days": days,
+                "start": start if isinstance(start, str) else None,
+                "end": end if isinstance(end, str) else None,
+                "limit_kw": _float_or_none(row.get("peakPower")),
+            })
+        return summaries
 
     def with_enabled(self, enabled: bool) -> dict[str, Any]:
         return {**self.raw, "controlMode": 1 if enabled else 0}

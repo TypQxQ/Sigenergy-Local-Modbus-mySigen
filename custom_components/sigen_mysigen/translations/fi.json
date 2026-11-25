@@ -116,6 +116,9 @@
       "battery_override": {
         "name": "Akun tilapäinen ohjaus aktiivinen (mySigen)"
       },
+      "peak_shaving": {
+        "name": "Huipputehon leikkaus (mySigen)"
+      },
       "dc_charger_v2x": {
         "name": "Sähkö autosta sallittu (V2X) (mySigen)"
       },

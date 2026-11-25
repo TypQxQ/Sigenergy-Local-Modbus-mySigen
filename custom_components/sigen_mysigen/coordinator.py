@@ -628,10 +628,9 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         try:
             status = await self.session.async_override_status()
             gateway = await self._async_gateway()
-            if (
-                self.allow_control
-                and time.monotonic() - self._settings_read_at >= _SETTINGS_INTERVAL
-            ):
+            # Settings are read with control off too, so what the app has set
+            # (peak shaving, battery export, operating mode) can be seen.
+            if time.monotonic() - self._settings_read_at >= _SETTINGS_INTERVAL:
                 await self._async_read_settings()
             elif self._grid_changing:
                 await self._async_read_grid()
