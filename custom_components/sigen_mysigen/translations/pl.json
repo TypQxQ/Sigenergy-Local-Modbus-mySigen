@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Bieżący próg wspomagania z baterii ładowarki AC (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Tryb sterowania inteligentnym obciążeniem {load} (mySigen)",
+        "state": {
+          "auto": "Automatyczny",
+          "manual": "Ręczny"
+        }
       }
     },
     "number": {

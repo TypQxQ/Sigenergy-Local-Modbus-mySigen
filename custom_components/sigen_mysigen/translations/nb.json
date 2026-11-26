@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "AC-laderens nåværende grense for batteriboost (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Smartlast {load} styringsmodus (mySigen)",
+        "state": {
+          "auto": "Automatisk",
+          "manual": "Manuell"
+        }
       }
     },
     "number": {

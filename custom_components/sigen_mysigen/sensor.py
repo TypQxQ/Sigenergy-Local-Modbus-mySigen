@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -24,7 +25,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import AC_CHARGE_MODES, DC_CHARGE_MODES, OVERRIDE_MODES, BatteryModule
+from .api import (
+    AC_CHARGE_MODES,
+    DC_CHARGE_MODES,
+    OVERRIDE_MODES,
+    SMART_LOAD_MODE_NAMES,
+    BatteryModule,
+    SmartLoad,
+    smart_load_mode_attributes,
+    smart_load_mode_name,
+)
 from .const import DOMAIN
 from .control import RESULTS
 from .coordinator import MySigenCoordinator
@@ -181,6 +191,8 @@ async def async_setup_entry(
             AcSessionEnergy(coordinator, "ac_charger_session_energy"),
             AcBoostCutoff(coordinator, "ac_charger_boost_cutoff"),
         ]
+    # Read-only, so also with control off.
+    entities += [SmartLoadMode(coordinator, load) for load in coordinator.smart_loads]
     for module in coordinator.modules.modules:
         device = coordinator.module_devices.get(module.serial)
         if device is None:
@@ -419,3 +431,49 @@ class BatteryModuleSensor(MySigenEntity, SensorEntity):
     @property
     def native_value(self) -> float | str | None:
         return self.coordinator.modules.value(self._serial, self._spec.reading)
+
+
+class SmartLoadMode(MySigenEntity, SensorEntity):
+    """Whether mySigen controls a smart load automatically or by hand.
+
+    Read-only, so it is there whether or not control is allowed. While it is
+    enabled the states are read every ten minutes, or at every poll while a
+    smart load switch is enabled too.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = list(SMART_LOAD_MODE_NAMES.values())
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: MySigenCoordinator, load: SmartLoad) -> None:
+        super().__init__(coordinator, "smart_load_mode", f"smart_load_mode_{load.load_id}")
+        self._load = load
+        self._attr_translation_placeholders = {"load": load.name}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.coordinator.shown_smart_load_modes.add(self._load.load_id)
+        # Show the mode now rather than after the next poll.
+        await self.coordinator.async_request_refresh()
+
+    async def async_will_remove_from_hass(self) -> None:
+        self.coordinator.shown_smart_load_modes.discard(self._load.load_id)
+        await super().async_will_remove_from_hass()
+
+    @property
+    def _state(self):
+        return self.coordinator.smart_load_states.get(self._load.load_id)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._state is not None
+
+    @property
+    def native_value(self) -> str | None:
+        state = self._state
+        return smart_load_mode_name(state.operation_mode) if state is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        state = self._state
+        return smart_load_mode_attributes(self._load, state) if state is not None else None

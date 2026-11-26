@@ -1453,6 +1453,31 @@ _SMART_LOADS: dict[str, str] = {
 for _language, _name in _SMART_LOADS.items():
     LANGUAGES[_language]["n_smart_load"] = _name
 
+# The smart load's control mode, as the mySigen app names its two choices.
+# Only English has been checked by a native speaker.
+KEYS.update({
+    "entity.sensor.smart_load_mode.name": "n_smart_load_mode",
+    "entity.sensor.smart_load_mode.state.auto": "slm_auto",
+    "entity.sensor.smart_load_mode.state.manual": "slm_manual",
+})
+_SMART_LOAD_MODES: dict[str, tuple[str, str, str]] = {
+    # name, Auto, Manual
+    "sv": ("Smart last {load} styrläge", "Automatiskt", "Manuellt"),
+    "da": ("Smart belastning {load} styringstilstand", "Automatisk", "Manuel"),
+    "nb": ("Smartlast {load} styringsmodus", "Automatisk", "Manuell"),
+    "de": ("Smarte Last {load} Steuermodus", "Automatisch", "Manuell"),
+    "nl": ("Slimme verbruiker {load} besturingsmodus", "Automatisch", "Handmatig"),
+    "fr": ("Mode de pilotage de la charge intelligente {load}", "Automatique", "Manuel"),
+    "es": ("Modo de control de la carga inteligente {load}", "Automático", "Manual"),
+    "it": ("Modalità controllo carico intelligente {load}", "Automatica", "Manuale"),
+    "fi": ("Älykäs kuorma {load} ohjaustila", "Automaattinen", "Manuaalinen"),
+    "pl": ("Tryb sterowania inteligentnym obciążeniem {load}", "Automatyczny", "Ręczny"),
+}
+for _language, (_name, _auto, _manual) in _SMART_LOAD_MODES.items():
+    LANGUAGES[_language].update(
+        {"n_smart_load_mode": _name, "slm_auto": _auto, "slm_manual": _manual}
+    )
+
 # Storm Watch and vacation mode, as the mySigen app calls them. "Storm
 # Watch" is the feature's name and stays in English. Only English and
 # Swedish have been checked by a native speaker.

@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "AC-laturin nykyinen akkuboostin raja (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Älykäs kuorma {load} ohjaustila (mySigen)",
+        "state": {
+          "auto": "Automaattinen",
+          "manual": "Manuaalinen"
+        }
       }
     },
     "number": {

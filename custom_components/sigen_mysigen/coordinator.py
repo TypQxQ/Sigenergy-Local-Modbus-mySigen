@@ -42,6 +42,7 @@ from .api import (
     OverrideStatus,
     SmartLoad,
     SmartLoadState,
+    smart_load_read_due,
     StormWatch,
     AiSettings,
     normalize_serial,
@@ -177,6 +178,11 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # Loads whose switch is enabled in Home Assistant. The states are
         # read at every poll only while there is one.
         self.watched_smart_loads: set[int] = set()
+        # Loads whose mode sensor is enabled. The states are read every ten
+        # minutes while there is one and no switch is watched.
+        self.shown_smart_load_modes: set[int] = set()
+        # When the smart loads' states were last read (time.monotonic()).
+        self._smart_load_read_at = 0.0
         # Storm Watch; read only where mySigen shows it for the station. None
         # until read and after a failed read.
         self.storm_watch: StormWatch | None = None
@@ -368,6 +374,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         async with self.command_lock:
             if self.rate_limit_wait:
                 return
+            self._smart_load_read_at = time.monotonic()
             try:
                 self.smart_load_states = await self.session.async_smart_load_states()
             except (MySigenConnectionError, MySigenPermissionError) as err:
@@ -466,8 +473,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 _LOGGER.info("mySigen lists different battery modules now; reloading")
                 self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
                 return
-            if not self.allow_control:
-                return
+            # Also with control off: the mode sensors follow the list.
             try:
                 loads = await self.session.async_smart_loads()
             except (MySigenConnectionError, MySigenPermissionError) as err:
@@ -645,7 +651,15 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                 and time.monotonic() - self._storm_read_at >= _SETTINGS_INTERVAL
             ):
                 await self._async_read_storm_watch()
-            if self.allow_control and self.smart_loads and self.watched_smart_loads:
+            if smart_load_read_due(
+                allow_control=self.allow_control,
+                loads=self.smart_loads,
+                watched=self.watched_smart_loads,
+                shown=self.shown_smart_load_modes,
+                now=time.monotonic(),
+                read_at=self._smart_load_read_at,
+                interval=_SETTINGS_INTERVAL,
+            ):
                 await self._async_read_smart_loads()
             if self.modules.modules:
                 await self._async_read_module()

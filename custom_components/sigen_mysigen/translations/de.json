@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Aktuelle Batterie-Boost-Grenze der AC-Wallbox (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Smarte Last {load} Steuermodus (mySigen)",
+        "state": {
+          "auto": "Automatisch",
+          "manual": "Manuell"
+        }
       }
     },
     "number": {

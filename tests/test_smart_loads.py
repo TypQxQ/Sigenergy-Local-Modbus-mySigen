@@ -87,6 +87,78 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(api.parse_device_kinds(tree), {"AIO-1": 2, "BAT-1": 4, "GW-1": 8})
 
 
+class TestMode(unittest.TestCase):
+    """The control mode, shown by a sensor whether or not control is on."""
+
+    def test_mode_names(self):
+        self.assertEqual(api.smart_load_mode_name(0), "auto")
+        self.assertEqual(api.smart_load_mode_name(1), "manual")
+        self.assertEqual(sorted(api.SMART_LOAD_MODE_NAMES.values()), ["auto", "manual"])
+
+    def test_unknown_mode_code_has_no_name(self):
+        # For example a load Sigen AI runs: shown as unknown, never guessed.
+        for code in (2, -1, None):
+            self.assertIsNone(api.smart_load_mode_name(code))
+
+    def test_mode_sensor_state_and_attributes(self):
+        load = api.parse_smart_loads(LIST, KINDS)[0]
+        state = api.parse_smart_load_states(STATES)[134388]
+        self.assertEqual(api.smart_load_mode_name(state.operation_mode), "manual")
+        self.assertEqual(api.smart_load_mode_attributes(load, state), {
+            "port": 1, "attached_to": "gateway", "switched_on": True, "mode_code": 1,
+        })
+        # The raw code stays visible when it has no name.
+        odd = api.SmartLoadState(None, 2)
+        self.assertEqual(api.smart_load_mode_attributes(load, odd)["mode_code"], 2)
+        self.assertIsNone(api.smart_load_mode_attributes(load, odd)["switched_on"])
+
+    def test_listed_loads_keep_every_entity_kind(self):
+        # Setup removes smart load entities mySigen no longer lists by their
+        # unique ID prefix, so the mode sensor must count as listed too.
+        loads = api.parse_smart_loads(LIST, KINDS)
+        keys = api.smart_load_unique_keys(loads)
+        for load_id in (134388, 134389):
+            self.assertIn(f"smart_load_{load_id}", keys)
+            self.assertIn(f"smart_load_mode_{load_id}", keys)
+        self.assertEqual(api.smart_load_unique_keys(()), set())
+
+
+class TestReadSchedule(unittest.TestCase):
+    """When the coordinator reads the smart loads' states."""
+
+    LOADS = api.parse_smart_loads(LIST, KINDS)
+
+    def _due(self, *, allow=True, loads=LOADS, watched=(), shown=(134388,),
+             now=1000.0, read_at=0.0):
+        return api.smart_load_read_due(
+            allow_control=allow, loads=loads, watched=set(watched), shown=set(shown),
+            now=now, read_at=read_at, interval=600.0,
+        )
+
+    def test_state_read_every_settings_interval_with_control_off(self):
+        self.assertTrue(self._due(allow=False))
+        self.assertFalse(self._due(allow=False, now=1000.0, read_at=500.0))
+        self.assertTrue(self._due(allow=False, now=1100.0, read_at=500.0))
+        # A watched switch does not count while control is off.
+        self.assertFalse(self._due(allow=False, watched=[134388], now=1000.0, read_at=500.0))
+
+    def test_every_poll_while_a_switch_is_watched(self):
+        self.assertTrue(self._due(watched=[134388], now=1000.0, read_at=999.0))
+        self.assertTrue(self._due(watched=[134388], shown=(), now=1000.0, read_at=999.0))
+        # Control on but no switch enabled: the sensor's ten minutes.
+        self.assertFalse(self._due(now=1000.0, read_at=999.0))
+
+    def test_no_read_while_nothing_is_enabled(self):
+        # Both entities start disabled; a plant with loads nobody looks at
+        # makes no extra request.
+        for allow in (True, False):
+            self.assertFalse(self._due(allow=allow, shown=()))
+
+    def test_no_loads_no_read(self):
+        for allow in (True, False):
+            self.assertFalse(self._due(allow=allow, loads=(), watched=[1]))
+
+
 class _ParamsHttp(_Http):
     """Also records the query string and whether a body was sent."""
 

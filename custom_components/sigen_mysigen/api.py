@@ -775,6 +775,66 @@ class SmartLoadState:
         return self.operation_mode == SMART_LOAD_MANUAL
 
 
+# The control modes mySigen reports for a smart load, by code. Any other code
+# (for example a load Sigen AI runs) has no name: it is shown as unknown,
+# with the raw code in the attributes, and never switched to or from.
+SMART_LOAD_MODE_NAMES: dict[int, str] = {0: "auto", SMART_LOAD_MANUAL: "manual"}
+
+
+def smart_load_mode_name(code: int | None) -> str | None:
+    """The mode's name, or None for a code with no name."""
+    return SMART_LOAD_MODE_NAMES.get(code) if code is not None else None
+
+
+def smart_load_mode_attributes(load: SmartLoad, state: SmartLoadState) -> dict[str, Any]:
+    """What the mode sensor shows beside the mode itself."""
+    return {
+        "port": load.path,
+        "attached_to": load.host,
+        "switched_on": state.on,
+        "mode_code": state.operation_mode,
+    }
+
+
+def smart_load_unique_keys(loads: tuple[SmartLoad, ...]) -> set[str]:
+    """The unique ID endings of every entity the listed loads get.
+
+    Setup removes smart load entities whose load mySigen no longer lists, by
+    their shared "smart_load_" prefix, so every kind must be named here.
+    """
+    return {
+        key
+        for load in loads
+        for key in (f"smart_load_{load.load_id}", f"smart_load_mode_{load.load_id}")
+    }
+
+
+def smart_load_read_due(
+    *,
+    allow_control: bool,
+    loads: tuple[SmartLoad, ...],
+    watched: set[int],
+    shown: set[int],
+    now: float,
+    read_at: float,
+    interval: float,
+) -> bool:
+    """Whether this poll reads the smart loads' states.
+
+    At every poll while control is on and a switch is enabled (`watched`),
+    so a switch shows changes made in the app quickly. Every `interval`
+    seconds while only a mode sensor is enabled (`shown`). Not at all while
+    neither is, so nobody pays for a read they don't see.
+    """
+    if not loads:
+        return False
+    if allow_control and watched:
+        return True
+    if not shown:
+        return False
+    return now - read_at >= interval
+
+
 def parse_device_kinds(data: Any) -> dict[str, int]:
     """Serial number -> device type, for every node of the device tree."""
     kinds: dict[str, int] = {}

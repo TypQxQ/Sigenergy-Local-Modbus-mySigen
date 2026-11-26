@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Seuil actuel du boost batterie de la borne AC (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Mode de pilotage de la charge intelligente {load} (mySigen)",
+        "state": {
+          "auto": "Automatique",
+          "manual": "Manuel"
+        }
       }
     },
     "number": {

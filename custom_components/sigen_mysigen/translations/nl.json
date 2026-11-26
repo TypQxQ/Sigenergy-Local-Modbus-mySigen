@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Huidige batterijboostgrens AC-lader (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Slimme verbruiker {load} besturingsmodus (mySigen)",
+        "state": {
+          "auto": "Automatisch",
+          "manual": "Handmatig"
+        }
       }
     },
     "number": {

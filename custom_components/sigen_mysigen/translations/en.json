@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Current AC battery boost cut-off (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Smart load {load} control mode (mySigen)",
+        "state": {
+          "auto": "Auto",
+          "manual": "Manual"
+        }
       }
     },
     "number": {
