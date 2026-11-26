@@ -283,7 +283,7 @@
         "name": "Aktuelle Batterie-Boost-Grenze der AC-Wallbox (mySigen)"
       },
       "smart_load_mode": {
-        "name": "Smarte Last {load} Steuermodus (mySigen)",
+        "name": "Smarte Last {load} aktueller Steuermodus (mySigen)",
         "state": {
           "auto": "Automatisch",
           "manual": "Manuell"
@@ -359,6 +359,13 @@
           "fast_charging": "Jetzt mit voller Leistung laden",
           "solar_surplus": "Nur mit Solarüberschuss laden",
           "sigen_ai": "Sigen AI entscheiden lassen"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Smarte Last {load} Steuermodus (mySigen)",
+        "state": {
+          "auto": "Automatisch",
+          "manual": "Manuell"
         }
       }
     },

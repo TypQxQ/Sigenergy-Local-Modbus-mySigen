@@ -283,7 +283,7 @@
         "name": "Límite actual de impulso de batería, cargador AC (mySigen)"
       },
       "smart_load_mode": {
-        "name": "Modo de control de la carga inteligente {load} (mySigen)",
+        "name": "Modo actual de la carga inteligente {load} (mySigen)",
         "state": {
           "auto": "Automático",
           "manual": "Manual"
@@ -359,6 +359,13 @@
           "fast_charging": "Cargar ahora a plena potencia",
           "solar_surplus": "Cargar solo con excedente solar",
           "sigen_ai": "Dejar que decida Sigen AI"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Modo de control de la carga inteligente {load} (mySigen)",
+        "state": {
+          "auto": "Automático",
+          "manual": "Manual"
         }
       }
     },

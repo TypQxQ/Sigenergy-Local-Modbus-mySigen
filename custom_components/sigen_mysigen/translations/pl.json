@@ -283,7 +283,7 @@
         "name": "Bieżący próg wspomagania z baterii ładowarki AC (mySigen)"
       },
       "smart_load_mode": {
-        "name": "Tryb sterowania inteligentnym obciążeniem {load} (mySigen)",
+        "name": "Bieżący tryb inteligentnego obciążenia {load} (mySigen)",
         "state": {
           "auto": "Automatyczny",
           "manual": "Ręczny"
@@ -359,6 +359,13 @@
           "fast_charging": "Ładuj teraz pełną mocą",
           "solar_surplus": "Ładuj tylko nadwyżką słoneczną",
           "sigen_ai": "Niech decyduje Sigen AI"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Tryb sterowania inteligentnym obciążeniem {load} (mySigen)",
+        "state": {
+          "auto": "Automatyczny",
+          "manual": "Ręczny"
         }
       }
     },

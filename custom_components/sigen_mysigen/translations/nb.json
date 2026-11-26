@@ -283,7 +283,7 @@
         "name": "AC-laderens nåværende grense for batteriboost (mySigen)"
       },
       "smart_load_mode": {
-        "name": "Smartlast {load} styringsmodus (mySigen)",
+        "name": "Smartlast {load} nåværende styringsmodus (mySigen)",
         "state": {
           "auto": "Automatisk",
           "manual": "Manuell"
@@ -359,6 +359,13 @@
           "fast_charging": "Lad nå med full effekt",
           "solar_surplus": "Lad bare med soloverskudd",
           "sigen_ai": "La Sigen AI bestemme"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Smartlast {load} styringsmodus (mySigen)",
+        "state": {
+          "auto": "Automatisk",
+          "manual": "Manuell"
         }
       }
     },

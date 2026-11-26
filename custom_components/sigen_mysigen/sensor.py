@@ -452,12 +452,12 @@ class SmartLoadMode(MySigenEntity, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        self.coordinator.shown_smart_load_modes.add(self._load.load_id)
+        self.coordinator.shown_smart_load_modes.add(self.unique_id)
         # Show the mode now rather than after the next poll.
         await self.coordinator.async_request_refresh()
 
     async def async_will_remove_from_hass(self) -> None:
-        self.coordinator.shown_smart_load_modes.discard(self._load.load_id)
+        self.coordinator.shown_smart_load_modes.discard(self.unique_id)
         await super().async_will_remove_from_hass()
 
     @property

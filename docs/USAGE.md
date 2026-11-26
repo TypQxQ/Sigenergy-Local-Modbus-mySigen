@@ -189,16 +189,17 @@ Start and stop charging, the power limits and the charger's own readings stay in
 
 ## 💡 Smart loads
 
-A smart load is an appliance, such as a water heater, on one of the SigenStor's or the Gateway's own load ports, set up in the mySigen app. Each one gets a read-only mode sensor, also with control off, and with **Allow battery control** on also a switch. Both are disabled until you enable them:
+A smart load is an appliance, such as a water heater, on one of the SigenStor's or the Gateway's own load ports, set up in the mySigen app. Each one gets a read-only mode sensor, also with control off, and with **Allow battery control** on also a mode select and a switch. All are disabled until you enable them:
 
 | | Control | Type | What it does |
 | :-: | --- | --- | --- |
-| 💡 | Smart load *name* control mode | Sensor | `auto` or `manual`, as the mySigen app sets the load's control. Unknown for any other mode mySigen reports, whose code is in `mode_code`. The attributes also show the `port`, whether it is `attached_to` the `sigenstor` or the `gateway`, and whether the load is `switched_on`. Read every ten minutes while the sensor is enabled. Works with control off. |
+| 💡 | Smart load *name* current control mode | Sensor | `auto` or `manual`, as the mySigen app sets the load's control. Unknown for any other mode mySigen reports, whose code is in `mode_code`. The attributes also show the `port`, whether it is `attached_to` the `sigenstor` or the `gateway`, and whether the load is `switched_on`. Read every ten minutes while the sensor is enabled. Works with control off. |
+| 💡 | Smart load *name* control mode | Select | Sets the load's control to `auto` or `manual`, like the app. Needs **Allow battery control**. A load in a mode this add-on doesn't know is left alone and the change is refused. |
 | 💡 | Smart load *name* | Switch | Switches the load on or off, like its switch in the mySigen app. *Name* is the name you gave the load in the app. Needs **Allow battery control**. |
 
-The switch works while the load is under manual control in mySigen, which is when the app shows its switch; otherwise it is refused and nothing is sent. Remote EMS doesn't switch smart loads, so the switch also works while Remote EMS is on. The attributes show the `port`, whether it is `attached_to` the `sigenstor` or the `gateway`, and whether the load is under `manual_control`.
+The switch works while the load is under manual control in mySigen, which is when the app shows its switch; otherwise it is refused and nothing is sent. Set the mode select to `manual` first. Remote EMS doesn't switch smart loads, so the switch also works while Remote EMS is on. The attributes show the `port`, whether it is `attached_to` the `sigenstor` or the `gateway`, and whether the load is under `manual_control`.
 
-While a switch is enabled, the states are read at every update, so a change made in the app shows within one update interval. Otherwise they are read every ten minutes while a mode sensor is enabled, and not at all while neither is. A load you add or remove in the app appears or goes within an hour. Power and energy of each smart load stay in Sigenergy ESS. Loads on third-party devices, such as a Shelly relay, are left out: control those directly.
+While a switch is enabled, the states are read at every update, so a change made in the app shows within one update interval. Otherwise they are read every ten minutes while a mode sensor or select is enabled, and not at all while neither is. A load you add or remove in the app appears or goes within an hour. Power and energy of each smart load stay in Sigenergy ESS. Loads on third-party devices, such as a Shelly relay, are left out: control those directly.
 
 > [!NOTE]
 > **Tried on one plant so far.** Have a smart load? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)

@@ -178,9 +178,10 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # Loads whose switch is enabled in Home Assistant. The states are
         # read at every poll only while there is one.
         self.watched_smart_loads: set[int] = set()
-        # Loads whose mode sensor is enabled. The states are read every ten
-        # minutes while there is one and no switch is watched.
-        self.shown_smart_load_modes: set[int] = set()
+        # Unique IDs of the enabled smart load mode sensors and selects. The
+        # states are read every ten minutes while there is one and no switch
+        # is watched. By entity, so a load's sensor and select each count.
+        self.shown_smart_load_modes: set[str] = set()
         # When the smart loads' states were last read (time.monotonic()).
         self._smart_load_read_at = 0.0
         # Storm Watch; read only where mySigen shows it for the station. None

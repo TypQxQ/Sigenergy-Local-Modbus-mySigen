@@ -1,6 +1,8 @@
 """The override the Start battery override button will start."""
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
@@ -14,6 +16,9 @@ from .api import (
     DC_CHARGE_MODES,
     OPERATING_MODE_NAMES,
     OPERATING_MODES,
+    SMART_LOAD_MODE_NAMES,
+    SmartLoad,
+    smart_load_mode_name,
 )
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MODE, CONF_PLANT_ENTRY_ID
@@ -22,6 +27,7 @@ from .control import (
     async_set_ai_strategy,
     async_set_dc_charge_mode,
     async_set_operating_mode,
+    async_set_smart_load_mode,
 )
 from .link import remote_ems_state
 from .entity import MySigenEntity
@@ -43,6 +49,7 @@ async def async_setup_entry(
         entities.append(DcChargingMode(coordinator, "dc_charger_charging_mode"))
     if coordinator.has_ac_charger:
         entities.append(AcChargingMode(coordinator, "ac_charger_charging_mode"))
+    entities.extend(SmartLoadModeSelect(coordinator, load) for load in coordinator.smart_loads)
     async_add_entities(entities)
 
 
@@ -198,4 +205,51 @@ class AcChargingMode(MySigenEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         await async_run_setting(
             self.coordinator, async_set_ac_charge_mode(self.coordinator, mode=option)
+        )
+
+
+class SmartLoadModeSelect(MySigenEntity, SelectEntity):
+    """Chooses whether mySigen runs a smart load by itself or by hand.
+
+    Auto lets mySigen decide when the load runs; Manual is where its switch
+    works. A mode with no name here is shown as unknown and left alone.
+    """
+
+    _attr_options = list(SMART_LOAD_MODE_NAMES.values())
+    _attr_entity_registry_enabled_default = False
+
+    def __init__(self, coordinator: Any, load: SmartLoad) -> None:
+        super().__init__(
+            coordinator, "smart_load_mode_select", f"smart_load_mode_select_{load.load_id}"
+        )
+        self._load = load
+        self._attr_translation_placeholders = {"load": load.name}
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self.coordinator.shown_smart_load_modes.add(self.unique_id)
+        await self.coordinator.async_request_refresh()
+
+    async def async_will_remove_from_hass(self) -> None:
+        self.coordinator.shown_smart_load_modes.discard(self.unique_id)
+        await super().async_will_remove_from_hass()
+
+    @property
+    def available(self) -> bool:
+        return (
+            super().available
+            and self.coordinator.smart_load_states.get(self._load.load_id) is not None
+        )
+
+    @property
+    def current_option(self) -> str | None:
+        state = self.coordinator.smart_load_states.get(self._load.load_id)
+        return smart_load_mode_name(state.operation_mode) if state is not None else None
+
+    async def async_select_option(self, option: str) -> None:
+        await async_run_setting(
+            self.coordinator,
+            async_set_smart_load_mode(
+                self.coordinator, load_id=self._load.load_id, manual=option == "manual"
+            ),
         )

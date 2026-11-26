@@ -283,7 +283,7 @@
         "name": "AC-laturin nykyinen akkuboostin raja (mySigen)"
       },
       "smart_load_mode": {
-        "name": "Älykäs kuorma {load} ohjaustila (mySigen)",
+        "name": "Älykäs kuorma {load} nykyinen ohjaustila (mySigen)",
         "state": {
           "auto": "Automaattinen",
           "manual": "Manuaalinen"
@@ -359,6 +359,13 @@
           "fast_charging": "Lataa nyt täydellä teholla",
           "solar_surplus": "Lataa vain aurinkoylijäämällä",
           "sigen_ai": "Anna Sigen AI:n päättää"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Älykäs kuorma {load} ohjaustila (mySigen)",
+        "state": {
+          "auto": "Automaattinen",
+          "manual": "Manuaalinen"
         }
       }
     },

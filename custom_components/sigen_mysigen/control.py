@@ -39,6 +39,9 @@ from .api import (
     MySigenRateLimitError,
     MySigenUnknownOutcome,
     OverrideStatus,
+    SMART_LOAD_AUTO,
+    SMART_LOAD_MANUAL,
+    smart_load_mode_name,
 )
 
 RESULT_CONFIRMED = "confirmed"
@@ -891,8 +894,8 @@ async def async_set_smart_load(
         if not current.manual:
             raise CommandRefused(
                 "mySigen is not controlling this smart load by hand right now "
-                f"(operation mode {current.operation_mode}). Set it to manual in "
-                "the mySigen app. Nothing was sent."
+                f"(operation mode {current.operation_mode}). Set it to manual with "
+                "its control mode select or in the mySigen app. Nothing was sent."
             )
         if current.on is None:
             raise CommandRefused(
@@ -910,5 +913,47 @@ async def async_set_smart_load(
         sleep=sleep,
         before=before,
         # The state follows a switch within a few seconds, not at once.
+        settle=True,
+    )
+
+
+async def async_set_smart_load_mode(
+    coordinator: Any,
+    *,
+    load_id: int,
+    manual: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Set a smart load's control to Manual or Auto.
+
+    Like the switch, this is a load relay setting rather than battery
+    dispatch, so Remote EMS is not checked. A load in a mode this add-on has
+    no name for is left alone: that mode may be one only the app can set.
+    """
+    load = next((load for load in coordinator.smart_loads if load.load_id == load_id), None)
+    if load is None:
+        raise CommandRefused("mySigen no longer lists this smart load. Nothing was sent.")
+    wanted = SMART_LOAD_MANUAL if manual else SMART_LOAD_AUTO
+
+    async def read() -> Any:
+        return (await coordinator.session.async_smart_load_states()).get(load_id)
+
+    def before(current: Any) -> None:
+        if smart_load_mode_name(current.operation_mode) is None:
+            raise CommandRefused(
+                "mySigen reports a control mode this add-on does not know "
+                f"({current.operation_mode}). Change it in the mySigen app. "
+                "Nothing was sent."
+            )
+
+    return await _change_setting(
+        coordinator,
+        "smart_load_mode",
+        read=read,
+        send=lambda _current: coordinator.session.async_set_smart_load_mode(load.path, manual),
+        expected=lambda current: current.operation_mode == wanted,
+        publish=lambda current: coordinator.publish_smart_load(load_id, current),
+        sleep=sleep,
+        before=before,
         settle=True,
     )
