@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Seuil actuel du boost batterie de la borne AC (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Mode actuel de la charge intelligente {load} (mySigen)",
+        "state": {
+          "auto": "Automatique",
+          "manual": "Manuel"
+        }
       }
     },
     "number": {
@@ -352,6 +359,13 @@
           "fast_charging": "Charger maintenant à pleine puissance",
           "solar_surplus": "Charger uniquement avec le surplus solaire",
           "sigen_ai": "Laisser Sigen AI décider"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Mode de pilotage de la charge intelligente {load} (mySigen)",
+        "state": {
+          "auto": "Automatique",
+          "manual": "Manuel"
         }
       }
     },

@@ -87,6 +87,92 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(api.parse_device_kinds(tree), {"AIO-1": 2, "BAT-1": 4, "GW-1": 8})
 
 
+class TestMode(unittest.TestCase):
+    """The control mode, shown by a sensor whether or not control is on."""
+
+    def test_mode_names(self):
+        self.assertEqual(api.smart_load_mode_name(0), "auto")
+        self.assertEqual(api.smart_load_mode_name(1), "manual")
+        self.assertEqual(sorted(api.SMART_LOAD_MODE_NAMES.values()), ["auto", "manual"])
+
+    def test_unknown_mode_code_has_no_name(self):
+        # For example a load Sigen AI runs: shown as unknown, never guessed.
+        for code in (2, -1, None):
+            self.assertIsNone(api.smart_load_mode_name(code))
+
+    def test_mode_sensor_state_and_attributes(self):
+        load = api.parse_smart_loads(LIST, KINDS)[0]
+        state = api.parse_smart_load_states(STATES)[134388]
+        self.assertEqual(api.smart_load_mode_name(state.operation_mode), "manual")
+        self.assertEqual(api.smart_load_mode_attributes(load, state), {
+            "port": 1, "attached_to": "gateway", "switched_on": True, "mode_code": 1,
+        })
+        # The raw code stays visible when it has no name.
+        odd = api.SmartLoadState(None, 2)
+        self.assertEqual(api.smart_load_mode_attributes(load, odd)["mode_code"], 2)
+        self.assertIsNone(api.smart_load_mode_attributes(load, odd)["switched_on"])
+
+    def test_listed_loads_keep_every_entity_kind(self):
+        # Setup removes smart load entities mySigen no longer lists by their
+        # unique ID prefix, so the mode sensor must count as listed too.
+        loads = api.parse_smart_loads(LIST, KINDS)
+        keys = api.smart_load_unique_keys(loads)
+        for load_id in (134388, 134389):
+            self.assertIn(f"smart_load_{load_id}", keys)
+            self.assertIn(f"smart_load_mode_{load_id}", keys)
+            self.assertIn(f"smart_load_mode_select_{load_id}", keys)
+        self.assertEqual(api.smart_load_unique_keys(()), set())
+
+
+class TestReadSchedule(unittest.TestCase):
+    """When the coordinator reads the smart loads' states."""
+
+    LOADS = api.parse_smart_loads(LIST, KINDS)
+
+    def _due(self, *, allow=True, loads=LOADS, watched=(), shown=("entry_smart_load_mode_134388",),
+             now=1000.0, read_at=0.0):
+        return api.smart_load_read_due(
+            allow_control=allow, loads=loads, watched=set(watched), shown=set(shown),
+            now=now, read_at=read_at, interval=600.0,
+        )
+
+    def test_state_read_every_settings_interval_with_control_off(self):
+        self.assertTrue(self._due(allow=False))
+        self.assertFalse(self._due(allow=False, now=1000.0, read_at=500.0))
+        self.assertTrue(self._due(allow=False, now=1100.0, read_at=500.0))
+        # A watched switch does not count while control is off.
+        self.assertFalse(self._due(allow=False, watched=[134388], now=1000.0, read_at=500.0))
+
+    def test_every_poll_while_a_switch_is_watched(self):
+        self.assertTrue(self._due(watched=[134388], now=1000.0, read_at=999.0))
+        self.assertTrue(self._due(watched=[134388], shown=(), now=1000.0, read_at=999.0))
+        # Control on but no switch enabled: the sensor's ten minutes.
+        self.assertFalse(self._due(now=1000.0, read_at=999.0))
+
+    def test_no_read_while_nothing_is_enabled(self):
+        # Both entities start disabled; a plant with loads nobody looks at
+        # makes no extra request.
+        for allow in (True, False):
+            self.assertFalse(self._due(allow=allow, shown=()))
+
+    def test_first_read_is_due_right_after_boot(self):
+        # time.monotonic() counts from host boot, so it can be below the
+        # interval when Home Assistant starts soon after a reboot. The
+        # coordinator starts the timer at -inf, never at 0.
+        self.assertTrue(self._due(allow=False, now=5.0, read_at=float("-inf")))
+        self.assertFalse(self._due(allow=False, now=5.0, read_at=0.0))
+
+    def test_read_soon_makes_the_next_poll_read(self):
+        # After an unconfirmed change the coordinator sets the timer to -inf
+        # (read_settings_soon), so a read is due at once, also with only a
+        # mode sensor or select enabled.
+        self.assertTrue(self._due(now=1000.0, read_at=float("-inf")))
+
+    def test_no_loads_no_read(self):
+        for allow in (True, False):
+            self.assertFalse(self._due(allow=allow, loads=(), watched=[1]))
+
+
 class _ParamsHttp(_Http):
     """Also records the query string and whether a body was sent."""
 
@@ -115,6 +201,18 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(http.sent[1:], [
             ("PATCH", "switch", {"stationId": "42", "loadPath": "2", "manualSwitch": "0"}, False),
             ("PATCH", "switch", {"stationId": "42", "loadPath": "2", "manualSwitch": "1"}, False),
+        ])
+
+    async def test_mode_write_request(self):
+        # As the web app sent it: the "device/" prefix, not "third-party-device/".
+        self.assertEqual(api._SMART_LOAD_MODE_PATH, "device/tp-device/smart-loads/control-mode")
+        ok = _Response(200, {"code": 0, "msg": "success", "data": True})
+        http, client = self._client(ok, ok)
+        await client.async_set_smart_load_mode(1, True)
+        await client.async_set_smart_load_mode(1, False)
+        self.assertEqual(http.sent[1:], [
+            ("PATCH", "control-mode", {"stationId": "42", "loadPath": "1", "controlMode": "1"}, False),
+            ("PATCH", "control-mode", {"stationId": "42", "loadPath": "1", "controlMode": "0"}, False),
         ])
 
     async def test_list_and_states_are_read_with_the_station(self):
@@ -174,6 +272,9 @@ class _LoadSession(_Session):
 
     async def async_set_smart_load(self, path, on):
         await self._write("load", path, on)
+
+    async def async_set_smart_load_mode(self, path, manual):
+        await self._write("mode", path, manual)
 
 
 class _LoadCoordinator(_Coordinator):
@@ -282,6 +383,81 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
             with self.assertRaisesRegex(control.CommandRefused, text):
                 await self._switch(coordinator)
             self.assertEqual(coordinator.session.writes, [], text)
+
+
+class TestModeRules(unittest.IsolatedAsyncioTestCase):
+    """Choosing a smart load's control mode from Home Assistant."""
+
+    async def _choose(self, coordinator, manual=True, sleep=_no_sleep):
+        return await control.async_set_smart_load_mode(
+            coordinator, load_id=OTHER, manual=manual, sleep=sleep)
+
+    async def test_select_sets_manual_and_confirms(self):
+        waits = []
+
+        async def sleep(seconds):
+            waits.append(seconds)
+
+        coordinator = _LoadCoordinator([states(False, mode=0), states(False, mode=1)])
+        self.assertEqual(await self._choose(coordinator, sleep=sleep), "confirmed")
+        self.assertEqual(coordinator.session.writes, [("mode", 2, True)])
+        self.assertEqual(coordinator.settings, [("smart_load_mode", "confirmed")])
+        self.assertEqual(coordinator.published, [(OTHER, api.SmartLoadState(False, 1))])
+        self.assertEqual(waits, [3.0])
+
+        coordinator = _LoadCoordinator([states(True, mode=1), states(True, mode=0)])
+        self.assertEqual(await self._choose(coordinator, manual=False), "confirmed")
+        self.assertEqual(coordinator.session.writes, [("mode", 2, False)])
+
+    async def test_select_already_in_mode_sends_nothing(self):
+        coordinator = _LoadCoordinator([states(True, mode=1)])
+        self.assertEqual(await self._choose(coordinator), "confirmed")
+        self.assertEqual(coordinator.session.writes, [])
+
+    async def test_select_refuses_unknown_mode(self):
+        # A mode this add-on has no name for (for example Sigen AI's) is
+        # left alone rather than overwritten.
+        for mode in (2, None):
+            coordinator = _LoadCoordinator([states(True, mode=mode)])
+            with self.assertRaisesRegex(control.CommandRefused, "mode"):
+                await self._choose(coordinator)
+            self.assertEqual(coordinator.session.writes, [])
+            self.assertEqual(coordinator.settings, [("smart_load_mode", "refused")])
+
+    async def test_select_not_confirmed_or_unknown(self):
+        coordinator = _LoadCoordinator(
+            [states(False, mode=0), states(False, mode=0), states(False, mode=0)])
+        with self.assertRaises(control.CommandNotConfirmed):
+            await self._choose(coordinator)
+        self.assertEqual(coordinator.session.writes, [("mode", 2, True)])
+
+        coordinator = _LoadCoordinator(
+            [states(False, mode=0)],
+            write_error=api.MySigenUnknownOutcome("smart load mode: TimeoutError"))
+        with self.assertRaises(control.CommandUnknown):
+            await self._choose(coordinator)
+        self.assertEqual(coordinator.session.writes, [("mode", 2, True)])
+
+    async def test_select_refusals_send_nothing(self):
+        cases = [
+            (dict(allow=False), [states(False, mode=0)], "switched off"),
+            (dict(loads=()), [states(False, mode=0)], "no longer lists"),
+            (dict(), [{}], "did not report the current setting"),
+        ]
+        for coordinator_args, answers, text in cases:
+            coordinator = _LoadCoordinator(answers, **coordinator_args)
+            with self.assertRaisesRegex(control.CommandRefused, text):
+                await self._choose(coordinator)
+            self.assertEqual(coordinator.session.writes, [], text)
+
+    async def test_switch_refusal_names_mode_select(self):
+        coordinator = _LoadCoordinator([states(True, mode=0)])
+        with self.assertRaisesRegex(control.CommandRefused, "control mode select"):
+            await control.async_set_smart_load(
+                coordinator, load_id=OTHER, on=True, sleep=_no_sleep)
+
+    def test_the_mode_select_takes_no_remote_ems_check(self):
+        self.assertNotIn("remote_ems", control.async_set_smart_load_mode.__code__.co_varnames)
 
 
 class TestNoRemoteEmsRule(unittest.IsolatedAsyncioTestCase):

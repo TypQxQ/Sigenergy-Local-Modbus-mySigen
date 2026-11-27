@@ -281,6 +281,13 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Huidige batterijboostgrens AC-lader (mySigen)"
+      },
+      "smart_load_mode": {
+        "name": "Slimme verbruiker {load} huidige besturing (mySigen)",
+        "state": {
+          "auto": "Automatisch",
+          "manual": "Handmatig"
+        }
       }
     },
     "number": {
@@ -352,6 +359,13 @@
           "fast_charging": "Nu laden op vol vermogen",
           "solar_surplus": "Alleen laden met zonne-overschot",
           "sigen_ai": "Sigen AI laten beslissen"
+        }
+      },
+      "smart_load_mode_select": {
+        "name": "Slimme verbruiker {load} besturingsmodus (mySigen)",
+        "state": {
+          "auto": "Automatisch",
+          "manual": "Handmatig"
         }
       }
     },
