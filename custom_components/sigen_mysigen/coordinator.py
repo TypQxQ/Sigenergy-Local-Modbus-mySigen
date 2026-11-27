@@ -183,7 +183,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         # is watched. By entity, so a load's sensor and select each count.
         self.shown_smart_load_modes: set[str] = set()
         # When the smart loads' states were last read (time.monotonic()).
-        self._smart_load_read_at = 0.0
+        self._smart_load_read_at = float("-inf")
         # Storm Watch; read only where mySigen shows it for the station. None
         # until read and after a failed read.
         self.storm_watch: StormWatch | None = None
@@ -282,6 +282,7 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
         """Read the settings again at the next poll."""
         self._settings_read_at = float("-inf")
         self._charger_read_at = float("-inf")
+        self._smart_load_read_at = float("-inf")
 
     def publish_operating_mode(self, code: int) -> None:
         self.operating_mode = code

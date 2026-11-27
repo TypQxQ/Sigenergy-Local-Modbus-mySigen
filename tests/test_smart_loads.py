@@ -155,6 +155,19 @@ class TestReadSchedule(unittest.TestCase):
         for allow in (True, False):
             self.assertFalse(self._due(allow=allow, shown=()))
 
+    def test_first_read_is_due_right_after_boot(self):
+        # time.monotonic() counts from host boot, so it can be below the
+        # interval when Home Assistant starts soon after a reboot. The
+        # coordinator starts the timer at -inf, never at 0.
+        self.assertTrue(self._due(allow=False, now=5.0, read_at=float("-inf")))
+        self.assertFalse(self._due(allow=False, now=5.0, read_at=0.0))
+
+    def test_read_soon_makes_the_next_poll_read(self):
+        # After an unconfirmed change the coordinator sets the timer to -inf
+        # (read_settings_soon), so a read is due at once, also with only a
+        # mode sensor or select enabled.
+        self.assertTrue(self._due(now=1000.0, read_at=float("-inf")))
+
     def test_no_loads_no_read(self):
         for allow in (True, False):
             self.assertFalse(self._due(allow=allow, loads=(), watched=[1]))
