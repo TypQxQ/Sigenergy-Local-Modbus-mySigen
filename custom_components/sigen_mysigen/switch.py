@@ -14,6 +14,7 @@ from .api import OPERATING_MODES, SmartLoad
 from .control import (
     async_set_ac_battery_boost,
     async_set_battery_export,
+    async_set_dc_battery_boost,
     async_set_off_grid,
     async_set_peak_shaving,
     async_set_smart_load,
@@ -38,7 +39,10 @@ async def async_setup_entry(
     if coordinator.allow_grid_disconnect:
         entities.append(GridDisconnect(coordinator, "grid_disconnect"))
     if coordinator.has_dc_charger:
-        entities.append(AllowV2x(coordinator, "dc_charger_allow_v2x"))
+        entities += [
+            AllowV2x(coordinator, "dc_charger_allow_v2x"),
+            AllowDcBatteryBoost(coordinator, "dc_charger_allow_battery_boost"),
+        ]
     if coordinator.has_ac_charger:
         entities.append(AllowAcBatteryBoost(coordinator, "ac_charger_allow_battery_boost"))
     settings = coordinator.ai_settings
@@ -167,6 +171,33 @@ class AllowV2x(MySigenEntity, SwitchEntity):
     async def _async_set(self, enabled: bool) -> None:
         await async_run_setting(
             self.coordinator, async_set_v2x_enabled(self.coordinator, enabled=enabled)
+        )
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self._async_set(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self._async_set(False)
+
+
+class AllowDcBatteryBoost(MySigenEntity, SwitchEntity):
+    """On: the home battery helps charge the car, down to the cut-off level."""
+
+    _attr_entity_registry_enabled_default = False
+
+    @property
+    def available(self) -> bool:
+        mode = self.coordinator.dc_charge_mode
+        return super().available and mode is not None and mode.boost is not None
+
+    @property
+    def is_on(self) -> bool | None:
+        mode = self.coordinator.dc_charge_mode
+        return mode.boost if mode is not None else None
+
+    async def _async_set(self, enabled: bool) -> None:
+        await async_run_setting(
+            self.coordinator, async_set_dc_battery_boost(self.coordinator, enabled=enabled)
         )
 
     async def async_turn_on(self, **kwargs: Any) -> None:

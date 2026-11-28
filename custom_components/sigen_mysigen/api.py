@@ -100,8 +100,8 @@ _GRID_CURRENT_PATH = "device/energy-profile/parallel/off/grid/{station_id}"
 _GRID_CURRENT_WRITE_PATH = "device/energy-profile/parallel/off/grid"
 _GRID_STATUS_PATH = "device/gateway/gateway-status"
 _GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
-# DC charger (step E). Taken from the solidfox clients; not yet read on a
-# system with a charger.
+# DC charger (step E). Taken from the solidfox clients and read on real
+# chargers, battery boost included.
 _DC_MODE_PATH = "device/charge/mode/dc"
 _DC_SETTING_PATH = "device/dcevse/charge/setting"
 # AC charger. The mode answer and its codes were read on two plants with a
@@ -114,6 +114,8 @@ _AC_SUPPORT_PATH = "device/charge/mode/support/mode"
 _AC_LIVE_PATH = "device/acevse/charge/realtime"
 _DC_V2X_PATH = "device/station-v2x/select"
 _DC_V2X_WRITE_PATH = "device/station-v2x/open-close"
+# The levels the mySigen app allows on its charger pages, for the station; it
+# limits the battery boost cut-off of both chargers to this range.
 _SOC_RANGE_PATH = "device/charge/mode/soc/range"
 # Smart loads on the SigenStor's and the Gateway's own ports. Captured from
 # the mySigen web app on a real plant while a load was switched off and on.
@@ -536,6 +538,57 @@ def _level_range(low: Any, high: Any, default: tuple[int, int]) -> tuple[int, in
     if not 0 <= low_value < high_value <= 100:
         return default
     return low_value, high_value
+
+
+def _flag(value: Any) -> bool | None:
+    """A switch mySigen gives as true/false or 1/0; None for anything else."""
+    if isinstance(value, bool):
+        return value
+    return {0: False, 1: True}.get(_int_or_none(value))
+
+
+@dataclass(frozen=True)
+class _ChargerSettings:
+    """The charging settings object the app shares between the AC and DC charger.
+
+    `device/charge/mode/ac` and `device/charge/mode/dc` answer, and take, the
+    same object; the mySigen app reads and writes both in one function. The
+    app ignores the object's `socLowerLimit` and `socUpperLimit`: it limits
+    the battery boost cut-off to `device/charge/mode/soc/range` instead.
+    """
+
+    raw: dict[str, Any]
+
+    @property
+    def boost(self) -> bool | None:
+        """Battery boost: the home battery helps charge the car."""
+        return _flag(self.raw.get("enableFromPack"))
+
+    @property
+    def boost_cutoff(self) -> int | None:
+        """The home battery level at which battery boost stops."""
+        value = self.raw.get("cutoffSocFromPack")
+        if isinstance(value, bool):
+            return None
+        try:
+            level = round(float(value))
+        except (TypeError, ValueError):
+            return None
+        return level if 0 <= level <= 100 else None
+
+    def _set_boost(
+        self, body: dict[str, Any], boost: bool | None, boost_cutoff: int | None
+    ) -> None:
+        if boost is not None:
+            # In the form mySigen gave it.
+            body["enableFromPack"] = (
+                int(boost) if isinstance(self.raw.get("enableFromPack"), int)
+                and not isinstance(self.raw.get("enableFromPack"), bool) else boost
+            )
+        if boost_cutoff is not None:
+            body["cutoffSocFromPack"] = float(boost_cutoff)
+
+
 # Fields the app sends back with a mode change; written as they were read.
 _DC_MODE_FIELDS = (
     "enableFromPack", "cutoffSocFromPack", "allowsDischargePower", "vehicleDischargeCutoffSoc",
@@ -543,10 +596,8 @@ _DC_MODE_FIELDS = (
 
 
 @dataclass(frozen=True)
-class DcChargeMode:
-    """The DC charger's mode and the settings that go with it."""
-
-    raw: dict[str, Any]
+class DcChargeMode(_ChargerSettings):
+    """The DC charger's mode, battery boost and V2X settings."""
 
     @property
     def mode(self) -> str | None:
@@ -570,13 +621,20 @@ class DcChargeMode:
             DEFAULT_FLOOR_RANGE,
         )
 
-    def body(self, mode: str | None = None, discharge_floor: int | None = None) -> dict[str, Any]:
+    def body(
+        self,
+        mode: str | None = None,
+        discharge_floor: int | None = None,
+        boost: bool | None = None,
+        boost_cutoff: int | None = None,
+    ) -> dict[str, Any]:
         """A change: the mode code plus the read fields, one of them changed."""
         body: dict[str, Any] = {
             key: self.raw[key] for key in _DC_MODE_FIELDS if self.raw.get(key) is not None
         }
         if discharge_floor is not None:
             body["vehicleDischargeCutoffSoc"] = int(discharge_floor)
+        self._set_boost(body, boost, boost_cutoff)
         body["chargeMode"] = DC_CHARGE_MODES[mode] if mode else self.raw["chargeMode"]
         return body
 
@@ -628,47 +686,14 @@ _AC_MODE_FIELDS = (
 )
 
 
-def _flag(value: Any) -> bool | None:
-    """A switch mySigen gives as true/false or 1/0; None for anything else."""
-    if isinstance(value, bool):
-        return value
-    return {0: False, 1: True}.get(_int_or_none(value))
-
-
 @dataclass(frozen=True)
-class AcChargeMode:
+class AcChargeMode(_ChargerSettings):
     """The AC charger's mode and battery boost, from `device/charge/mode/ac`."""
-
-    raw: dict[str, Any]
 
     @property
     def mode(self) -> str | None:
         code = _int_or_none(self.raw.get("chargeMode"))
         return next((name for name, value in AC_CHARGE_MODES.items() if value == code), None)
-
-    @property
-    def boost(self) -> bool | None:
-        """Battery boost: the home battery helps charge the car."""
-        return _flag(self.raw.get("enableFromPack"))
-
-    @property
-    def boost_cutoff(self) -> int | None:
-        """The home battery level at which battery boost stops."""
-        value = self.raw.get("cutoffSocFromPack")
-        if isinstance(value, bool):
-            return None
-        try:
-            level = round(float(value))
-        except (TypeError, ValueError):
-            return None
-        return level if 0 <= level <= 100 else None
-
-    @property
-    def cutoff_range(self) -> tuple[int, int]:
-        """The levels the cut-off may take; 0 to 100 % when not reported."""
-        return _level_range(
-            self.raw.get("socLowerLimit"), self.raw.get("socUpperLimit"), DEFAULT_LEVEL_RANGE
-        )
 
     def body(
         self,
@@ -680,14 +705,7 @@ class AcChargeMode:
         body = {key: self.raw[key] for key in _AC_MODE_FIELDS if key in self.raw}
         if mode is not None:
             body["chargeMode"] = AC_CHARGE_MODES[mode]
-        if boost is not None:
-            # In the form mySigen gave it.
-            body["enableFromPack"] = (
-                int(boost) if isinstance(self.raw.get("enableFromPack"), int)
-                and not isinstance(self.raw.get("enableFromPack"), bool) else boost
-            )
-        if boost_cutoff is not None:
-            body["cutoffSocFromPack"] = float(boost_cutoff)
+        self._set_boost(body, boost, boost_cutoff)
         return body
 
 

@@ -233,6 +233,8 @@ async def async_get_config_entry_diagnostics(
         "mode": None if dc_mode is None else dc_mode.mode,
         "mode_fields": None if dc_mode is None else sorted(dc_mode.raw),
         "discharge_floor": None if dc_mode is None else dc_mode.discharge_floor,
+        "battery_boost": None if dc_mode is None else dc_mode.boost,
+        "boost_cutoff": None if dc_mode is None else dc_mode.boost_cutoff,
         "stop_level": None if dc_setting is None else dc_setting.stop_level,
         "allowed_power_kw": None if dc_setting is None else dc_setting.allowed_power,
         "v2x_enabled": coordinator.v2x_enabled,

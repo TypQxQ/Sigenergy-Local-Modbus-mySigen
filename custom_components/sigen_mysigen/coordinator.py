@@ -390,8 +390,9 @@ class MySigenCoordinator(DataUpdateCoordinator[MySigenData]):
                     ("dc_charge_setting", self.session.async_dc_charge_setting),
                     ("v2x_enabled", self.session.async_v2x_enabled),
                 ]
-                if self.soc_range is None:
-                    reads.append(("soc_range", self.session.async_soc_range))
+            if self.soc_range is None:
+                # The charge limit's and both battery boost cut-offs' range.
+                reads.append(("soc_range", self.session.async_soc_range))
             if self.has_ac_charger:
                 reads += [
                     ("ac_charge_mode", self.session.async_ac_charge_mode),
