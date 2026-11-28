@@ -35,7 +35,7 @@
 
 | | Feature | What is missing |
 | :-: | --- | --- |
-| 🚗 | **DC charger** | Charging mode is confirmed on one charger and V2X reads correctly; the charge limit, V2X minimum and V2X switch still need a charger |
+| 🚗 | **DC charger** | Charging mode, battery boost and its cut-off are confirmed on one charger and V2X reads correctly; the charge limit, V2X minimum and V2X switch still need a charger |
 | 🔋 | **AC charger** | Charging mode, battery boost, cut-off and session energy read correctly on two chargers; no change has been sent from Home Assistant yet |
 | 💡 | **Smart loads** | On/off switches for SigenStor and Gateway ports; switched on one plant only |
 | 🎯 | **Sigen AI strategy preference** | Profit Max, Balanced Energy or Self-use First; tried on one plant only |

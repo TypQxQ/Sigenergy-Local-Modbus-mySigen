@@ -124,6 +124,9 @@
       },
       "ac_charger_battery_boost": {
         "name": "Boost batteria del caricatore AC (mySigen)"
+      },
+      "dc_charger_battery_boost": {
+        "name": "Boost batteria del caricatore DC (mySigen)"
       }
     },
     "sensor": {
@@ -281,6 +284,9 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Limite attuale boost batteria del caricatore AC (mySigen)"
+      },
+      "dc_charger_boost_cutoff": {
+        "name": "Limite attuale boost batteria del caricatore DC (mySigen)"
       }
     },
     "number": {
@@ -304,6 +310,9 @@
       },
       "ac_charger_boost_cutoff_level": {
         "name": "Limite del boost batteria del caricatore AC (mySigen)"
+      },
+      "dc_charger_boost_cutoff_level": {
+        "name": "Limite del boost batteria del caricatore DC (mySigen)"
       }
     },
     "select": {
@@ -384,6 +393,9 @@
       },
       "ac_charger_allow_battery_boost": {
         "name": "Consenti boost batteria del caricatore AC (mySigen)"
+      },
+      "dc_charger_allow_battery_boost": {
+        "name": "Consenti boost batteria del caricatore DC (mySigen)"
       }
     }
   },

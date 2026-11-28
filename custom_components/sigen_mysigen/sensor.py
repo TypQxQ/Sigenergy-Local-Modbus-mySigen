@@ -174,6 +174,7 @@ async def async_setup_entry(
         entities += [
             DcChargeModeInUse(coordinator, "dc_charger_mode"),
             DcStopLevel(coordinator, "dc_charger_stop_level"),
+            DcBoostCutoff(coordinator, "dc_charger_boost_cutoff"),
         ]
     if coordinator.has_ac_charger:
         entities += [
@@ -340,6 +341,17 @@ class DcStopLevel(MySigenEntity, SensorEntity):
     def native_value(self) -> int | None:
         setting = self.coordinator.dc_charge_setting
         return setting.stop_level if setting is not None else None
+
+
+class DcBoostCutoff(MySigenEntity, SensorEntity):
+    """The home battery level at which DC battery boost stops."""
+
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    @property
+    def native_value(self) -> int | None:
+        mode = self.coordinator.dc_charge_mode
+        return mode.boost_cutoff if mode is not None else None
 
 
 class AcChargeModeInUse(MySigenEntity, SensorEntity):

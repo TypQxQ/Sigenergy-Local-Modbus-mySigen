@@ -124,6 +124,9 @@
       },
       "ac_charger_battery_boost": {
         "name": "AC battery boost (mySigen)"
+      },
+      "dc_charger_battery_boost": {
+        "name": "DC battery boost (mySigen)"
       }
     },
     "sensor": {
@@ -281,6 +284,9 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "Current AC battery boost cut-off (mySigen)"
+      },
+      "dc_charger_boost_cutoff": {
+        "name": "Current DC battery boost cut-off (mySigen)"
       }
     },
     "number": {
@@ -304,6 +310,9 @@
       },
       "ac_charger_boost_cutoff_level": {
         "name": "AC battery boost cut-off (mySigen)"
+      },
+      "dc_charger_boost_cutoff_level": {
+        "name": "DC battery boost cut-off (mySigen)"
       }
     },
     "select": {
@@ -384,6 +393,9 @@
       },
       "ac_charger_allow_battery_boost": {
         "name": "Allow AC battery boost (mySigen)"
+      },
+      "dc_charger_allow_battery_boost": {
+        "name": "Allow DC battery boost (mySigen)"
       }
     }
   },

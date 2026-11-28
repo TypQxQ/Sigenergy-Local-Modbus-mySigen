@@ -1532,6 +1532,20 @@ _AC_CHARGER: dict[str, dict[str, str]] = {
 for _language, _extra in _AC_CHARGER.items():
     LANGUAGES[_language].update(_extra)
 
+# DC charger battery boost: the same settings as the AC charger's, so the
+# same words with "AC" changed to "DC".
+KEYS.update({
+    "entity.sensor.dc_charger_boost_cutoff.name": "n_dc_cutoff_now",
+    "entity.binary_sensor.dc_charger_battery_boost.name": "n_dc_boost",
+    "entity.switch.dc_charger_allow_battery_boost.name": "n_dc_allow_boost",
+    "entity.number.dc_charger_boost_cutoff_level.name": "n_dc_cutoff",
+})
+for _language, _extra in _AC_CHARGER.items():
+    LANGUAGES[_language].update({
+        f"n_dc_{_name}": _extra[f"n_ac_{_name}"].replace("AC", "DC")
+        for _name in ("cutoff_now", "boost", "allow_boost", "cutoff")
+    })
+
 # Operating modes that can't be chosen but are shown while the plant runs in
 # them (issue 32). Remote EMS and VPP follow Sigenergy ESS's own wording.
 # Only English and Swedish have been checked by a native speaker.

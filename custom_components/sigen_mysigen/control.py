@@ -571,6 +571,12 @@ def dc_floor_range(coordinator: Any) -> tuple[int, int]:
     return mode.floor_range if mode is not None else DEFAULT_FLOOR_RANGE
 
 
+def dc_cutoff_range(coordinator: Any) -> tuple[int, int]:
+    """The levels the DC battery boost cut-off may take, from the last answer."""
+    mode = coordinator.dc_charge_mode
+    return mode.cutoff_range if mode is not None else DEFAULT_LEVEL_RANGE
+
+
 async def async_set_dc_charge_mode(
     coordinator: Any,
     *,
@@ -615,6 +621,70 @@ async def async_set_dc_discharge_floor(
         sleep=sleep,
         # The charger's own limits, from the answer just read.
         before=lambda current: _check_level(level, current.floor_range),
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
+    )
+
+
+def _check_boost_reported(current: Any) -> None:
+    if current.boost is None:
+        raise CommandRefused(
+            "mySigen did not report whether battery boost is on. Nothing was sent."
+        )
+
+
+def _check_cutoff(level: int, current: Any) -> None:
+    low, high = current.cutoff_range
+    if not low <= level <= high:
+        raise CommandRefused(f"The battery boost cut-off must be {low} to {high} %.")
+
+
+async def async_set_dc_battery_boost(
+    coordinator: Any,
+    *,
+    enabled: bool,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Switch DC battery boost on or off: the home battery helps charge the car."""
+    _check_charger(coordinator)
+    return await _change_setting(
+        coordinator,
+        "dc_battery_boost",
+        read=coordinator.session.async_dc_charge_mode,
+        send=lambda current: coordinator.session.async_set_dc_charge_mode(
+            current.body(boost=enabled)
+        ),
+        expected=lambda current: current.boost is enabled,
+        publish=coordinator.publish_dc_charge_mode,
+        sleep=sleep,
+        before=_check_boost_reported,
+        # A charger confirms a change later than the plant.
+        settle=True,
+        readbacks=3,
+    )
+
+
+async def async_set_dc_boost_cutoff(
+    coordinator: Any,
+    *,
+    level: int,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+) -> str:
+    """Set the home battery level at which DC battery boost stops."""
+    _check_charger(coordinator)
+    return await _change_setting(
+        coordinator,
+        "dc_boost_cutoff",
+        read=coordinator.session.async_dc_charge_mode,
+        send=lambda current: coordinator.session.async_set_dc_charge_mode(
+            current.body(boost_cutoff=level)
+        ),
+        expected=lambda current: current.boost_cutoff == level,
+        publish=coordinator.publish_dc_charge_mode,
+        sleep=sleep,
+        # The charger's own limits, from the answer just read.
+        before=lambda current: _check_cutoff(level, current),
         # A charger confirms a change later than the plant.
         settle=True,
         readbacks=3,
@@ -737,17 +807,10 @@ async def async_set_ac_battery_boost(
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Switch battery boost on or off: the home battery helps charge the car."""
-
-    def before(current: Any) -> None:
-        if current.boost is None:
-            raise CommandRefused(
-                "mySigen did not report whether battery boost is on. Nothing was sent."
-            )
-
     return await _change_ac(
         coordinator, "ac_battery_boost",
         boost=enabled, expected=lambda current: current.boost is enabled,
-        sleep=sleep, before=before,
+        sleep=sleep, before=_check_boost_reported,
     )
 
 
@@ -758,16 +821,10 @@ async def async_set_ac_boost_cutoff(
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Set the home battery level at which battery boost stops."""
-
-    def before(current: Any) -> None:
-        low, high = current.cutoff_range
-        if not low <= level <= high:
-            raise CommandRefused(f"The battery boost cut-off must be {low} to {high} %.")
-
     return await _change_ac(
         coordinator, "ac_boost_cutoff",
         boost_cutoff=level, expected=lambda current: current.boost_cutoff == level,
-        sleep=sleep, before=before,
+        sleep=sleep, before=lambda current: _check_cutoff(level, current),
     )
 
 

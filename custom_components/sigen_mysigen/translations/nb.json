@@ -124,6 +124,9 @@
       },
       "ac_charger_battery_boost": {
         "name": "AC-laderens batteriboost (mySigen)"
+      },
+      "dc_charger_battery_boost": {
+        "name": "DC-laderens batteriboost (mySigen)"
       }
     },
     "sensor": {
@@ -281,6 +284,9 @@
       },
       "ac_charger_boost_cutoff": {
         "name": "AC-laderens nåværende grense for batteriboost (mySigen)"
+      },
+      "dc_charger_boost_cutoff": {
+        "name": "DC-laderens nåværende grense for batteriboost (mySigen)"
       }
     },
     "number": {
@@ -304,6 +310,9 @@
       },
       "ac_charger_boost_cutoff_level": {
         "name": "AC-laderens grense for batteriboost (mySigen)"
+      },
+      "dc_charger_boost_cutoff_level": {
+        "name": "DC-laderens grense for batteriboost (mySigen)"
       }
     },
     "select": {
@@ -384,6 +393,9 @@
       },
       "ac_charger_allow_battery_boost": {
         "name": "Tillat batteriboost for AC-laderen (mySigen)"
+      },
+      "dc_charger_allow_battery_boost": {
+        "name": "Tillat batteriboost for DC-laderen (mySigen)"
       }
     }
   },

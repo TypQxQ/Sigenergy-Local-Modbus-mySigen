@@ -19,7 +19,10 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     entities: list[BinarySensorEntity] = [BatteryOverrideActive(coordinator, "battery_override")]
     if coordinator.has_dc_charger:
-        entities.append(V2xAllowed(coordinator, "dc_charger_v2x"))
+        entities += [
+            V2xAllowed(coordinator, "dc_charger_v2x"),
+            DcBatteryBoost(coordinator, "dc_charger_battery_boost"),
+        ]
     if coordinator.has_ac_charger:
         entities.append(AcBatteryBoost(coordinator, "ac_charger_battery_boost"))
     if coordinator.session.storm_watch_shown:
@@ -84,6 +87,15 @@ class StormWatchActive(MySigenEntity, BinarySensorEntity):
             "end": when(first.end) if first else None,
             "charged_full": watch.charged_full,
         }
+
+
+class DcBatteryBoost(MySigenEntity, BinarySensorEntity):
+    """On when the home battery helps charge the car through the DC charger."""
+
+    @property
+    def is_on(self) -> bool | None:
+        mode = self.coordinator.dc_charge_mode
+        return mode.boost if mode is not None else None
 
 
 class AcBatteryBoost(MySigenEntity, BinarySensorEntity):
