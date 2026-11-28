@@ -571,10 +571,13 @@ def dc_floor_range(coordinator: Any) -> tuple[int, int]:
     return mode.floor_range if mode is not None else DEFAULT_FLOOR_RANGE
 
 
-def dc_cutoff_range(coordinator: Any) -> tuple[int, int]:
-    """The levels the DC battery boost cut-off may take, from the last answer."""
-    mode = coordinator.dc_charge_mode
-    return mode.cutoff_range if mode is not None else DEFAULT_LEVEL_RANGE
+def boost_cutoff_range(coordinator: Any) -> tuple[int, int]:
+    """The levels a battery boost cut-off may take; 0 to 100 % when not reported.
+
+    The mySigen app limits both chargers' cut-off to the station's
+    `device/charge/mode/soc/range`, not to limits in the mode answer.
+    """
+    return coordinator.soc_range or DEFAULT_LEVEL_RANGE
 
 
 async def async_set_dc_charge_mode(
@@ -634,8 +637,8 @@ def _check_boost_reported(current: Any) -> None:
         )
 
 
-def _check_cutoff(level: int, current: Any) -> None:
-    low, high = current.cutoff_range
+def _check_cutoff(level: int, coordinator: Any) -> None:
+    low, high = boost_cutoff_range(coordinator)
     if not low <= level <= high:
         raise CommandRefused(f"The battery boost cut-off must be {low} to {high} %.")
 
@@ -673,6 +676,7 @@ async def async_set_dc_boost_cutoff(
 ) -> str:
     """Set the home battery level at which DC battery boost stops."""
     _check_charger(coordinator)
+    _check_cutoff(level, coordinator)
     return await _change_setting(
         coordinator,
         "dc_boost_cutoff",
@@ -683,8 +687,6 @@ async def async_set_dc_boost_cutoff(
         expected=lambda current: current.boost_cutoff == level,
         publish=coordinator.publish_dc_charge_mode,
         sleep=sleep,
-        # The charger's own limits, from the answer just read.
-        before=lambda current: _check_cutoff(level, current),
         # A charger confirms a change later than the plant.
         settle=True,
         readbacks=3,
@@ -739,12 +741,6 @@ async def async_set_v2x_enabled(
 def _check_ac_charger(coordinator: Any) -> None:
     if not coordinator.has_ac_charger:
         raise CommandRefused("mySigen lists no AC charger for this plant.")
-
-
-def ac_cutoff_range(coordinator: Any) -> tuple[int, int]:
-    """The levels the battery boost cut-off may take, from the last answer."""
-    mode = coordinator.ac_charge_mode
-    return mode.cutoff_range if mode is not None else DEFAULT_LEVEL_RANGE
 
 
 async def _change_ac(
@@ -821,10 +817,12 @@ async def async_set_ac_boost_cutoff(
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> str:
     """Set the home battery level at which battery boost stops."""
+    _check_ac_charger(coordinator)
+    _check_cutoff(level, coordinator)
     return await _change_ac(
         coordinator, "ac_boost_cutoff",
         boost_cutoff=level, expected=lambda current: current.boost_cutoff == level,
-        sleep=sleep, before=lambda current: _check_cutoff(level, current),
+        sleep=sleep,
     )
 
 

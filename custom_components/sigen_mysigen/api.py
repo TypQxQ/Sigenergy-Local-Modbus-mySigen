@@ -100,8 +100,8 @@ _GRID_CURRENT_PATH = "device/energy-profile/parallel/off/grid/{station_id}"
 _GRID_CURRENT_WRITE_PATH = "device/energy-profile/parallel/off/grid"
 _GRID_STATUS_PATH = "device/gateway/gateway-status"
 _GRID_WRITE_PATH = "device/gateway/ongrid-state/update"
-# DC charger (step E). Taken from the solidfox clients; not yet read on a
-# system with a charger.
+# DC charger (step E). Taken from the solidfox clients and read on real
+# chargers, battery boost included.
 _DC_MODE_PATH = "device/charge/mode/dc"
 _DC_SETTING_PATH = "device/dcevse/charge/setting"
 # AC charger. The mode answer and its codes were read on two plants with a
@@ -114,6 +114,8 @@ _AC_SUPPORT_PATH = "device/charge/mode/support/mode"
 _AC_LIVE_PATH = "device/acevse/charge/realtime"
 _DC_V2X_PATH = "device/station-v2x/select"
 _DC_V2X_WRITE_PATH = "device/station-v2x/open-close"
+# The levels the mySigen app allows on its charger pages, for the station; it
+# limits the battery boost cut-off of both chargers to this range.
 _SOC_RANGE_PATH = "device/charge/mode/soc/range"
 # Smart loads on the SigenStor's and the Gateway's own ports. Captured from
 # the mySigen web app on a real plant while a load was switched off and on.
@@ -550,7 +552,9 @@ class _ChargerSettings:
     """The charging settings object the app shares between the AC and DC charger.
 
     `device/charge/mode/ac` and `device/charge/mode/dc` answer, and take, the
-    same object; the mySigen app reads and writes both in one function.
+    same object; the mySigen app reads and writes both in one function. The
+    app ignores the object's `socLowerLimit` and `socUpperLimit`: it limits
+    the battery boost cut-off to `device/charge/mode/soc/range` instead.
     """
 
     raw: dict[str, Any]
@@ -571,13 +575,6 @@ class _ChargerSettings:
         except (TypeError, ValueError):
             return None
         return level if 0 <= level <= 100 else None
-
-    @property
-    def cutoff_range(self) -> tuple[int, int]:
-        """The levels the cut-off may take; 0 to 100 % when not reported."""
-        return _level_range(
-            self.raw.get("socLowerLimit"), self.raw.get("socUpperLimit"), DEFAULT_LEVEL_RANGE
-        )
 
     def _set_boost(
         self, body: dict[str, Any], boost: bool | None, boost_cutoff: int | None

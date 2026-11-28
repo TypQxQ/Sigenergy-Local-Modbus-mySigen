@@ -126,7 +126,7 @@
         "name": "Boost batterie de la borne AC (mySigen)"
       },
       "dc_charger_battery_boost": {
-        "name": "Boost batterie de la borne DC (mySigen)"
+        "name": "Boost batterie DC (mySigen)"
       }
     },
     "sensor": {
@@ -286,7 +286,7 @@
         "name": "Seuil actuel du boost batterie de la borne AC (mySigen)"
       },
       "dc_charger_boost_cutoff": {
-        "name": "Seuil actuel du boost batterie de la borne DC (mySigen)"
+        "name": "Seuil du boost batterie DC actuel (mySigen)"
       }
     },
     "number": {
@@ -312,7 +312,7 @@
         "name": "Seuil du boost batterie de la borne AC (mySigen)"
       },
       "dc_charger_boost_cutoff_level": {
-        "name": "Seuil du boost batterie de la borne DC (mySigen)"
+        "name": "Seuil du boost batterie DC (mySigen)"
       }
     },
     "select": {
@@ -395,7 +395,7 @@
         "name": "Autoriser le boost batterie de la borne AC (mySigen)"
       },
       "dc_charger_allow_battery_boost": {
-        "name": "Autoriser le boost batterie de la borne DC (mySigen)"
+        "name": "Autoriser le boost batterie DC (mySigen)"
       }
     }
   },

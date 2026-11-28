@@ -52,15 +52,10 @@ class TestParsing(unittest.TestCase):
                                         "cutoffSocFromPack": 140})
         self.assertIsNone(odd.boost)
         self.assertIsNone(odd.boost_cutoff)
-        self.assertEqual(odd.cutoff_range, (0, 100))
         bare = api.parse_ac_charge_mode({"chargeMode": 1})
         self.assertEqual((bare.boost, bare.boost_cutoff), (None, None))
         as_int = api.parse_ac_charge_mode({"chargeMode": 1, "enableFromPack": 1})
         self.assertTrue(as_int.boost)
-
-    def test_cutoff_range_when_reported(self):
-        mode = api.parse_ac_charge_mode({**mode_answer(0), "socLowerLimit": 20, "socUpperLimit": 90})
-        self.assertEqual(mode.cutoff_range, (20, 90))
 
     def test_supported_modes(self):
         self.assertEqual(api.parse_ac_supported_modes([0, 1, 2]), frozenset({0, 1, 2}))
@@ -162,11 +157,14 @@ class _AcSession(_Session):
 
 
 class _AcCoordinator(_Coordinator):
-    def __init__(self, answers, has_ac=True, supported=frozenset({0, 1, 2}), **kwargs):
+    def __init__(
+        self, answers, has_ac=True, supported=frozenset({0, 1, 2}), soc_range=None, **kwargs
+    ):
         super().__init__({}, **kwargs)
         self.session = _AcSession({"ac": answers}, kwargs.get("write_error"))
         self.has_ac_charger = has_ac
         self.ac_supported_modes = supported
+        self.soc_range = soc_range
 
     def publish_ac_charge_mode(self, value):
         self.published.append(value.raw)
@@ -212,11 +210,18 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         coordinator = _AcCoordinator([mode_answer(0, cutoff=70.0), mode_answer(0, cutoff=40.0)])
         await control.async_set_ac_boost_cutoff(coordinator, level=40, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [("ac", mode_answer(0, cutoff=40.0))])
-        coordinator = _AcCoordinator(
-            [{**mode_answer(0, cutoff=70.0), "socLowerLimit": 20, "socUpperLimit": 90}])
+        # The station's level range limits it, as in the app; nothing is read first.
+        coordinator = _AcCoordinator([mode_answer(0, cutoff=70.0)], soc_range=(20, 90))
         with self.assertRaisesRegex(control.CommandRefused, "20 to 90"):
             await control.async_set_ac_boost_cutoff(coordinator, level=10, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [])
+        # Limits in the mode answer are not used: the app ignores them.
+        coordinator = _AcCoordinator([
+            {**mode_answer(0, cutoff=70.0), "socLowerLimit": 20, "socUpperLimit": 90},
+            {**mode_answer(0, cutoff=10.0), "socLowerLimit": 20, "socUpperLimit": 90},
+        ])
+        await control.async_set_ac_boost_cutoff(coordinator, level=10, sleep=_no_sleep)
+        self.assertEqual(len(coordinator.session.writes), 1)
 
     async def test_a_lost_answer_is_unknown_and_not_sent_again(self):
         coordinator = _AcCoordinator(

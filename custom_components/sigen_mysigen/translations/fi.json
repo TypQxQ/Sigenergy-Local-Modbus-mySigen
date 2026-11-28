@@ -126,7 +126,7 @@
         "name": "AC-laturin akkuboost (mySigen)"
       },
       "dc_charger_battery_boost": {
-        "name": "DC-laturin akkuboost (mySigen)"
+        "name": "DC-akkuboost (mySigen)"
       }
     },
     "sensor": {
@@ -286,7 +286,7 @@
         "name": "AC-laturin nykyinen akkuboostin raja (mySigen)"
       },
       "dc_charger_boost_cutoff": {
-        "name": "DC-laturin nykyinen akkuboostin raja (mySigen)"
+        "name": "Nykyinen DC-akkuboostin raja (mySigen)"
       }
     },
     "number": {
@@ -312,7 +312,7 @@
         "name": "AC-laturin akkuboostin raja (mySigen)"
       },
       "dc_charger_boost_cutoff_level": {
-        "name": "DC-laturin akkuboostin raja (mySigen)"
+        "name": "DC-akkuboostin raja (mySigen)"
       }
     },
     "select": {
@@ -395,7 +395,7 @@
         "name": "Salli AC-laturin akkuboost (mySigen)"
       },
       "dc_charger_allow_battery_boost": {
-        "name": "Salli DC-laturin akkuboost (mySigen)"
+        "name": "Salli DC-akkuboost (mySigen)"
       }
     }
   },

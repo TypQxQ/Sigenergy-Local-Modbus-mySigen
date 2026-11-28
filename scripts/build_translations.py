@@ -1532,18 +1532,41 @@ _AC_CHARGER: dict[str, dict[str, str]] = {
 for _language, _extra in _AC_CHARGER.items():
     LANGUAGES[_language].update(_extra)
 
-# DC charger battery boost: the same settings as the AC charger's, so the
-# same words with "AC" changed to "DC".
+# DC charger battery boost, worded like the other DC charger names in each
+# language. Only English was checked by a native speaker.
 KEYS.update({
     "entity.sensor.dc_charger_boost_cutoff.name": "n_dc_cutoff_now",
     "entity.binary_sensor.dc_charger_battery_boost.name": "n_dc_boost",
     "entity.switch.dc_charger_allow_battery_boost.name": "n_dc_allow_boost",
     "entity.number.dc_charger_boost_cutoff_level.name": "n_dc_cutoff",
 })
-for _language, _extra in _AC_CHARGER.items():
+_DC_BOOST: dict[str, tuple[str, str, str, str]] = {
+    # boost state, current cut-off, allow boost, cut-off.
+    "sv": ("DC-laddarens batteriboost", "DC-laddarens aktuella gräns för batteriboost",
+           "Tillåt batteriboost för DC-laddaren", "DC-laddarens gräns för batteriboost"),
+    "da": ("DC-laderens batteriboost", "DC-laderens aktuelle grænse for batteriboost",
+           "Tillad batteriboost for DC-laderen", "DC-laderens grænse for batteriboost"),
+    "nb": ("DC-laderens batteriboost", "DC-laderens gjeldende grense for batteriboost",
+           "Tillat batteriboost for DC-laderen", "DC-laderens grense for batteriboost"),
+    "de": ("DC-Batterie-Boost", "Aktuelle DC-Batterie-Boost-Grenze",
+           "DC-Batterie-Boost erlauben", "DC-Batterie-Boost-Grenze"),
+    "nl": ("DC-batterijboost", "Huidige DC-batterijboostgrens",
+           "DC-batterijboost toestaan", "DC-batterijboostgrens"),
+    "fr": ("Boost batterie DC", "Seuil du boost batterie DC actuel",
+           "Autoriser le boost batterie DC", "Seuil du boost batterie DC"),
+    "es": ("Impulso de batería DC", "Límite de impulso de batería DC actual",
+           "Permitir impulso de batería DC", "Límite de impulso de batería DC"),
+    "it": ("Boost batteria DC", "Limite boost batteria DC attuale",
+           "Consenti boost batteria DC", "Limite boost batteria DC"),
+    "fi": ("DC-akkuboost", "Nykyinen DC-akkuboostin raja",
+           "Salli DC-akkuboost", "DC-akkuboostin raja"),
+    "pl": ("Wspomaganie z baterii DC", "Bieżący próg wspomagania z baterii DC",
+           "Zezwól na wspomaganie z baterii DC", "Próg wspomagania z baterii DC"),
+}
+for _language, (_boost, _cutoff_now, _allow, _cutoff) in _DC_BOOST.items():
     LANGUAGES[_language].update({
-        f"n_dc_{_name}": _extra[f"n_ac_{_name}"].replace("AC", "DC")
-        for _name in ("cutoff_now", "boost", "allow_boost", "cutoff")
+        "n_dc_boost": _boost, "n_dc_cutoff_now": _cutoff_now,
+        "n_dc_allow_boost": _allow, "n_dc_cutoff": _cutoff,
     })
 
 # Operating modes that can't be chosen but are shown while the plant runs in

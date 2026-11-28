@@ -126,7 +126,7 @@
         "name": "Batterie-Boost der AC-Wallbox (mySigen)"
       },
       "dc_charger_battery_boost": {
-        "name": "Batterie-Boost der DC-Wallbox (mySigen)"
+        "name": "DC-Batterie-Boost (mySigen)"
       }
     },
     "sensor": {
@@ -286,7 +286,7 @@
         "name": "Aktuelle Batterie-Boost-Grenze der AC-Wallbox (mySigen)"
       },
       "dc_charger_boost_cutoff": {
-        "name": "Aktuelle Batterie-Boost-Grenze der DC-Wallbox (mySigen)"
+        "name": "Aktuelle DC-Batterie-Boost-Grenze (mySigen)"
       }
     },
     "number": {
@@ -312,7 +312,7 @@
         "name": "Batterie-Boost-Grenze der AC-Wallbox (mySigen)"
       },
       "dc_charger_boost_cutoff_level": {
-        "name": "Batterie-Boost-Grenze der DC-Wallbox (mySigen)"
+        "name": "DC-Batterie-Boost-Grenze (mySigen)"
       }
     },
     "select": {
@@ -395,7 +395,7 @@
         "name": "Batterie-Boost der AC-Wallbox erlauben (mySigen)"
       },
       "dc_charger_allow_battery_boost": {
-        "name": "Batterie-Boost der DC-Wallbox erlauben (mySigen)"
+        "name": "DC-Batterie-Boost erlauben (mySigen)"
       }
     }
   },

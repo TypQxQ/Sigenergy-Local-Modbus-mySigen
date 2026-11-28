@@ -286,7 +286,7 @@
         "name": "AC-laderens nåværende grense for batteriboost (mySigen)"
       },
       "dc_charger_boost_cutoff": {
-        "name": "DC-laderens nåværende grense for batteriboost (mySigen)"
+        "name": "DC-laderens gjeldende grense for batteriboost (mySigen)"
       }
     },
     "number": {

@@ -171,7 +171,7 @@ When mySigen lists a DC charger, its sensors appear by themselves. With **Allow 
 | 🔋 | Allow DC battery boost | Switch | The home battery helps charge the car, down to the cut-off level |
 | 🔒 | DC battery boost cut-off | Number, % | Battery boost stops when the home battery reaches this level |
 
-Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. They are read every ten minutes, so a change made in the app can take that long to show. A charger confirms a change a few seconds later than the plant, so a change waits up to about ten seconds for it. A charge level outside what the charger allows is refused; where mySigen gives no limits, 0 to 100 % applies to the charge limit and the battery boost cut-off, and 20 to 100 % to the V2X minimum, as in the mySigen app.
+Start and stop charging and the power limits stay in Sigenergy ESS. These settings exist only in mySigen, so they also work while Remote EMS is on. They are read every ten minutes, so a change made in the app can take that long to show. A charger confirms a change a few seconds later than the plant, so a change waits up to about ten seconds for it. A charge level outside what the charger allows is refused; the charge limit and the battery boost cut-off share the levels mySigen allows for the plant. Where mySigen gives no limits, 0 to 100 % applies to those two and 20 to 100 % to the V2X minimum, as in the mySigen app.
 
 > [!NOTE]
 > **Tried on two chargers so far.** Changing the charging mode, battery boost and its cut-off is confirmed on a real charger, and the V2X state reads correctly. The charge limit, V2X minimum and V2X switch have not been confirmed yet. Have a DC charger? [Help test it →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)
@@ -186,7 +186,7 @@ When mySigen lists an AC charger, its sensors appear by themselves. With **Allow
 | 🔋 | Allow AC battery boost | Switch | The home battery helps charge the car, down to the cut-off level |
 | 🔒 | AC battery boost cut-off | Number, % | Battery boost stops when the home battery reaches this level |
 
-Start and stop charging, the power limits and the charger's own readings stay in Sigenergy ESS. Charging mode and battery boost exist only in mySigen, so they also work while Remote EMS is on. The cut-off takes 0 to 100 % unless the charger reports narrower limits. Everything is read every ten minutes, so a change made in the app, and the session energy, can take that long to show.
+Start and stop charging, the power limits and the charger's own readings stay in Sigenergy ESS. Charging mode and battery boost exist only in mySigen, so they also work while Remote EMS is on. The cut-off takes the levels mySigen allows for the plant, as in the app, or 0 to 100 % when it reports none. Everything is read every ten minutes, so a change made in the app, and the session energy, can take that long to show.
 
 > [!NOTE]
 > **Built from two chargers' readings, not tried yet.** The modes and battery boost read correctly on two plants with a Sigen AC Charger. A change is sent the way the app sends it, but no change from Home Assistant has been tried on a real charger. Have an AC charger? Change one thing, check the app, and [tell us →](https://github.com/TypQxQ/Sigenergy-Local-Modbus-mySigen/discussions/38)

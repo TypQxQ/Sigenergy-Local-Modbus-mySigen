@@ -52,10 +52,6 @@ class TestParsing(unittest.TestCase):
         self.assertIsNone(api.parse_dc_charge_mode({**MODE, "enableFromPack": None}).boost)
         self.assertIsNone(api.parse_dc_charge_mode({**MODE, "cutoffSocFromPack": True}).boost_cutoff)
         self.assertEqual(api.parse_dc_charge_mode({**MODE, "cutoffSocFromPack": 35.0}).boost_cutoff, 35)
-        # The cut-off range is the charger's own, 0 to 100 % when not reported.
-        self.assertEqual(mode.cutoff_range, (0, 100))
-        self.assertEqual(api.parse_dc_charge_mode(
-            {**MODE, "socLowerLimit": 10, "socUpperLimit": 90}).cutoff_range, (10, 90))
         # Boost goes back in the form mySigen gave it; the rest unchanged.
         self.assertEqual(mode.body(boost=False), {
             "enableFromPack": False, "cutoffSocFromPack": 20,
@@ -128,6 +124,10 @@ class TestRequests(unittest.IsolatedAsyncioTestCase):
 
 
 class _ChargerSession(_Session):
+    def __init__(self, reads, write_error=None):
+        super().__init__(reads, write_error)
+        self.mode_bodies = []
+
     async def async_dc_charge_mode(self):
         return self._next("mode")
 
@@ -138,7 +138,7 @@ class _ChargerSession(_Session):
         return self._next("v2x")
 
     async def async_set_dc_charge_mode(self, body):
-        self.__dict__.setdefault("mode_bodies", []).append(body)
+        self.mode_bodies.append(body)
         await self._write("mode", body["chargeMode"], body.get("vehicleDischargeCutoffSoc"))
 
     async def async_set_dc_stop_level(self, current, level):
@@ -224,6 +224,26 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(coordinator.session.mode_bodies[0]["cutoffSocFromPack"], 40.0)
         self.assertIs(coordinator.session.mode_bodies[0]["enableFromPack"], True)
 
+    async def test_battery_boost_confirmed_on_a_late_read_back(self):
+        # A charger confirms later than the plant: the third read-back counts.
+        coordinator = _ChargerCoordinator({"mode": [
+            boost_mode(True), boost_mode(True), boost_mode(True), boost_mode(False),
+        ]})
+        result = await control.async_set_dc_battery_boost(
+            coordinator, enabled=False, sleep=_no_sleep)
+        self.assertEqual(result, "confirmed")
+        self.assertEqual(len(coordinator.session.writes), 1)
+        self.assertEqual(coordinator.session.reads["mode"], [])
+
+        coordinator = _ChargerCoordinator({"mode": [
+            boost_mode(True), boost_mode(True), boost_mode(True), boost_mode(True, 40),
+        ]})
+        result = await control.async_set_dc_boost_cutoff(
+            coordinator, level=40, sleep=_no_sleep)
+        self.assertEqual(result, "confirmed")
+        self.assertEqual(len(coordinator.session.writes), 1)
+        self.assertEqual(coordinator.session.reads["mode"], [])
+
     async def test_nothing_sent_when_already_set(self):
         coordinator = _ChargerCoordinator({"v2x": [True]})
         await control.async_set_v2x_enabled(
@@ -244,8 +264,9 @@ class TestRules(unittest.IsolatedAsyncioTestCase):
             (dict(charger=False), "boost", dict(enabled=False), "no DC charger"),
             (dict(allow=False), "boost", dict(enabled=False), "switched off"),
             (dict(charger=False), "cutoff", dict(level=40), "no DC charger"),
-            # The cut-off follows the charger's limits, 0 to 100 % by default.
-            (dict(), "cutoff", dict(level=101), "0 to 100"),
+            # The cut-off follows the station's level range, as the app does.
+            (dict(), "cutoff", dict(level=3), "5 to 100"),
+            (dict(soc_range=None), "cutoff", dict(level=101), "0 to 100"),
         ]
         functions = {
             "mode": control.async_set_dc_charge_mode,
@@ -279,14 +300,16 @@ class TestNoRemoteEmsRule(unittest.IsolatedAsyncioTestCase):
             await control.async_set_dc_battery_boost(coordinator, enabled=True, sleep=_no_sleep)
         self.assertEqual(coordinator.session.writes, [])
 
-    async def test_the_cutoff_uses_the_limits_just_read(self):
+    async def test_the_cutoff_uses_the_station_range_not_the_mode_answer(self):
+        # The app ignores socLowerLimit/socUpperLimit in the mode answer.
         narrow = boost_mode(True, socLowerLimit=10, socUpperLimit=90)
-        coordinator = _ChargerCoordinator({"mode": [narrow]})
-        with self.assertRaisesRegex(control.CommandRefused, "10 to 90"):
-            await control.async_set_dc_boost_cutoff(coordinator, level=5, sleep=_no_sleep)
-        self.assertEqual(coordinator.session.writes, [])
-        coordinator.dc_charge_mode = narrow
-        self.assertEqual(control.dc_cutoff_range(coordinator), (10, 90))
+        coordinator = _ChargerCoordinator(
+            {"mode": [narrow, boost_mode(True, 95, socLowerLimit=10, socUpperLimit=90)]})
+        self.assertEqual(control.boost_cutoff_range(coordinator), (5, 100))
+        await control.async_set_dc_boost_cutoff(coordinator, level=95, sleep=_no_sleep)
+        self.assertEqual(len(coordinator.session.writes), 1)
+        coordinator = _ChargerCoordinator({"mode": [narrow]}, soc_range=None)
+        self.assertEqual(control.boost_cutoff_range(coordinator), (0, 100))
 
     async def test_without_a_reported_range_the_limit_is_0_to_100(self):
         coordinator = _ChargerCoordinator({"setting": [setting(80), setting(95)]}, soc_range=None)

@@ -126,7 +126,7 @@
         "name": "Impulso de batería del cargador AC (mySigen)"
       },
       "dc_charger_battery_boost": {
-        "name": "Impulso de batería del cargador DC (mySigen)"
+        "name": "Impulso de batería DC (mySigen)"
       }
     },
     "sensor": {
@@ -286,7 +286,7 @@
         "name": "Límite actual de impulso de batería, cargador AC (mySigen)"
       },
       "dc_charger_boost_cutoff": {
-        "name": "Límite actual de impulso de batería, cargador DC (mySigen)"
+        "name": "Límite de impulso de batería DC actual (mySigen)"
       }
     },
     "number": {
@@ -312,7 +312,7 @@
         "name": "Límite del impulso de batería del cargador AC (mySigen)"
       },
       "dc_charger_boost_cutoff_level": {
-        "name": "Límite del impulso de batería del cargador DC (mySigen)"
+        "name": "Límite de impulso de batería DC (mySigen)"
       }
     },
     "select": {
@@ -395,7 +395,7 @@
         "name": "Permitir impulso de batería del cargador AC (mySigen)"
       },
       "dc_charger_allow_battery_boost": {
-        "name": "Permitir impulso de batería del cargador DC (mySigen)"
+        "name": "Permitir impulso de batería DC (mySigen)"
       }
     }
   },

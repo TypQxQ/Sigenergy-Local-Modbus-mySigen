@@ -22,14 +22,13 @@ from .api import (
 from .commands import async_run_setting
 from .const import CONF_OVERRIDE_MINUTES, CONF_OVERRIDE_POWER
 from .control import (
-    ac_cutoff_range,
     async_set_ac_boost_cutoff,
     async_set_dc_boost_cutoff,
     async_set_dc_discharge_floor,
     async_set_dc_stop_level,
     async_set_grid_current_limit,
     async_set_peak_shaving,
-    dc_cutoff_range,
+    boost_cutoff_range,
     dc_floor_range,
     dc_stop_range,
 )
@@ -191,7 +190,7 @@ class GridCurrentLimitNumber(MySigenEntity, NumberEntity):
 
 
 class _DcLevel(MySigenEntity, NumberEntity):
-    """A vehicle charge level for the DC charger, within mySigen's range."""
+    """A charge level in percent, of the car or the home battery, within a range."""
 
     _attr_entity_registry_enabled_default = False
     _attr_native_step = 1
@@ -252,7 +251,7 @@ class DcBoostCutoffLevel(_DcLevel):
     """DC battery boost stops when the home battery reaches this level."""
 
     def _range(self) -> tuple[int, int]:
-        return dc_cutoff_range(self.coordinator)
+        return boost_cutoff_range(self.coordinator)
 
     @property
     def native_value(self) -> int | None:
@@ -269,7 +268,7 @@ class AcBoostCutoffLevel(_DcLevel):
     """Battery boost stops when the home battery reaches this level."""
 
     def _range(self) -> tuple[int, int]:
-        return ac_cutoff_range(self.coordinator)
+        return boost_cutoff_range(self.coordinator)
 
     @property
     def native_value(self) -> int | None:
